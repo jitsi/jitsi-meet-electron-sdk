@@ -1,0 +1,38 @@
+{
+  "name": "jitsi-meet-electron-utils",
+  "version": "0.0.0",
+  "description": "Utilities for jitsi-meet-electron project",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "validate": "npm ls"
+  },
+  "pre-commit": [
+    "lint"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jitsi/jitsi-meet-electron-utils"
+  },
+  "keywords": [
+    "jingle",
+    "webrtc",
+    "xmpp",
+    "electron",
+    "jitsi-meet",
+    "utils"
+  ],
+  "author": "",
+  "readmeFilename": "README.md",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "sourceId2Coordinates": "file:./remotecontrol/node_addons/sourceId2Coordinates",
+    "robotjs": "jitsi/robotjs#jitsi",
+    "postis": "^2.2.0"
+  },
+  "devDependencies": {
+    "eslint": ">=3",
+    "eslint-plugin-jsdoc": "*",
+    "precommit-hook": "3.0.0"
+  }
+}
