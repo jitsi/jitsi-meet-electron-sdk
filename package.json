@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint .",
-    "validate": "npm ls"
+    "validate": "npm ls",
+    "install": "node-gyp rebuild"
   },
   "pre-commit": [
     "lint"
@@ -25,8 +26,9 @@
   "author": "",
   "readmeFilename": "README.md",
   "license": "Apache-2.0",
+  "gypfile": true,
   "dependencies": {
-    "sourceId2Coordinates": "file:./remotecontrol/node_addons/sourceId2Coordinates",
+    "nan": "^2.2.1",
     "robotjs": "jitsi/robotjs#jitsi",
     "postis": "^2.2.0"
   },
