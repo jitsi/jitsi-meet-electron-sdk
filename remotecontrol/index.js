@@ -1,7 +1,7 @@
 const electron = require("electron");
 const postis = require("postis");
 const robot = require("robotjs");
-const sourceId2Coordinates = require("sourceId2Coordinates");
+const sourceId2Coordinates = require("../node_addons/sourceId2Coordinates");
 const constants = require("./constants");
 const {
     EVENTS,

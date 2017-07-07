@@ -20,8 +20,8 @@
         ],
 
         'sources': [
-            'src/index.cc',
-            'src/sourceId2Coordinates.cc'
+            'node_addons/sourceId2Coordinates/src/index.cc',
+            'node_addons/sourceId2Coordinates/src/sourceId2Coordinates.cc'
         ]
     }]
 }

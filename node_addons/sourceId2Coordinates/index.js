@@ -1,5 +1,6 @@
 const sourceId2Coordinates
-    = require('./build/Release/sourceId2Coordinates.node').sourceId2Coordinates;
+    = require('../../build/Release/sourceId2Coordinates.node')
+        .sourceId2Coordinates;
 
 /**
  * Returns the coordinates of a desktop using the passed desktop sharing source
