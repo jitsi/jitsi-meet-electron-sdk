@@ -31,7 +31,6 @@ NAN_MODULE_INIT(Init)
 		Nan::GetFunction(Nan::New<FunctionTemplate>(sourceId2Coordinates))
 			.ToLocalChecked()
 	);
-	NAN_EXPORT(target, sourceId2Coordinates);
 }
 
 NODE_MODULE(sourceId2CoordinatesModule, Init)
