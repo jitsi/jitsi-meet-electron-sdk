@@ -75,7 +75,9 @@ class RemoteControl {
             break;
             // eslint-disable-next-line no-case-declarations
             default: // > 1 display
-                const coordinates = sourceId2Coordinates(sourceId);
+                // Remove the type part from the sourceId
+                const parsedSourceId = sourceId.replace('screen:', '');
+                const coordinates = sourceId2Coordinates(parsedSourceId);
                 if(coordinates) {
                     // Currently sourceId2Coordinates will return undefined for
                     // any OS except Windows. This code will be executed only on
@@ -89,7 +91,7 @@ class RemoteControl {
                 } else {
                     // On Mac OS the sourceId = 'screen' + displayId.
                     // Try to match displayId with sourceId.
-                    const displayId = Number(sourceId.replace('screen:', ''));
+                    const displayId = Number(parsedSourceId);
                     this._display
                         = displays.find(display => display.id === displayId);
                 }
