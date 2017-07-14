@@ -28,7 +28,7 @@ NOTE: `dispose` method will be called automatically when the Jitsi Meet iframe u
 
 * **Desktop Sharing**
 ```Javascript
-setupScreenSharingForWindow(iframe.contentWindow);
+setupScreenSharingForWindow(iframe/* the Jitsi Meet iframe */);
 ```
 
 ## Example
