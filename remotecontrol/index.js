@@ -119,7 +119,8 @@ class RemoteControl {
         );
         this._channel = postis({
             window: this._iframe.contentWindow,
-            windowForEventListening: window
+            windowForEventListening: window,
+            scope: 'jitsi-remote-control'
         });
         this._channel.ready(() => {
             this._channel.listen('message', message => {
