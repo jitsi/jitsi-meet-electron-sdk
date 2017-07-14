@@ -22,25 +22,13 @@ class RemoteControl {
      * @param {HTMLElement} iframe the Jitsi Meet iframe.
      */
     constructor(iframe) {
-        this._channel = postis({
-            window: iframe.contentWindow,
-            windowForEventListening: window
-        });
-        this._channel.ready(() => {
-            this._channel.listen('message', message => {
-                const { name } = message.data;
-                if(name === REMOTE_CONTROL_MESSAGE_NAME) {
-                    this._onRemoteControlMessage(message);
-                }
-            });
-            this._sendEvent({ type: EVENTS.supported });
-        });
-
+        this._iframe = iframe;
+        this._iframe.addEventListener('load', () => this._onIFrameLoad());
         /**
          * The status ("up"/"down") of the mouse button.
-         * FIXME: Assuming that one button at a time can be pressed. Haven't noticed
-         * any issues but maybe we should store the status for every mouse button
-         * that we are processing.
+         * FIXME: Assuming that one button at a time can be pressed. Haven't
+         * noticed any issues but maybe we should store the status for every
+         * mouse button that we are processing.
          */
         this._mouseButtonStatus = "up";
     }
@@ -49,8 +37,10 @@ class RemoteControl {
      * Disposes the remote control functionality.
      */
     dispose() {
-        this._channel.destroy();
-        this._channel = null;
+        if(this.channel) {
+            this._channel.destroy();
+            this._channel = null;
+        }
         this._stop();
     }
 
@@ -117,6 +107,29 @@ class RemoteControl {
      */
     _stop() {
         this._display = undefined;
+    }
+
+    /**
+     * Handles iframe load events.
+     */
+    _onIFrameLoad() {
+        this._iframe.contentWindow.addEventListener(
+            'unload',
+            () => this.dispose()
+        );
+        this._channel = postis({
+            window: this._iframe.contentWindow,
+            windowForEventListening: window
+        });
+        this._channel.ready(() => {
+            this._channel.listen('message', message => {
+                const { name } = message.data;
+                if(name === REMOTE_CONTROL_MESSAGE_NAME) {
+                    this._onRemoteControlMessage(message);
+                }
+            });
+            this._sendEvent({ type: EVENTS.supported });
+        });
     }
 
     /**

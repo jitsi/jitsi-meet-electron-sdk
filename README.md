@@ -6,26 +6,27 @@ jitsi-meet-electron-utils contains native code for some utilities. You'll need [
 
 ## Usage
 ```Javascript
-const utils = require("jitsi-meet-electron-utils");
 const {
     RemoteControl,
     setupScreenSharingForWindow
-} = utils;
+} = require("jitsi-meet-electron-utils");
 ```
 
-* **Remote Control** - The remote control utility requires iframe HTML Element with loaded Jitsi Meet.
+* **Remote Control** - The remote control utility requires iframe HTML Element that will load Jitsi Meet.
+
+Enable the remote control:
 ```Javascript
 const remoteControl = new RemoteControl(iframe/* the Jitsi Meet iframe */);
-...
-...
-...
+```
+
+To disable the remote control:
+```Javascript
 remoteControl.dispose();
 ```
+
+NOTE: `dispose` method will be called automatically when the Jitsi Meet iframe unload.
+
 * **Desktop Sharing**
-```Javascript
-setupScreenSharingForWindow(window/* the Jitsi Meet window object */);
-```
-If Jitsi Meet is loaded in an iframe HTML element which is stored in the `iframe` variable, the code will look like:
 ```Javascript
 setupScreenSharingForWindow(iframe.contentWindow);
 ```
@@ -33,6 +34,3 @@ setupScreenSharingForWindow(iframe.contentWindow);
 ## Example
 
 For examples of installation and usage checkout the [Jitsi Meet Electron](https://github.com/jitsi/jitsi-meet-electron) project.
-
-## Discuss
-Please use the [Jitsi dev mailing list](http://lists.jitsi.org/pipermail/dev/) to discuss feature requests before opening an issue on Github.
