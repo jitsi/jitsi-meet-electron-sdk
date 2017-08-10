@@ -37,7 +37,7 @@ class RemoteControl {
      * Disposes the remote control functionality.
      */
     dispose() {
-        if(this.channel) {
+        if(this._channel) {
             this._channel.destroy();
             this._channel = null;
         }
