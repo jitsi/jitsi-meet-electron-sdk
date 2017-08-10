@@ -148,7 +148,7 @@ class RemoteControl {
         }
         switch(data.type) {
             case EVENTS.mousemove: {
-                const { width, height, x, y } = this._display.workArea;
+                const { width, height, x, y } = this._display.bounds;
                 const destX = data.x * width + x;
                 const destY = data.y * height + y;
                 if(this._mouseButtonStatus === "down") {
