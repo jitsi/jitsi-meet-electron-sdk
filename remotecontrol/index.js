@@ -176,12 +176,9 @@ class RemoteControl {
                 break;
             }
             case EVENTS.mousescroll:{
-                //FIXME: implement horizontal scrolling
-                if(data.y !== 0) {
-                    robot.scrollMouse(
-                        Math.abs(data.y),
-                        data.y > 0 ? "down" : "up"
-                    );
+                const { x, y } = data;
+                if(x !== 0 || y !== 0) {
+                    robot.scrollMouse(x, y);
                 }
                 break;
             }
