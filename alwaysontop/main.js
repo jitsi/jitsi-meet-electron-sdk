@@ -21,7 +21,7 @@ function onAlwaysOnTopWindow(
         options) {
     if (frameName === 'AlwaysOnTop') {
         event.preventDefault();
-        event.newGuest = new BrowserWindow(
+        const win = event.newGuest = new BrowserWindow(
             Object.assign(options, {
                 backgroundColor: 'transparent',
                 width: SIZE.width,
@@ -39,9 +39,13 @@ function onAlwaysOnTopWindow(
                 transparent: true,
                 zoomToPageWidth: true,
                 titleBarStyle: undefined,
-                frame: false
+                frame: false,
+                show: false
             }, getPosition())
         );
+        win.once('ready-to-show', () => {
+            win.showInactive();
+        });
     }
 }
 
