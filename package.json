@@ -28,6 +28,7 @@
   "license": "Apache-2.0",
   "gypfile": true,
   "dependencies": {
+    "async": "^2.5.0",
     "nan": "^2.2.1",
     "robotjs": "jitsi/robotjs#jitsi",
     "postis": "^2.2.0"
