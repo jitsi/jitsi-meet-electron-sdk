@@ -1,11 +1,11 @@
-const exec    = require('child_process').exec;
-const async   = require('async');
+const exec          = require('child_process').exec;
+const async         = require('async');
 // The tools
-const airport = require('./airport');
-const iwconfig  = require('./iwconfig');
-const netsh   = require('./netsh');
+const airport       = require('./airport');
+const procwireless  = require('./procwireless');
+const netsh         = require('./netsh');
 
-var toolInstance;
+let toolInstance;
 
 /**
  * Uses all available tools to query for wifi stats, and the one we found to
@@ -27,8 +27,8 @@ function initTools(callback) {
             },
             function (cb) {
                 getStats(function (err, str) {
-                    cb(null, {err: err, tool: iwconfig, result: str});
-                }, iwconfig);
+                    cb(null, {err: err, tool: procwireless, result: str});
+                }, procwireless);
             },
             function (cb) {
                 getStats(function (err, str) {
