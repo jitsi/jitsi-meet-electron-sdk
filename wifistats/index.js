@@ -103,11 +103,14 @@ function getWiFiStats(callback) {
  */
 function setupWiFiStats(iframe) {
     iframe.addEventListener('load', () => {
-        if (!iframe.contentWindow.JitsiMeetElectron) {
-            iframe.contentWindow.JitsiMeetElectron = {};
-        }
+        const ctx = iframe.contentWindow;
+        if(typeof ctx.JitsiMeetJS === "undefined")
+            ctx.JitsiMeetJS = {};
 
-        iframe.contentWindow.JitsiMeetElectron.getWiFiStats = getWiFiStats;
+        if(typeof ctx.JitsiMeetJS.app === "undefined")
+            ctx.JitsiMeetJS.app = {};
+
+        ctx.JitsiMeetJS.app.getWiFiStats = getWiFiStats;
     });
 }
 
