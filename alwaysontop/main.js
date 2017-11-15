@@ -36,7 +36,6 @@ function onAlwaysOnTopWindow(
                 fullscreen: false,
                 fullscreenable: false,
                 skipTaskbar: true,
-                transparent: true,
                 zoomToPageWidth: true,
                 titleBarStyle: undefined,
                 frame: false,
