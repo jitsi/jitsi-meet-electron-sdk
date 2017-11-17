@@ -11,9 +11,15 @@ const SIZE = {
  * BrowserWindow options of the always on top window. This handler will be
  * executed in the context of the main process.
  *
- * @inheritdoc
+ * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which
+ * displays Jitsi Meet.
+ *
+ * NOTE: All other parameters are standard for electron webcontent's new-window
+ * event listeners.
+ * @see {@link https://github.com/electron/electron/blob/master/docs/api/web-contents.md#event-new-window}
  */
 function onAlwaysOnTopWindow(
+        jitsiMeetWindow,
         event,
         url,
         frameName,
@@ -26,9 +32,10 @@ function onAlwaysOnTopWindow(
                 backgroundColor: 'transparent',
                 width: SIZE.width,
                 height: SIZE.height,
-                minWidth: 0,
-                minHeight: 0,
-                useContentSize: true,
+                minWidth: SIZE.width,
+                minHeight: SIZE.height,
+                maxWidth: SIZE.width,
+                maxHeight: SIZE.height,
                 minimizable: false,
                 maximizable: false,
                 resizable: false,
@@ -36,7 +43,6 @@ function onAlwaysOnTopWindow(
                 fullscreen: false,
                 fullscreenable: false,
                 skipTaskbar: true,
-                zoomToPageWidth: true,
                 titleBarStyle: undefined,
                 frame: false,
                 show: false
@@ -44,6 +50,13 @@ function onAlwaysOnTopWindow(
         );
         win.once('ready-to-show', () => {
             win.showInactive();
+        });
+        jitsiMeetWindow.webContents.send('jitsi-always-on-top', {
+            type: 'event',
+            name: 'new-window',
+            data: {
+                id: win.id
+            }
         });
     }
 }
@@ -77,6 +90,8 @@ function getPosition () {
 module.exports = function setupAlwaysOnTopMain(jitsiMeetWindow) {
     jitsiMeetWindow.webContents.on(
         'new-window',
-        onAlwaysOnTopWindow
+        (...args) => {
+            onAlwaysOnTopWindow(jitsiMeetWindow, ...args);
+        }
     );
 };
