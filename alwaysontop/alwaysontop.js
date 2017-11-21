@@ -1,10 +1,11 @@
 const {
     api,
+    move,
     ondblclick,
     onload,
-    onbeforeunload
+    onbeforeunload,
+    shouldImplementDrag
 } = window.alwaysOnTop;
-
 
 window.addEventListener('beforeunload', onbeforeunload);
 
@@ -12,11 +13,52 @@ window.addEventListener('dblclick', ondblclick);
 
 document.addEventListener("DOMContentLoaded", () => {
     onload();
+    setupDraggable();
 });
 
 // load all resources from meet
 api._getAlwaysOnTopResources().forEach(src => loadFile(src));
 
+/**
+ * Enables draggable functionality for the always on top window.
+ *
+ * @returns {void}
+ */
+function setupDraggable() {
+    if (shouldImplementDrag) {
+        window.addEventListener('mousedown', mouseDownEvent => {
+            pageX = mouseDownEvent.pageX;
+            pageY = mouseDownEvent.pageY;
+            window.addEventListener('mousemove', drag);
+        });
+
+        window.addEventListener('mouseup', () => {
+            window.removeEventListener('mousemove', drag);
+        });
+    } else {
+        document.body.style['-webkit-app-region'] = 'drag';
+    }
+}
+
+/**
+ * Stores the position of the mouse relative to the page on mouse down events.
+ *
+ * @type {int}
+ */
+let pageX = 0, pageY = 0;
+
+/**
+ * Mouse move listener.
+ *
+ * @param {MouseMove} mouseMoveEvent - The mouse move event.
+ * @returns {void}
+ */
+function drag(mouseMoveEvent) {
+    mouseMoveEvent.stopPropagation();
+    mouseMoveEvent.preventDefault();
+    const { screenX, screenY } = mouseMoveEvent;
+    move(screenX - pageX, screenY - pageY);
+}
 
 /**
  * Loads a file from a specific source.

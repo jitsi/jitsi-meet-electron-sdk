@@ -1,15 +1,16 @@
 /* global __dirname */
-const { remote } = require('electron');
+const { ipcRenderer, remote } = require('electron');
 
-const path = require("path");
-const url = require("url");
+const os = require('os');
+const path = require('path');
+const url = require('url');
 
 /**
  * URL for index.html which will be our entry point.
  */
 const alwaysOnTopURL = url.format({
-    pathname: path.join(__dirname, "alwaysontop.html"),
-    protocol: "file:",
+    pathname: path.join(__dirname, 'alwaysontop.html'),
+    protocol: 'file:',
     slashes: true
 });
 
@@ -37,6 +38,12 @@ class AlwaysOnTop {
         this._jitsiMeetElectronWindow.on('blur', this._openAlwaysOnTopWindow);
         this._jitsiMeetElectronWindow.on('focus', this._closeAlwaysOnTopWindow);
         this._jitsiMeetElectronWindow.on('close', this._closeAlwaysOnTopWindow);
+        ipcRenderer.on('jitsi-always-on-top', (event, { type, name, data}) => {
+            if (type === 'event' && name === 'new-window') {
+                this._alwaysOnTopBrowserWindow
+                    = remote.BrowserWindow.fromId(data.id);
+            }
+        });
     }
 
     /**
@@ -95,6 +102,17 @@ class AlwaysOnTop {
             ondblclick: () => {
                 this._closeAlwaysOnTopWindow();
                 this._jitsiMeetElectronWindow.show();
+            },
+            /**
+             * On Windows and Linux if we use the standart drag
+             * (-webkit-app-region: drag) all mouse events are blocked. To fix
+             * this we'll implement drag ourselves.
+             */
+            shouldImplementDrag: os.type() !== 'Darwin',
+            move: (x, y) => {
+                if (this._alwaysOnTopBrowserWindow) {
+                    this._alwaysOnTopBrowserWindow.setPosition(x, y);
+                }
             }
         };
     }
@@ -108,6 +126,7 @@ class AlwaysOnTop {
         if(this._alwaysOnTopWindow) {
             this._alwaysOnTopWindow.close();
             this._alwaysOnTopWindow = undefined;
+            this._alwaysOnTopBrowserWindow = undefined;
         }
     }
 
