@@ -79,21 +79,30 @@ function getStats(callback, tool) {
  * @callback callback delivering results
  * @param {Error} error if any
  * @param {object} result stats
+ * @returns {Promise}
  */
-function getWiFiStats(callback) {
-    if (!toolInstance) {
-        initTools(
-            (err, t, result) => {
-                if (err) {
-                    return callback(err);
-                }
-                toolInstance = t;
-                callback(null, result);
-            });
-        return;
-    }
+function getWiFiStats() {
+    return new Promise((resolve, reject) => {
+        if (!toolInstance) {
+            initTools(
+                (err, t, result) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    toolInstance = t;
+                    resolve(result);
+                });
+            return;
+        }
 
-    getStats(callback);
+        getStats((error, result) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(JSON.stringify(result));
+            }
+        });
+    });
 }
 
 /**
