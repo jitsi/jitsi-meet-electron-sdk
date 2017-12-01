@@ -11,78 +11,80 @@ const cmdLine = 'cat /proc/net/wireless';
  * We report link, level and noise.
  *
  * @param {string} str - the string which is output of the command.
- * @param callback
+ * @return {Promise}
  */
-function parseOutput(str, callback) {
-    try {
-        const lines = str.split('\n');
+function parseOutput(str) {
+    return new Promise((resolve, reject) => {
+        try {
+            const lines = str.split('\n');
 
-        if (lines.length <= 2) {
-            throw new Error('No wifi interface');
-        }
-
-        // we take the third line
-        const line = lines[2];
-
-        const elements = line.split(':');
-        if (elements.length < 2) {
-            throw new Error('No wifi interface - wrong format');
-        }
-
-        const iface = elements[0];
-        const stats = elements[1].trim().split(/[ ]+/);
-
-        const resultObj = {
-            interface: iface,
-            signal: parseInt(stats[1], 10),
-            rssi: parseInt(stats[2], 10),
-            noise: parseInt(stats[3], 10),
-            timestamp: Date.now()
-        };
-
-        // now let's get that interface address
-        // The output should be like
-        // inet 192.168.1.102/24 brd..... scope global ...
-        // inet6 2605:...... scope global ...
-        exec('ip address show dev ' + iface, function (err, str) {
-            if (err) {
-                // cannot get interface address, lets submit whatever we have
-                callback(null, resultObj);
-                return;
+            if (lines.length <= 2) {
+                reject(new Error('No wifi interface'));
             }
 
-            try {
-                const lines = str.split('\n');
-                const addresses = [];
-                for (let line of lines) {
-                    line = line.trim();
+            // we take the third line
+            const line = lines[2];
 
-                    if (line.indexOf('scope global') == -1) {
-                        continue;
-                    }
+            const elements = line.split(':');
+            if (elements.length < 2) {
+                reject(new Error('No wifi interface - wrong format'));
+            }
 
-                    let addr;
-                    if (line.startsWith('inet6')) {
-                        addr = extractAddress(line.substring(5));
-                    } else if (line.startsWith('inet')) {
-                        addr = extractAddress(line.substring(4));
-                    }
+            const iface = elements[0];
+            const stats = elements[1].trim().split(/[ ]+/);
 
-                    if (addr) {
-                        addresses.push(addr);
-                    }
+            const resultObj = {
+                interface: iface,
+                signal: parseInt(stats[1], 10),
+                rssi: parseInt(stats[2], 10),
+                noise: parseInt(stats[3], 10),
+                timestamp: Date.now()
+            };
+
+            // now let's get that interface address
+            // The output should be like
+            // inet 192.168.1.102/24 brd..... scope global ...
+            // inet6 2605:...... scope global ...
+            exec('ip address show dev ' + iface, function (err, str) {
+                if (err) {
+                    // cannot get interface address, lets submit whatever we have
+                    resolve(resultObj);
+                    return;
                 }
 
-                resultObj.addresses = addresses;
-                callback(null, resultObj);
-            } catch (ex) {
-                // cannot get interface address, lets submit whatever we have
-                callback(null, resultObj);
-            }
-        });
-    } catch (ex) {
-        callback(ex, null);
-    }
+                try {
+                    const lines = str.split('\n');
+                    const addresses = [];
+                    for (let line of lines) {
+                        line = line.trim();
+
+                        if (line.indexOf('scope global') == -1) {
+                            continue;
+                        }
+
+                        let addr;
+                        if (line.startsWith('inet6')) {
+                            addr = extractAddress(line.substring(5));
+                        } else if (line.startsWith('inet')) {
+                            addr = extractAddress(line.substring(4));
+                        }
+
+                        if (addr) {
+                            addresses.push(addr);
+                        }
+                    }
+
+                    resultObj.addresses = addresses;
+                    resolve(resultObj);
+                } catch (ex) {
+                    // cannot get interface address, lets submit whatever we have
+                    resolve(resultObj);
+                }
+            });
+        } catch (ex) {
+            reject(ex);
+        }
+    });
 }
 
 /**

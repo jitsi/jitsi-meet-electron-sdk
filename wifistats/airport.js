@@ -10,74 +10,76 @@ const cmdExtractWifiAddresses = 'DEVICE_OUT=`networksetup -listallhardwareports 
  * signal and the background noise level.
  *
  * @param {string} str - the string which is output of the command.
- * @param callback
+ * @return {Promise}
  */
-function parseOutput(str, callback) {
-    try {
-        const lines = str.split('\n');
-        const resultValues = {};
+function parseOutput(str) {
+    return new Promise((resolve, reject) => {
+        try {
+            const lines = str.split('\n');
+            const resultValues = {};
 
-        for (const line of lines) {
-            const res = line.split(":");
-            if (res.length > 1) {
-                const key = res[0].trim();
-                resultValues[key] = res[1].trim();
-            }
-        }
-
-        const rssi = parseInt(resultValues.agrCtlRSSI, 10);
-        const noise = parseInt(resultValues.agrCtlNoise, 10);
-        const resultObj = {
-            signal: (rssi - noise),
-            rssi,
-            noise,
-            timestamp: Date.now()
-        };
-
-        exec(cmdExtractWifiAddresses, function (err, str) {
-            if (err) {
-                // cannot get interface address, lets submit whatever we have
-                callback(null, resultObj);
-                return;
+            for (const line of lines) {
+                const res = line.split(":");
+                if (res.length > 1) {
+                    const key = res[0].trim();
+                    resultValues[key] = res[1].trim();
+                }
             }
 
-            try {
-                // the string start with interface name
-                resultObj.interface = str.substring(0, str.indexOf(':'));
+            const rssi = parseInt(resultValues.agrCtlRSSI, 10);
+            const noise = parseInt(resultValues.agrCtlNoise, 10);
+            const resultObj = {
+                signal: (rssi - noise),
+                rssi,
+                noise,
+                timestamp: Date.now()
+            };
 
-                const lines = str.split('\n');
-                const addresses = [];
-                for (let line of lines) {
-                    line = line.trim();
-
-                    // skip local link address
-                    if (line.indexOf('scopeid') != -1) {
-                        continue;
-                    }
-
-                    let addrLine;
-                    if (line.startsWith('inet6')) {
-                        addrLine = line.substring(5);
-                    } else if (line.startsWith('inet')) {
-                        addrLine = line.substring(4);
-                    }
-
-                    if (addrLine) {
-                        const elements = addrLine.trim().split(' ');
-                        addresses.push(elements[0]);
-                    }
+            exec(cmdExtractWifiAddresses, function (err, str) {
+                if (err) {
+                    // cannot get interface address, lets submit whatever we have
+                    resolve(resultObj);
+                    return;
                 }
 
-                resultObj.addresses = addresses;
-                callback(null, resultObj);
-            } catch (ex) {
-                // cannot get interface address, lets submit whatever we have
-                callback(null, resultObj);
-            }
-        });
-    } catch (ex) {
-        callback(ex, null);
-    }
+                try {
+                    // the string start with interface name
+                    resultObj.interface = str.substring(0, str.indexOf(':'));
+
+                    const lines = str.split('\n');
+                    const addresses = [];
+                    for (let line of lines) {
+                        line = line.trim();
+
+                        // skip local link address
+                        if (line.indexOf('scopeid') != -1) {
+                            continue;
+                        }
+
+                        let addrLine;
+                        if (line.startsWith('inet6')) {
+                            addrLine = line.substring(5);
+                        } else if (line.startsWith('inet')) {
+                            addrLine = line.substring(4);
+                        }
+
+                        if (addrLine) {
+                            const elements = addrLine.trim().split(' ');
+                            addresses.push(elements[0]);
+                        }
+                    }
+
+                    resultObj.addresses = addresses;
+                    resolve(resultObj);
+                } catch (ex) {
+                    // cannot get interface address, lets submit whatever we have
+                    resolve(resultObj);
+                }
+            });
+        } catch (ex) {
+            reject(ex);
+        }
+    });
 }
 
 module.exports = {

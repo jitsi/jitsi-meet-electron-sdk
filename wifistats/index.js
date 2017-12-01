@@ -1,108 +1,93 @@
 const exec          = require('child_process').exec;
-const async         = require('async');
+
 // The tools
 const airport       = require('./airport');
 const procwireless  = require('./procwireless');
 const netsh         = require('./netsh');
 
 let toolInstance;
+let supportWifiStats = true;
 
 /**
  * Uses all available tools to query for wifi stats, and the one we found to
- * work we store in global variable {@link toolInstance}.
- * The result is returned to callback.
+ * work we store in global variable {@link toolInstance}, otherwise we set
+ * supportWifiStats to false.
  * We call all tools in parallel and when all finishes we check the results.
  *
- * @callback callback delivering results
- * @param {Error} error if any
- * @param {object} result stats
+ * @return {Promise}
  */
-function initTools(callback) {
-    async.parallel([
-            function (cb) {
-                getStats(
-                    function (err, str) {
-                        cb(null, {err: err, tool: airport, result: str});
-                    }, airport);
-            },
-            function (cb) {
-                getStats(function (err, str) {
-                    cb(null, {err: err, tool: procwireless, result: str});
-                }, procwireless);
-            },
-            function (cb) {
-                getStats(function (err, str) {
-                    cb(null, {err: err, tool: netsh, result: str});
-                }, netsh);
+function initTools() {
+    return new Promise((resolve, reject) => {
+        Promise.all([
+                getStats(airport)
+                    .then(result => resolve({
+                        tool: airport,
+                        result
+                    }))
+                    .catch(() => {}),
+                getStats(procwireless)
+                    .then(result => resolve({
+                        tool: procwireless,
+                        result
+                    }))
+                    .catch(() => {}),
+                getStats(netsh)
+                    .then(result => resolve({
+                        tool: netsh,
+                        result
+                    }))
+                    .catch(() => {})
+            ]
+        ).then(results => {
+                results.forEach(resultEntry => {
+                    if (resultEntry) {
+                        toolInstance = resultEntry.tool;
+                        resolve(resultEntry.result);
+                    }
+                });
+                if (!toolInstance) {
+                    supportWifiStats = false;
+                    reject(new Error('No known wifi stats tool found'));
+                }
             }
-        ],
-        function (err, results) {
-            const res = results.find((r) => (r.err == null));
-            if (res) {
-                callback(null, res.tool, res.result);
-            } else {
-                callback(new Error('No known wifi stats tool found'));
-            }
-        }
-    );
+        );
+    });
 }
 
 /**
- * Queries for wifi stats using a specific tool or if not specified, uses the
- * global one which we discover to be working.
+ * Queries for wifi stats using a specific tool.
  * @param tool - The tool to use querying for wifi stats.
- * @callback callback delivering results
- * @param {Error} error if any
- * @param {object} result stats
+ * @return {Promise}
  */
-function getStats(callback, tool) {
-    if (!tool) {
-        if (toolInstance) {
-            tool = toolInstance;
-        } else {
-            callback(new Error('No known wifi stats tool found'));
-        }
-    }
+function getStats(tool) {
+    return new Promise((resolve, reject) => {
+        exec(tool.cmdLine, function (error, str) {
+            if (error) {
+                reject(error);
+                return;
+            }
 
-    exec(tool.cmdLine, function (err, str) {
-        if (err) {
-            callback(err, null);
-            return;
-        }
-
-        tool.parseOutput(str, callback);
+            tool.parseOutput(str)
+                .then(result => resolve(JSON.stringify(result)))
+                .catch(error => reject(error));
+        });
     });
 }
 
 /**
  * Queries for wifi stats.
- * @callback callback delivering results
- * @param {Error} error if any
- * @param {object} result stats
  * @returns {Promise}
  */
 function getWiFiStats() {
-    return new Promise((resolve, reject) => {
-        if (!toolInstance) {
-            initTools(
-                (err, t, result) => {
-                    if (err) {
-                        reject(err);
-                    }
-                    toolInstance = t;
-                    resolve(result);
-                });
-            return;
-        }
+    if (!supportWifiStats) {
+        return Promise.reject(new Error('No known wifi stats tool found'));
+    }
 
-        getStats((error, result) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(JSON.stringify(result));
-            }
-        });
-    });
+    if (!toolInstance) {
+        return initTools();
+    } else {
+        return getStats(toolInstance);
+    }
 }
 
 /**

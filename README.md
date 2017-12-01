@@ -75,6 +75,33 @@ const {
 const api = new JitsiMeetExternalAPI(...);
 setupAlwaysOnTopRender(api);
 ```
+
+#### WiFi Stats
+Provides a function to query for wifi stats on the host computer. Returns information like interface name, addresses, signal quality, noise (not available on all OS). 
+
+**WiFi Stats:**
+
+In the **main** electron process:
+```Javascript
+const {
+    setupWiFiStats
+} = require("jitsi-meet-electron-utils");
+
+// jitsiMeetWindow - The BrowserWindow instance
+// of the window where Jitsi Meet is loaded.
+setupWiFiStats(jitsiMeetWindow);
+```
+
+In the **render** electron process of the window where Jitsi Meet is displayed:
+```Javascript
+const {
+    setupWiFiStats
+} = require("jitsi-meet-electron-utils");
+
+const api = new JitsiMeetExternalAPI(...);
+setupWiFiStats(api.getIFrame());
+```
+
 ## Example
 
 For examples of installation and usage checkout the [Jitsi Meet Electron](https://github.com/jitsi/jitsi-meet-electron) project.
