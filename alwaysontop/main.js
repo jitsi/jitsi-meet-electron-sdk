@@ -53,9 +53,9 @@ function onAlwaysOnTopWindow(
         });
         jitsiMeetWindow.webContents.send('jitsi-always-on-top', {
             type: 'event',
-            name: 'new-window',
             data: {
-                id: win.id
+                id: win.id,
+                name: 'new-window'
             }
         });
     }

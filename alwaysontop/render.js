@@ -27,6 +27,7 @@ class AlwaysOnTop {
         this._updateLargeVideoSrc = this._updateLargeVideoSrc.bind(this);
         this._openAlwaysOnTopWindow = this._openAlwaysOnTopWindow.bind(this);
         this._closeAlwaysOnTopWindow = this._closeAlwaysOnTopWindow.bind(this);
+        this._onMessageReceived = this._onMessageReceived.bind(this);
 
         this._api = api;
         this._jitsiMeetElectronWindow
@@ -38,12 +39,6 @@ class AlwaysOnTop {
         this._jitsiMeetElectronWindow.on('blur', this._openAlwaysOnTopWindow);
         this._jitsiMeetElectronWindow.on('focus', this._closeAlwaysOnTopWindow);
         this._jitsiMeetElectronWindow.on('close', this._closeAlwaysOnTopWindow);
-        ipcRenderer.on('jitsi-always-on-top', (event, { type, name, data}) => {
-            if (type === 'event' && name === 'new-window') {
-                this._alwaysOnTopBrowserWindow
-                    = remote.BrowserWindow.fromId(data.id);
-            }
-        });
     }
 
     /**
@@ -72,6 +67,22 @@ class AlwaysOnTop {
     }
 
     /**
+     * Handles IPC messages from the main process.
+     *
+     * @param {*} event - The event object passed by electron.
+     * @param {string} type - The type of the message.
+     * @param {Object} data - The payload of the message.
+     */
+    _onMessageReceived(event, { type, data}) {
+        const { id, name } = data;
+
+        if (type === 'event' && name === 'new-window') {
+            this._alwaysOnTopBrowserWindow
+                = remote.BrowserWindow.fromId(id);
+        }
+    }
+
+    /**
      * Creates and opens the always on top window.
      *
      * @returns {void}
@@ -84,6 +95,7 @@ class AlwaysOnTop {
             'play',
             this._updateLargeVideoSrc
         );
+        ipcRenderer.on('jitsi-always-on-top', this._onMessageReceived);
         this._alwaysOnTopWindow = window.open(alwaysOnTopURL, 'AlwaysOnTop');
         if(!this._alwaysOnTopWindow) {
             return;
@@ -104,7 +116,7 @@ class AlwaysOnTop {
                 this._jitsiMeetElectronWindow.show();
             },
             /**
-             * On Windows and Linux if we use the standart drag
+             * On Windows and Linux if we use the standard drag
              * (-webkit-app-region: drag) all mouse events are blocked. To fix
              * this we'll implement drag ourselves.
              */
@@ -127,6 +139,8 @@ class AlwaysOnTop {
             this._alwaysOnTopWindow.close();
             this._alwaysOnTopWindow = undefined;
             this._alwaysOnTopBrowserWindow = undefined;
+            ipcRenderer.removeListener('jitsi-always-on-top',
+                this._onMessageReceived);
         }
     }
 
