@@ -81,17 +81,6 @@ Provides a function to query for wifi stats on the host computer. Returns inform
 
 **WiFi Stats:**
 
-In the **main** electron process:
-```Javascript
-const {
-    setupWiFiStats
-} = require("jitsi-meet-electron-utils");
-
-// jitsiMeetWindow - The BrowserWindow instance
-// of the window where Jitsi Meet is loaded.
-setupWiFiStats(jitsiMeetWindow);
-```
-
 In the **render** electron process of the window where Jitsi Meet is displayed:
 ```Javascript
 const {
