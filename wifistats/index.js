@@ -1,3 +1,4 @@
+/* global process */
 const exec          = require('child_process').exec;
 
 // The tools
@@ -17,40 +18,26 @@ let supportWifiStats = true;
  * @return {Promise}
  */
 function initTools() {
+    const os = process.platform;
+    let tool;
+
+    // check for running OS and use appropriate tool
+    if (os === 'win32') {
+        tool = netsh;
+    } else if (os === 'darwin') {
+        tool = airport;
+    } else if (os === 'linux') {
+        tool = procwireless;
+    }
+
     return new Promise((resolve, reject) => {
-        Promise.all([
-                getStats(airport)
-                    .then(result => resolve({
-                        tool: airport,
-                        result
-                    }))
-                    .catch(() => {}),
-                getStats(procwireless)
-                    .then(result => resolve({
-                        tool: procwireless,
-                        result
-                    }))
-                    .catch(() => {}),
-                getStats(netsh)
-                    .then(result => resolve({
-                        tool: netsh,
-                        result
-                    }))
-                    .catch(() => {})
-            ]
-        ).then(results => {
-                results.forEach(resultEntry => {
-                    if (resultEntry) {
-                        toolInstance = resultEntry.tool;
-                        resolve(resultEntry.result);
-                    }
-                });
-                if (!toolInstance) {
-                    supportWifiStats = false;
-                    reject(new Error('No known wifi stats tool found'));
-                }
-            }
-        );
+        getStats(tool).then(result => {
+            toolInstance = tool;
+            resolve(result);
+        }).catch(error => {
+            supportWifiStats = false;
+            reject(error);
+        });
     });
 }
 
@@ -79,14 +66,12 @@ function getStats(tool) {
  * @returns {Promise}
  */
 function getWiFiStats() {
-    if (!supportWifiStats) {
-        return Promise.reject(new Error('No known wifi stats tool found'));
-    }
-
-    if (!toolInstance) {
-        return initTools();
-    } else {
+    if (toolInstance) {
         return getStats(toolInstance);
+    } else if (!supportWifiStats) {
+        return Promise.reject(new Error('No known wifi stats tool found'));
+    } else {
+        return initTools();
     }
 }
 
