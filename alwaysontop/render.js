@@ -28,17 +28,33 @@ class AlwaysOnTop {
         this._openAlwaysOnTopWindow = this._openAlwaysOnTopWindow.bind(this);
         this._closeAlwaysOnTopWindow = this._closeAlwaysOnTopWindow.bind(this);
         this._onMessageReceived = this._onMessageReceived.bind(this);
+        this._onConferenceJoined = this._onConferenceJoined.bind(this);
+        this._onConferenceLeft = this._onConferenceLeft.bind(this);
 
         this._api = api;
-        this._jitsiMeetElectronWindow
-            = remote.getCurrentWindow();
+        this._jitsiMeetElectronWindow = remote.getCurrentWindow();
 
         if (!api) {
             throw new Error('Wrong arguments!');
         }
-        this._jitsiMeetElectronWindow.on('blur', this._openAlwaysOnTopWindow);
-        this._jitsiMeetElectronWindow.on('focus', this._closeAlwaysOnTopWindow);
-        this._jitsiMeetElectronWindow.on('close', this._closeAlwaysOnTopWindow);
+
+        api.on('videoConferenceJoined', this._onConferenceJoined);
+        api.on('videoConferenceLeft', this._onConferenceLeft);
+
+        window.addEventListener('beforeunload', () => {
+            // Maybe not necessary but it's better to be safe that we are not
+            // leaking listeners:
+            this._onConferenceLeft();
+
+            api.removeListener(
+                'videoConferenceJoined',
+                this._onConferenceJoined
+            );
+            api.removeListener(
+                'videoConferenceLeft',
+                this._onConferenceLeft
+            );
+        });
     }
 
     /**
@@ -47,11 +63,7 @@ class AlwaysOnTop {
      * @returns {HTMLElement|undefined} the large video.
      */
     get _jitsiMeetLargeVideo() {
-        const iframe = this._api.getIFrame();
-        if(!iframe || !iframe.contentWindow || !iframe.contentWindow.document) {
-            return;
-        }
-        return iframe.contentWindow.document.getElementById('largeVideo');
+        return this._api._getLargeVideo();
     }
 
     /**
@@ -64,6 +76,38 @@ class AlwaysOnTop {
             return;
         }
         return this._alwaysOnTopWindow.document.getElementById('video');
+    }
+
+    /**
+     * Handles videoConferenceJoined api event.
+     *
+     * @returns {void}
+     */
+    _onConferenceJoined() {
+        this._jitsiMeetElectronWindow.on('blur', this._openAlwaysOnTopWindow);
+        this._jitsiMeetElectronWindow.on('focus', this._closeAlwaysOnTopWindow);
+        this._jitsiMeetElectronWindow.on('close', this._closeAlwaysOnTopWindow);
+    }
+
+    /**
+     * Handles videoConferenceLeft api event.
+     *
+     * @returns {void}
+     */
+    _onConferenceLeft() {
+        this._jitsiMeetElectronWindow.removeListener(
+            'blur',
+            this._openAlwaysOnTopWindow
+        );
+        this._jitsiMeetElectronWindow.removeListener(
+            'focus',
+            this._closeAlwaysOnTopWindow
+        );
+        this._jitsiMeetElectronWindow.removeListener(
+            'close',
+            this._closeAlwaysOnTopWindow
+        );
+        this._closeAlwaysOnTopWindow();
     }
 
     /**
@@ -88,14 +132,11 @@ class AlwaysOnTop {
      * @returns {void}
      */
     _openAlwaysOnTopWindow() {
-        if(!this._jitsiMeetLargeVideo || this._alwaysOnTopWindow) {
+        if(this._alwaysOnTopWindow) {
             return;
         }
-        this._jitsiMeetLargeVideo.addEventListener(
-            'play',
-            this._updateLargeVideoSrc
-        );
         ipcRenderer.on('jitsi-always-on-top', this._onMessageReceived);
+        this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
         this._alwaysOnTopWindow = window.open(alwaysOnTopURL, 'AlwaysOnTop');
         if(!this._alwaysOnTopWindow) {
             return;
@@ -104,12 +145,10 @@ class AlwaysOnTop {
             api: this._api,
             onload: this._updateLargeVideoSrc,
             onbeforeunload: () => {
-                if(this._jitsiMeetLargeVideo) {
-                    this._jitsiMeetLargeVideo.removeEventListener(
-                        'play',
-                        this._updateLargeVideoSrc
-                    );
-                }
+                this._api.removeListener(
+                    'largeVideoChanged',
+                    this._updateLargeVideoSrc
+                );
             },
             ondblclick: () => {
                 this._closeAlwaysOnTopWindow();
@@ -151,14 +190,21 @@ class AlwaysOnTop {
      * @returns {void}
      */
     _updateLargeVideoSrc() {
-        if(!this._jitsiMeetLargeVideo || !this._alwaysOnTopWindowVideo) {
+        if(!this._alwaysOnTopWindowVideo) {
             return;
         }
-        const mediaStream = this._jitsiMeetLargeVideo.srcObject;
-        const transform = this._jitsiMeetLargeVideo.style.transform;
-        this._alwaysOnTopWindowVideo.srcObject = mediaStream;
-        this._alwaysOnTopWindowVideo.style.transform = transform;
-        this._alwaysOnTopWindowVideo.play();
+
+        if(!this._jitsiMeetLargeVideo) {
+            this._alwaysOnTopWindowVideo.style.display = 'none';
+            this._alwaysOnTopWindowVideo.srcObject = null;
+        } else {
+            this._alwaysOnTopWindowVideo.style.display = 'block';
+            const mediaStream = this._jitsiMeetLargeVideo.srcObject;
+            const transform = this._jitsiMeetLargeVideo.style.transform;
+            this._alwaysOnTopWindowVideo.srcObject = mediaStream;
+            this._alwaysOnTopWindowVideo.style.transform = transform;
+            this._alwaysOnTopWindowVideo.play();
+        }
     }
 }
 

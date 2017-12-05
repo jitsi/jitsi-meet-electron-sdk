@@ -14,10 +14,10 @@ window.addEventListener('dblclick', ondblclick);
 document.addEventListener("DOMContentLoaded", () => {
     onload();
     setupDraggable();
+    // load all resources from meet
+    api._getAlwaysOnTopResources().forEach(src => loadFile(src));
 });
 
-// load all resources from meet
-api._getAlwaysOnTopResources().forEach(src => loadFile(src));
 
 /**
  * Enables draggable functionality for the always on top window.
