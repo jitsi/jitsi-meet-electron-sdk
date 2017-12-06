@@ -30,15 +30,13 @@ function initTools() {
         tool = procwireless;
     }
 
-    return new Promise((resolve, reject) => {
-        getStats(tool).then(result => {
+    return getStats(tool).then(result => {
             toolInstance = tool;
-            resolve(result);
+            return result;
         }).catch(error => {
             supportWifiStats = false;
-            reject(error);
+            return Promise.reject(error);
         });
-    });
 }
 
 /**
@@ -94,6 +92,5 @@ function setupWiFiStats(iframe) {
 }
 
 module.exports = {
-    getWiFiStats: getWiFiStats,
     setupWiFiStats: setupWiFiStats
 };

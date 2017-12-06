@@ -20,6 +20,7 @@ function parseOutput(str) {
 
             if (lines.length <= 2) {
                 reject(new Error('No wifi interface'));
+                return;
             }
 
             // we take the third line
@@ -28,6 +29,7 @@ function parseOutput(str) {
             const elements = line.split(':');
             if (elements.length < 2) {
                 reject(new Error('No wifi interface - wrong format'));
+                return;
             }
 
             const iface = elements[0];
