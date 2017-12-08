@@ -15,6 +15,32 @@ const alwaysOnTopURL = url.format({
 });
 
 /**
+ * Returieves and trying to parse a numeric value from the local storage.
+ *
+ * @param {string} localStorageKey - The key of the value that has to be
+ * retrieved from local storage.
+ * @returns {number} - The parsed number or undefined if the value is not
+ * available or if it can't be converted to number.
+ */
+function getNumberFromLocalStorage(localStorageKey) {
+    const localStorageValue = localStorage.getItem(localStorageKey);
+
+    // We need to explicitly check these values because Number('') is 0 and
+    // Number(null) is 0.
+    if(typeof localStorageValue !== 'string' || localStorageValue === '') {
+        return undefined;
+    }
+
+    const value = Number(localStorageValue);
+
+    if(isNaN(value)) { // Handling values like 'abcde'
+        return undefined;
+    }
+
+    return value;
+}
+
+/**
  * Implements the always on top functionality for the render process.
  */
 class AlwaysOnTop {
@@ -55,6 +81,8 @@ class AlwaysOnTop {
                 this._onConferenceLeft
             );
         });
+
+        this._sendPosition(this._position);
     }
 
     /**
@@ -76,6 +104,49 @@ class AlwaysOnTop {
             return;
         }
         return this._alwaysOnTopWindow.document.getElementById('video');
+    }
+
+    /**
+     * Sends the position of the always on top window to the main process.
+     *
+     * @param {Object} position - The position to be sent.
+     * @returns  {void}
+     */
+    _sendPosition({ x, y }) {
+        ipcRenderer.send('jitsi-always-on-top', {
+            type: 'event',
+            data: {
+                name: 'position',
+                x,
+                y
+            }
+        });
+    }
+
+    /**
+     * Getter for the position of the always on top window.
+     *
+     * @returns {Object} The x and y coordinates of the window.
+     */
+    get _position() {
+        return {
+            x: getNumberFromLocalStorage('jitsi-always-on-top-x'),
+            y: getNumberFromLocalStorage('jitsi-always-on-top-y')
+        };
+    }
+
+    /**
+     * Setter for the position of the always on top window. Stores the
+     * coordinates in the local storage and and sends them to the main process.
+     *
+     * @param {Object} coordinates - The x and y coordinates of the window.
+     */
+    set _position({ x, y }) {
+        if (typeof x === 'number' && typeof y === 'number') {
+            localStorage.setItem('jitsi-always-on-top-x', x);
+            localStorage.setItem('jitsi-always-on-top-y', y);
+            this._sendPosition({ x, y });
+        }
     }
 
     /**
@@ -117,12 +188,10 @@ class AlwaysOnTop {
      * @param {string} type - The type of the message.
      * @param {Object} data - The payload of the message.
      */
-    _onMessageReceived(event, { type, data}) {
-        const { id, name } = data;
-
-        if (type === 'event' && name === 'new-window') {
+    _onMessageReceived(event, { type, data = {}}) {
+        if (type === 'event' && data.name === 'new-window') {
             this._alwaysOnTopBrowserWindow
-                = remote.BrowserWindow.fromId(id);
+                = remote.BrowserWindow.fromId(data.id);
         }
     }
 
@@ -174,10 +243,18 @@ class AlwaysOnTop {
      * @returns {void}
      */
     _closeAlwaysOnTopWindow() {
+        if (this._alwaysOnTopBrowserWindow) {
+            const position
+                = this._alwaysOnTopBrowserWindow.getPosition();
+            this._alwaysOnTopBrowserWindow = undefined;
+            this._position = {
+                x: position[0],
+                y: position[1]
+            };
+        }
         if(this._alwaysOnTopWindow) {
             this._alwaysOnTopWindow.close();
             this._alwaysOnTopWindow = undefined;
-            this._alwaysOnTopBrowserWindow = undefined;
             ipcRenderer.removeListener('jitsi-always-on-top',
                 this._onMessageReceived);
         }
