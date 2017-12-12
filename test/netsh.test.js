@@ -70,7 +70,7 @@ describe('netsh', () => {
         });
     });
     describe('_parseIPAddressResults', () => {
-        it('returns an object with addresses values for example 2', () => {
+        it('returns an object with addresses values for example 1', () => {
             const result
                 = netsh._parseIPConfigResults(exampleIPAddressResult1, 'Wi-Fi');
 
@@ -79,8 +79,6 @@ describe('netsh', () => {
                     '157.60.14.11'],
                 result);
         });
-    });
-    describe('_parseIPAddressResults', () => {
         it('returns an object with addresses values for example 2', () => {
             const result
                 = netsh._parseIPConfigResults(exampleIPAddressResult2, 'Wi-Fi');
