@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint .",
+    "test": "TESTING=true mocha",
     "validate": "npm ls",
     "install": "node-gyp rebuild"
   },
@@ -35,6 +36,7 @@
   "devDependencies": {
     "eslint": ">=3",
     "eslint-plugin-jsdoc": "*",
+    "mocha": "^4.0.1",
     "precommit-hook": "3.0.0"
   }
 }
