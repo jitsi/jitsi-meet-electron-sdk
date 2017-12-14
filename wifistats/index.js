@@ -10,10 +10,9 @@ let toolInstance;
 let supportWifiStats = true;
 
 /**
- * Uses all available tools to query for wifi stats, and the one we found to
- * work we store in global variable {@link toolInstance}, otherwise we set
- * supportWifiStats to false.
- * We call all tools in parallel and when all finishes we check the results.
+ * Uses the available tool for current operating system to query for wifi stats,
+ * and the one we found we store in global variable {@link toolInstance},
+ * otherwise we set supportWifiStats to false.
  *
  * @return {Promise}
  */

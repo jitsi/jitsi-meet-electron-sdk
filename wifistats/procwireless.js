@@ -22,6 +22,7 @@ function parseOutput(str) {
                 resultObj = _parseProcWirelessResults(str);
             } catch (ex) {
                 reject(ex);
+                return;
             }
 
             // now let's get that interface address
