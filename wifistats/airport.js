@@ -28,10 +28,7 @@ function parseOutput(str) {
                 try {
                     const networkSetupResult = _parseNetworkSetupResults(str);
 
-                    resolve({
-                        ...resultObj,
-                        ...networkSetupResult
-                    });
+                    resolve(Object.assign({}, resultObj, networkSetupResult));
                 } catch (ex) {
                     // cannot get interface address, lets submit whatever we have
                     resolve(resultObj);

@@ -14,9 +14,6 @@ module.exports = {
         '__filename': false
     },
     'parserOptions': {
-        'ecmaFeatures': {
-            'experimentalObjectRestSpread': true
-        },
         'sourceType': 'module'
     },
     'rules': {
