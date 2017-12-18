@@ -208,6 +208,14 @@ class AlwaysOnTop {
         this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
         this._alwaysOnTopWindow = window.open(alwaysOnTopURL, 'AlwaysOnTop');
         if(!this._alwaysOnTopWindow) {
+            ipcRenderer.removeListener(
+                'jitsi-always-on-top',
+                this._onMessageReceived
+            );
+            this._api.removeListener(
+                'largeVideoChanged',
+                this._updateLargeVideoSrc
+            );
             return;
         }
         this._alwaysOnTopWindow.alwaysOnTop = {
