@@ -7,15 +7,12 @@
     "lint": "eslint .",
     "test": "TESTING=true mocha",
     "validate": "npm ls",
-    "install": "node-gyp rebuild"
+    "install": "prebuild-install || node-gyp rebuild"
   },
   "pre-commit": [
     "lint"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/jitsi/jitsi-meet-electron-utils"
-  },
+  "repository": "https://www.github.com/jitsi/jitsi-meet-electron-utils",
   "keywords": [
     "jingle",
     "webrtc",
@@ -30,13 +27,15 @@
   "gypfile": true,
   "dependencies": {
     "nan": "^2.2.1",
-    "robotjs": "jitsi/robotjs#jitsi",
-    "postis": "^2.2.0"
+    "postis": "^2.2.0",
+    "prebuild-install": "^2.4.1",
+    "robotjs": "jitsi/robotjs#jitsi"
   },
   "devDependencies": {
     "eslint": ">=3",
     "eslint-plugin-jsdoc": "*",
     "mocha": "^4.0.1",
+    "prebuild": "^7.0.0",
     "precommit-hook": "3.0.0"
   }
 }

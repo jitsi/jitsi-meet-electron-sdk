@@ -1,0 +1,38 @@
+os: unstable
+environment:
+  prebuild_upload:
+    secure: ISoUH9JZc7Vx2AkFPtCxh/Ml63yDs9w7oDKa7xNgwphOf2FWC3I5hMypxDH4cQlT
+
+  nodejs_version: "6"
+
+platform:
+  - x86
+  - x64
+
+install:
+- ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version);
+# Check if we're building the latest tag, if so
+# then we publish the binaries if tests pass.
+- ps: >
+    if ($env:appveyor_repo_tag -match "true" -and ("$(git describe --tags --always HEAD)" -eq $env:appveyor_repo_tag_name)) {
+      $env:publish_binary = "true";
+    }
+    if ($env:publish_binary -eq "true") {
+      "We're publishing a binary!" | Write-Host
+    } else {
+      "We're not publishing a binary" | Write-Host
+    }
+    true;
+build_script:
+- npm install
+
+test_script:
+- ps: >
+    if ($env:publish_binary -eq "true") {
+      node_modules\\.bin\\prebuild --all -u $env:prebuild_upload
+    }
+    true;
+deploy: OFF
+
+artifacts:
+- path: prebuilds
