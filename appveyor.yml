@@ -10,7 +10,7 @@ platform:
   - x64
 
 install:
-- ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version);
+- ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version) $env:platform;
 # Check if we're building the latest tag, if so
 # then we publish the binaries if tests pass.
 - ps: >
