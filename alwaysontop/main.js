@@ -123,7 +123,7 @@ function positionWindowWithinScreenBoundaries(
 function getPosition () {
     const Screen = electron.screen;
 
-    if (typeof position.x === 'number' && typeof position.x === 'number') {
+    if (typeof position.x === 'number' && typeof position.y === 'number') {
         // Position the window within the screen boundaries. This is needed
         // only for windows. On Mac and Linux it is working as expected without
         // changing the coordinates.
