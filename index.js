@@ -5,7 +5,6 @@ const {
 } = require('./googleapi');
 const RemoteControl = require('./remotecontrol');
 const setupScreenSharingForWindow = require('./screensharing');
-const teardown = require('./teardown');
 const {
     setupAlwaysOnTopRender,
     setupAlwaysOnTopMain
@@ -21,6 +20,5 @@ module.exports = {
     setupAlwaysOnTopRender,
     setupAlwaysOnTopMain,
     setupWiFiStats,
-    teardown,
     teardownGoogleApi
 };
