@@ -13,27 +13,35 @@ The Google API utility exposes methods for performing Google client-side authent
 
 **Enable the Google API integration:**
 
-In the **main** electron process:
+To set up the Google API integration, in the **main** electron process, execute `setupGoogleApiMain`. This will set up listeners on the main processes to be aware of requests to open a Google popup.
 ```Javascript
 const { setupGoogleApiMain } = require("jitsi-meet-electron-utils");
 const options = {
     browserWindowOptions: {
-        webPreferences: {
-            nodeIntegration: false
-        }
+        ...
     }
 };
 setupGoogleApiMain(options);
 ```
 
-In the **render** electron process of the window where Jitsi Meet is displayed:
+The function `setupGoogleApiMain` takes in an options objects the supports the following:
+- `browserWindowOptions`: The BrowserWindow options object to pass into the Google authentication popup. These are the same options as supported by the [BrowserWindow class](https://github.com/electron/electron/blob/master/docs/api/browser-window.md#class-browserwindow). By default the following options will be used:
+    ```
+    {
+        webPreferences: {
+            nodeIntegration: false
+        }
+    }
+    ```
+
+To finish setting up the Google API integration, in the **render** electron process of the window where Jitsi Meet is displayed, execute `setupGoogleApiRender` to expose globals to Jitsi-Meet to interact indirectly with the main processes.
 ```Javascript
 const { setupGoogleApiRender } = require("jitsi-meet-electron-utils");
 const api = new JitsiMeetExternalAPI(...);
 setupGoogleApiRender(api);
 ```
 
-To clean up Google API integration, in the **main** electron process:
+To clean up various listeners attached by the Google API integration, in the **main** electron process:
 ```
 teardownGoogleApi();
 ```
