@@ -7,6 +7,7 @@ jitsi-meet-electron-utils contains native code for some utilities. You'll need [
 NOTE: For Linux install libxtst-dev and libpng++-dev (`sudo apt-get install libxtst-dev libpng++-dev`). This dependancies are related to RobotJS which is a dependency of jitsi-meet-electron-utils. You can see the build instructions for RobotJS [here](https://github.com/jitsi/robotjs/tree/jitsi#building)
 
 ## Usage
+
 #### Google API
 The Google API utility exposes methods for performing Google client-side authentication by opening a oauth popup window and passing back the redirect URL with the Google access token.
 
@@ -32,7 +33,7 @@ const api = new JitsiMeetExternalAPI(...);
 setupGoogleApiRender(api);
 ```
 
-To clean up Google API integration:
+To clean up Google API integration, in the **main** electron process:
 ```
 teardownGoogleApi();
 ```
