@@ -23,7 +23,7 @@ const defaultBrowserWindowOptions = {
  * @private
  * @type {Object}
  */
-let browserWindowOptions = defaultBrowserWindowOptions;
+let browserWindowOptions = undefined;
 
 /**
  * A reference to the opened Google authentication window. Kept so the window
@@ -99,7 +99,7 @@ function setupGoogleApiMain(options = {}) {
  */
 function teardownGoogleApiMain() {
     ipcMain.removeAllListeners(constants.AUTH_REQUESTED);
-    browserWindowOptions = defaultBrowserWindowOptions;
+    browserWindowOptions = undefined;
 
     if (googlePopup) {
         googlePopup.close();
