@@ -7,6 +7,44 @@ jitsi-meet-electron-utils contains native code for some utilities. You'll need [
 NOTE: For Linux install libxtst-dev and libpng++-dev (`sudo apt-get install libxtst-dev libpng++-dev`). This dependancies are related to RobotJS which is a dependency of jitsi-meet-electron-utils. You can see the build instructions for RobotJS [here](https://github.com/jitsi/robotjs/tree/jitsi#building)
 
 ## Usage
+
+#### Google API
+The Google API utility exposes methods for performing Google client-side authentication by opening a oauth popup window and passing back the redirect URL with the Google access token.
+
+**Enable the Google API integration:**
+
+To set up the Google API integration, in the **main** electron process, execute `setupGoogleApiMain`. This will set up listeners on the main processes to be aware of requests to open a Google popup.
+```Javascript
+const { setupGoogleApiMain } = require("jitsi-meet-electron-utils");
+const options = {
+    browserWindowOptions: {
+        ...
+    }
+};
+setupGoogleApiMain(options);
+```
+
+The function `setupGoogleApiMain` takes in an options objects the supports the following:
+- `browserWindowOptions`: The BrowserWindow options object to pass into the Google authentication popup. These are the same options as supported by the [BrowserWindow class](https://github.com/electron/electron/blob/master/docs/api/browser-window.md#class-browserwindow). By default the following options will be used:
+    ```
+    {
+        webPreferences: {
+            nodeIntegration: false
+        }
+    }
+    ```
+
+To finish setting up the Google API integration, in the **render** electron process of the window where Jitsi Meet is displayed, execute `setupGoogleApiRender` to expose globals to Jitsi-Meet to interact indirectly with the main processes.
+```Javascript
+const { setupGoogleApiRender } = require("jitsi-meet-electron-utils");
+const api = new JitsiMeetExternalAPI(...);
+setupGoogleApiRender(api);
+```
+
+To clean up various listeners attached by the Google API integration, in the **main** electron process:
+```
+teardownGoogleApi();
+```
 #### Remote Control
 
 **Requirements**:
