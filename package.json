@@ -1,6 +1,6 @@
 {
   "name": "jitsi-meet-electron-utils",
-  "version": "0.4.2",
+  "version": "0.5.2",
   "description": "Utilities for jitsi-meet-electron project",
   "main": "index.js",
   "scripts": {
