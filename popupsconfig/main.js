@@ -21,7 +21,6 @@ function initPopupsConfiguration(jitsiMeetWindow) {
             frameName,
             disposition,
             options) => {
-                console.log(popupsConfigRegistry);
         const config
             = popupsConfigRegistry.getConfigByName('google-auth') || {};
         if (testMatchPatterns(url, frameName, config.matchPatterns)) {
