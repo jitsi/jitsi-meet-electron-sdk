@@ -1,7 +1,8 @@
 const electron = require("electron");
 const postis = require("postis");
 const robot = require("robotjs");
-const sourceId2Coordinates = require("../node_addons/sourceId2Coordinates");
+const {sourceId2Coordinates, moveMouse} = require("../node_addons/sourceId2Coordinates");
+
 const constants = require("./constants");
 const {
     EVENTS,
@@ -53,7 +54,7 @@ class RemoteControl {
      */
     _start(id, sourceId) {
         const displays = electron.screen.getAllDisplays();
-
+        
         switch(displays.length) {
             case 0:
                 this._display = undefined;
@@ -78,6 +79,9 @@ class RemoteControl {
                             x: x + 1,
                             y: y + 1
                         });
+
+                    this._displayCoordinates = coordinates;
+
                 } else {
                     // On Mac OS the sourceId = 'screen' + displayId.
                     // Try to match displayId with sourceId.
@@ -148,13 +152,28 @@ class RemoteControl {
         }
         switch(data.type) {
             case EVENTS.mousemove: {
-                const { width, height, x, y } = this._display.bounds;
-                const destX = data.x * width + x;
-                const destY = data.y * height + y;
-                if(this._mouseButtonStatus === "down") {
-                    robot.dragMouse(destX, destY);
-                } else {
-                    robot.moveMouse(destX, destY);
+                
+                if(this._displayCoordinates)
+                {
+                    let { width, height, x, y } = this._displayCoordinates;
+                    const destX = data.x * width + x;
+                    const destY = data.y * height + y;
+
+                    //robot.moveMouse doesn't work correctly with multiple displays in Windows
+                    // so we use our function 
+                    moveMouse(destX, destY);
+                }
+                else
+                {
+                    let { width, height, x, y } = this._display.bounds;
+                    const destX = data.x * (width * this._display.scaleFactor) + x;
+                    const destY = data.y * (height * this._display.scaleFactor) + y;
+
+                    if(this._mouseButtonStatus === "down") {
+                        robot.dragMouse(destX, destY);
+                    } else {
+                        robot.moveMouse(destX, destY);
+                    }
                 }
                 break;
             }
