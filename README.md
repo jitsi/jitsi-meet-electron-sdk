@@ -73,11 +73,17 @@ const {
 } = require("jitsi-meet-electron-utils");
 
 const api = new JitsiMeetExternalAPI(...);
-setupAlwaysOnTopRender(api);
+const alwaysOnTop = setupAlwaysOnTopRender(api);
+
+alwaysOnTop.on('will-close', handleAlwaysOnTopClose);
 ```
 
+`setupAlwaysOnTopRender` return an instance of EventEmitter with the following events:
+
+* _will-close_ - emitted right before the always on top window is going to close
+
 #### WiFi Stats
-Provides a function to query for wifi stats on the host computer. Returns information like interface name, addresses, signal quality, noise (not available on all OS). 
+Provides a function to query for wifi stats on the host computer. Returns information like interface name, addresses, signal quality, noise (not available on all OS).
 
 **WiFi Stats:**
 
