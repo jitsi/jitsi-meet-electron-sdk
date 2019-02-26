@@ -72,6 +72,7 @@ class AlwaysOnTop extends EventEmitter {
 
         api.on('videoConferenceJoined', this._onConferenceJoined);
         api.on('videoConferenceLeft', this._onConferenceLeft);
+        api.on('_willDispose', this._onConferenceLeft);
 
         window.addEventListener('beforeunload', () => {
             // Maybe not necessary but it's better to be safe that we are not
