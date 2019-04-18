@@ -1,9 +1,12 @@
 /* global __dirname */
 const { ipcRenderer, remote } = require('electron');
 
+const { EventEmitter } = require('events');
 const os = require('os');
 const path = require('path');
 const url = require('url');
+
+const { ALWAYSONTOP_WILL_CLOSE } = require('./constants');
 
 /**
  * URL for index.html which will be our entry point.
@@ -43,22 +46,25 @@ function getNumberFromLocalStorage(localStorageKey) {
 /**
  * Implements the always on top functionality for the render process.
  */
-class AlwaysOnTop {
+class AlwaysOnTop extends EventEmitter {
     /**
      * Creates new instance.
      *
      * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
      */
     constructor(api) {
+        super();
         this._updateLargeVideoSrc = this._updateLargeVideoSrc.bind(this);
         this._openAlwaysOnTopWindow = this._openAlwaysOnTopWindow.bind(this);
         this._closeAlwaysOnTopWindow = this._closeAlwaysOnTopWindow.bind(this);
         this._onMessageReceived = this._onMessageReceived.bind(this);
         this._onConferenceJoined = this._onConferenceJoined.bind(this);
         this._onConferenceLeft = this._onConferenceLeft.bind(this);
+        this._onIntersection = this._onIntersection.bind(this);
 
         this._api = api;
         this._jitsiMeetElectronWindow = remote.getCurrentWindow();
+        this._intersectionObserver = new IntersectionObserver(this._onIntersection);
 
         if (!api) {
             throw new Error('Wrong arguments!');
@@ -66,6 +72,7 @@ class AlwaysOnTop {
 
         api.on('videoConferenceJoined', this._onConferenceJoined);
         api.on('videoConferenceLeft', this._onConferenceLeft);
+        api.on('_willDispose', this._onConferenceLeft);
 
         window.addEventListener('beforeunload', () => {
             // Maybe not necessary but it's better to be safe that we are not
@@ -158,6 +165,7 @@ class AlwaysOnTop {
         this._jitsiMeetElectronWindow.on('blur', this._openAlwaysOnTopWindow);
         this._jitsiMeetElectronWindow.on('focus', this._closeAlwaysOnTopWindow);
         this._jitsiMeetElectronWindow.on('close', this._closeAlwaysOnTopWindow);
+        this._intersectionObserver.observe(this._api.getIFrame());
     }
 
     /**
@@ -166,6 +174,7 @@ class AlwaysOnTop {
      * @returns {void}
      */
     _onConferenceLeft() {
+        this._intersectionObserver.unobserve(this._api.getIFrame());
         this._jitsiMeetElectronWindow.removeListener(
             'blur',
             this._openAlwaysOnTopWindow
@@ -179,6 +188,30 @@ class AlwaysOnTop {
             this._closeAlwaysOnTopWindow
         );
         this._closeAlwaysOnTopWindow();
+    }
+
+    /**
+     * Handles intersection events for the instance's IntersectionObserver
+     *
+     * @param {IntersectionObserverEntry[]} entries
+     * @param {IntersectionObserver} observer
+     */
+    _onIntersection(entries) {
+        const singleEntry = entries.pop();
+        this._jitsiMeetElectronWindow.removeListener(
+            'focus',
+            this._closeAlwaysOnTopWindow
+        );
+
+        if (singleEntry.isIntersecting) {
+            this._closeAlwaysOnTopWindow();
+            this._jitsiMeetElectronWindow.on(
+                'focus',
+                this._closeAlwaysOnTopWindow
+            );
+        } else {
+            this._openAlwaysOnTopWindow();
+        }
     }
 
     /**
@@ -214,6 +247,7 @@ class AlwaysOnTop {
             api: this._api,
             onload: this._updateLargeVideoSrc,
             onbeforeunload: () => {
+                this.emit(ALWAYSONTOP_WILL_CLOSE);
                 this._api.removeListener(
                     'largeVideoChanged',
                     this._updateLargeVideoSrc
@@ -243,21 +277,29 @@ class AlwaysOnTop {
      * @returns {void}
      */
     _closeAlwaysOnTopWindow() {
-        if (this._alwaysOnTopBrowserWindow) {
-            const position
-                = this._alwaysOnTopBrowserWindow.getPosition();
-            this._alwaysOnTopBrowserWindow = undefined;
+        if (this._alwaysOnTopBrowserWindow && !this._alwaysOnTopBrowserWindow.isDestroyed()) {
+            const position =
+                this._alwaysOnTopBrowserWindow.getPosition();
+
             this._position = {
                 x: position[0],
                 y: position[1]
             };
         }
+
         if(this._alwaysOnTopWindow) {
-            this._alwaysOnTopWindow.close();
-            this._alwaysOnTopWindow = undefined;
+            // we need to check the BrowserWindow reference here because
+            // window.closed is not reliable due to Electron quirkiness
+            if(this._alwaysOnTopBrowserWindow &&!this._alwaysOnTopBrowserWindow.isDestroyed()) {
+                this._alwaysOnTopWindow.close();
+            }
+
             ipcRenderer.removeListener('jitsi-always-on-top',
                 this._onMessageReceived);
         }
+
+        this._alwaysOnTopBrowserWindow = undefined;
+        this._alwaysOnTopWindow = undefined;
     }
 
     /**
@@ -292,5 +334,5 @@ class AlwaysOnTop {
 * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
 */
 module.exports = function setupAlwaysOnTopRender(api) {
-    new AlwaysOnTop(api);
+    return new AlwaysOnTop(api);
 };

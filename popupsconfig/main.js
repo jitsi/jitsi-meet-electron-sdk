@@ -21,9 +21,9 @@ function initPopupsConfiguration(jitsiMeetWindow) {
             frameName,
             disposition,
             options) => {
-        const config
+        const configGoogle
             = popupsConfigRegistry.getConfigByName('google-auth') || {};
-        if (testMatchPatterns(url, frameName, config.matchPatterns)) {
+        if (testMatchPatterns(url, frameName, configGoogle.matchPatterns)) {
             event.preventDefault();
             event.newGuest = new BrowserWindow(Object.assign(options, {
                 titleBarStyle: undefined,
@@ -31,6 +31,26 @@ function initPopupsConfiguration(jitsiMeetWindow) {
                     nodeIntegration: false
                 }
             }));
+        }
+
+        const configDropbox
+            = popupsConfigRegistry.getConfigByName('dropbox-auth') || {};
+
+        if (testMatchPatterns(url, frameName, configDropbox.matchPatterns)) {
+            event.preventDefault();
+            const win
+                = event.newGuest = new BrowserWindow(Object.assign(options, {
+                    titleBarStyle: undefined,
+                    webPreferences: {
+                        nodeIntegration: false,
+                        webSecurity: false,
+                        sandbox: true
+                    }
+                }));
+            win.webContents.on('did-navigate', (event, url) => {
+                jitsiMeetWindow.webContents.send(
+                    'jitsi-popups-navigate', url, frameName, win.id);
+            });
         }
     });
 }
