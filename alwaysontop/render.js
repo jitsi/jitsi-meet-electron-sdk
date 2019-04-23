@@ -4,18 +4,9 @@ const { ipcRenderer, remote } = require('electron');
 const { EventEmitter } = require('events');
 const os = require('os');
 const path = require('path');
-const url = require('url');
+const { openWindow } = require('./functions');
 
 const { ALWAYSONTOP_WILL_CLOSE } = require('./constants');
-
-/**
- * URL for index.html which will be our entry point.
- */
-const alwaysOnTopURL = url.format({
-    pathname: path.join(__dirname, 'alwaysontop.html'),
-    protocol: 'file:',
-    slashes: true
-});
 
 /**
  * Returieves and trying to parse a numeric value from the local storage.
@@ -108,7 +99,7 @@ class AlwaysOnTop extends EventEmitter {
      */
     get _alwaysOnTopWindowVideo() {
         if(!this._alwaysOnTopWindow || !this._alwaysOnTopWindow.document) {
-            return;
+            return undefined;
         }
         return this._alwaysOnTopWindow.document.getElementById('video');
     }
@@ -233,13 +224,14 @@ class AlwaysOnTop extends EventEmitter {
      *
      * @returns {void}
      */
-    _openAlwaysOnTopWindow() {
+    async _openAlwaysOnTopWindow() {
         if(this._alwaysOnTopWindow) {
             return;
         }
         ipcRenderer.on('jitsi-always-on-top', this._onMessageReceived);
         this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
-        this._alwaysOnTopWindow = window.open(alwaysOnTopURL, 'AlwaysOnTop');
+
+        this._alwaysOnTopWindow = await openWindow('', 'AlwaysOnTop');
         if(!this._alwaysOnTopWindow) {
             return;
         }
@@ -269,6 +261,21 @@ class AlwaysOnTop extends EventEmitter {
                 }
             }
         };
+
+        const cssPath = path.join(__dirname, './alwaysontop.css');
+        const jsPath = path.join(__dirname, './alwaysontop.js');
+        const range = this._alwaysOnTopWindow.document.createRange();
+        range.setStart(this._alwaysOnTopWindow.document.head, 0);
+
+        this._alwaysOnTopWindow.document.head.appendChild(range.createContextualFragment(`
+            <link rel="stylesheet" href="file://${ cssPath }">
+            <script src="file://${ jsPath }"></script>
+        `));
+
+        this._alwaysOnTopWindow.document.body.innerHTML = `
+            <div id="react"></div>
+            <video autoplay="" id="video" style="transform: none;"></video>
+        `;
     }
 
     /**

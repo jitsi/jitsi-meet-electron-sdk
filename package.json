@@ -32,7 +32,7 @@
     "robotjs": "jitsi/robotjs#jitsi"
   },
   "devDependencies": {
-    "eslint": ">=3",
+    "eslint": "^5.16.0",
     "eslint-plugin-jsdoc": "*",
     "mocha": "^4.0.1",
     "prebuild": "^8.1.2",

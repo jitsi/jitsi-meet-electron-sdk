@@ -64,7 +64,7 @@ class RemoteControl {
                 this._display = displays[0];
             break;
             // eslint-disable-next-line no-case-declarations
-            default: // > 1 display
+            default: { // > 1 display
                 // Remove the type part from the sourceId
                 const parsedSourceId = sourceId.replace('screen:', '');
                 const coordinates = sourceId2Coordinates(parsedSourceId);
@@ -85,6 +85,7 @@ class RemoteControl {
                     this._display
                         = displays.find(display => display.id === displayId);
                 }
+            }
         }
 
         const response = {

@@ -14,6 +14,7 @@ module.exports = {
         '__filename': false
     },
     'parserOptions': {
+        'ecmaVersion': 2017,
         'sourceType': 'module'
     },
     'rules': {
