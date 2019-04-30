@@ -1,4 +1,5 @@
 const electron = require("electron");
+const os = require('os');
 const postis = require("postis");
 const robot = require("robotjs");
 const sourceId2Coordinates = require("../node_addons/sourceId2Coordinates");
@@ -42,6 +43,18 @@ class RemoteControl {
             this._channel = null;
         }
         this._stop();
+    }
+
+    /**
+     * Returns the scale factor for the current display used to calculate the resolution of the display.
+     *
+     * NOTE: On Mac OS this._display.scaleFactor will always be 2 for some reason. But the values returned from
+     * this._display.bounds will already take into account the scale factor. That's why we are returning 1 for Mac OS.
+     *
+     * @returns {number} The scale factor.
+     */
+    _getDisplayScaleFactor() {
+        return os.type() === 'Darwin' ? 1 : this._display.scaleFactor || 1;
     }
 
     /**
@@ -149,8 +162,9 @@ class RemoteControl {
         switch(data.type) {
             case EVENTS.mousemove: {
                 const { width, height, x, y } = this._display.bounds;
-                const destX = data.x * width + x;
-                const destY = data.y * height + y;
+                const scaleFactor = this._getDisplayScaleFactor();
+                const destX = (data.x * width + x) * scaleFactor;
+                const destY = (data.y * height + y) * scaleFactor;
                 if(this._mouseButtonStatus === "down") {
                     robot.dragMouse(destX, destY);
                 } else {
