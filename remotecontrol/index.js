@@ -58,13 +58,13 @@ class RemoteControl {
     }
 
     /**
-     * Handles remote control start messages.
+     * Sets the display metrics(x, y, width, height, scaleFactor, etc...) of the display that will be used for the
+     * remote control.
      *
-     * @param {number} id - the id of the request that will be used for the
-     * response.
      * @param {string} sourceId - The source id of the desktop sharing stream.
+     * @returns {void}
      */
-    _start(id, sourceId) {
+    _setDisplayMetrics(sourceId) {
         const displays = electron.screen.getAllDisplays();
 
         switch(displays.length) {
@@ -99,6 +99,21 @@ class RemoteControl {
                         = displays.find(display => display.id === displayId);
                 }
         }
+    }
+
+    /**
+     * Handles remote control start messages.
+     *
+     * @param {number} id - the id of the request that will be used for the
+     * response.
+     * @param {string} sourceId - The source id of the desktop sharing stream.
+     */
+    _start(id, sourceId) {
+        this._displayMetricsChangeListener = () => {
+            this._setDisplayMetrics(sourceId);
+        };
+        electron.screen.on('display-metrics-changed', this._displayMetricsChangeListener);
+        this._setDisplayMetrics(sourceId);
 
         const response = {
             id,
@@ -120,6 +135,10 @@ class RemoteControl {
      */
     _stop() {
         this._display = undefined;
+        if (this._displayMetricsChangeListener) {
+            electron.screen.removeListener('display-metrics-changed', this._displayMetricsChangeListener);
+            this._displayMetricsChangeListener = undefined;
+        }
     }
 
     /**
