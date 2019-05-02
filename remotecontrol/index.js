@@ -86,11 +86,29 @@ class RemoteControl {
                     // any OS except Windows. This code will be executed only on
                     // Windows.
                     const { x, y } = coordinates;
-                    this._display
+                    const display
                         = electron.screen.getDisplayNearestPoint({
                             x: x + 1,
                             y: y + 1
                         });
+
+                    if (typeof display !== 'undefined') {
+                        // We need to use x and y returned from sourceId2Coordinates because the ones returned from
+                        // Electron don't seem to respect the scale factors of the other displays.
+                        const { width, height } = display.bounds;
+
+                        this._display = {
+                            bounds: {
+                                x,
+                                y,
+                                width,
+                                height
+                            },
+                            scaleFactor: display.scaleFactor
+                        };
+                    } else {
+                        this._display = undefined;
+                    }
                 } else {
                     // On Mac OS the sourceId = 'screen' + displayId.
                     // Try to match displayId with sourceId.
@@ -182,8 +200,8 @@ class RemoteControl {
             case EVENTS.mousemove: {
                 const { width, height, x, y } = this._display.bounds;
                 const scaleFactor = this._getDisplayScaleFactor();
-                const destX = (data.x * width + x) * scaleFactor;
-                const destY = (data.y * height + y) * scaleFactor;
+                const destX = data.x * width * scaleFactor + x;
+                const destY = data.y * height * scaleFactor + y;
                 if(this._mouseButtonStatus === "down") {
                     robot.dragMouse(destX, destY);
                 } else {
