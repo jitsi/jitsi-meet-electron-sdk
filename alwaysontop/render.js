@@ -4,18 +4,8 @@ const { ipcRenderer, remote } = require('electron');
 const { EventEmitter } = require('events');
 const os = require('os');
 const path = require('path');
-const url = require('url');
 
 const { ALWAYSONTOP_WILL_CLOSE } = require('./constants');
-
-/**
- * URL for index.html which will be our entry point.
- */
-const alwaysOnTopURL = url.format({
-    pathname: path.join(__dirname, 'alwaysontop.html'),
-    protocol: 'file:',
-    slashes: true
-});
 
 /**
  * Returieves and trying to parse a numeric value from the local storage.
@@ -239,7 +229,11 @@ class AlwaysOnTop extends EventEmitter {
         }
         ipcRenderer.on('jitsi-always-on-top', this._onMessageReceived);
         this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
-        this._alwaysOnTopWindow = window.open(alwaysOnTopURL, 'AlwaysOnTop');
+
+        // Intentionally open about:blank. Otherwise if an origin is set, a
+        // cross-origin redirect can cause any set global variables to be blown
+        // away.
+        this._alwaysOnTopWindow = window.open('', 'AlwaysOnTop');
         if(!this._alwaysOnTopWindow) {
             return;
         }
@@ -268,6 +262,31 @@ class AlwaysOnTop extends EventEmitter {
                     this._alwaysOnTopBrowserWindow.setPosition(x, y);
                 }
             }
+        };
+
+        // Change the dom of 'about:blank' to display the always on top content.
+        this._alwaysOnTopWindow.onload = () => {
+            if (!this._alwaysOnTopWindow) {
+                return;
+            }
+
+            const cssPath = path.join(__dirname, './alwaysontop.css');
+            const jsPath = path.join(__dirname, './alwaysontop.js');
+
+            // Add the markup for the JS to manipulate and load the CSS.
+            this._alwaysOnTopWindow.document.body.innerHTML = `
+              <div id="react"></div>
+              <video autoplay="" id="video" style="transform: none;"></video>
+              <link rel="stylesheet" href="file://${ cssPath }">
+            `;
+
+            // JS must be loaded through a script tag, as setting it through
+            // inner HTML maybe not trigger script load.
+            const scriptTag
+                = this._alwaysOnTopWindow.document.createElement('script');
+
+            scriptTag.setAttribute('src',`file://${ jsPath }`);
+            this._alwaysOnTopWindow.document.head.appendChild(scriptTag);
         };
     }
 
