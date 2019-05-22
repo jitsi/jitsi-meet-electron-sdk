@@ -1,4 +1,5 @@
 const electron = require("electron");
+const os = require('os');
 const postis = require("postis");
 const robot = require("robotjs");
 const sourceId2Coordinates = require("../node_addons/sourceId2Coordinates");
@@ -45,13 +46,25 @@ class RemoteControl {
     }
 
     /**
-     * Handles remote control start messages.
+     * Returns the scale factor for the current display used to calculate the resolution of the display.
      *
-     * @param {number} id - the id of the request that will be used for the
-     * response.
-     * @param {string} sourceId - The source id of the desktop sharing stream.
+     * NOTE: On Mac OS this._display.scaleFactor will always be 2 for some reason. But the values returned from
+     * this._display.bounds will already take into account the scale factor. That's why we are returning 1 for Mac OS.
+     *
+     * @returns {number} The scale factor.
      */
-    _start(id, sourceId) {
+    _getDisplayScaleFactor() {
+        return os.type() === 'Darwin' ? 1 : this._display.scaleFactor || 1;
+    }
+
+    /**
+     * Sets the display metrics(x, y, width, height, scaleFactor, etc...) of the display that will be used for the
+     * remote control.
+     *
+     * @param {string} sourceId - The source id of the desktop sharing stream.
+     * @returns {void}
+     */
+    _setDisplayMetrics(sourceId) {
         const displays = electron.screen.getAllDisplays();
 
         switch(displays.length) {
@@ -73,11 +86,29 @@ class RemoteControl {
                     // any OS except Windows. This code will be executed only on
                     // Windows.
                     const { x, y } = coordinates;
-                    this._display
+                    const display
                         = electron.screen.getDisplayNearestPoint({
                             x: x + 1,
                             y: y + 1
                         });
+
+                    if (typeof display !== 'undefined') {
+                        // We need to use x and y returned from sourceId2Coordinates because the ones returned from
+                        // Electron don't seem to respect the scale factors of the other displays.
+                        const { width, height } = display.bounds;
+
+                        this._display = {
+                            bounds: {
+                                x,
+                                y,
+                                width,
+                                height
+                            },
+                            scaleFactor: display.scaleFactor
+                        };
+                    } else {
+                        this._display = undefined;
+                    }
                 } else {
                     // On Mac OS the sourceId = 'screen' + displayId.
                     // Try to match displayId with sourceId.
@@ -86,6 +117,21 @@ class RemoteControl {
                         = displays.find(display => display.id === displayId);
                 }
         }
+    }
+
+    /**
+     * Handles remote control start messages.
+     *
+     * @param {number} id - the id of the request that will be used for the
+     * response.
+     * @param {string} sourceId - The source id of the desktop sharing stream.
+     */
+    _start(id, sourceId) {
+        this._displayMetricsChangeListener = () => {
+            this._setDisplayMetrics(sourceId);
+        };
+        electron.screen.on('display-metrics-changed', this._displayMetricsChangeListener);
+        this._setDisplayMetrics(sourceId);
 
         const response = {
             id,
@@ -107,6 +153,10 @@ class RemoteControl {
      */
     _stop() {
         this._display = undefined;
+        if (this._displayMetricsChangeListener) {
+            electron.screen.removeListener('display-metrics-changed', this._displayMetricsChangeListener);
+            this._displayMetricsChangeListener = undefined;
+        }
     }
 
     /**
@@ -149,8 +199,9 @@ class RemoteControl {
         switch(data.type) {
             case EVENTS.mousemove: {
                 const { width, height, x, y } = this._display.bounds;
-                const destX = data.x * width + x;
-                const destY = data.y * height + y;
+                const scaleFactor = this._getDisplayScaleFactor();
+                const destX = data.x * width * scaleFactor + x;
+                const destY = data.y * height * scaleFactor + y;
                 if(this._mouseButtonStatus === "down") {
                     robot.dragMouse(destX, destY);
                 } else {

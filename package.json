@@ -1,6 +1,6 @@
 {
   "name": "jitsi-meet-electron-utils",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Utilities for jitsi-meet-electron project",
   "main": "index.js",
   "scripts": {
@@ -29,7 +29,7 @@
     "nan": "^2.2.1",
     "postis": "^2.2.0",
     "prebuild-install": "^2.4.1",
-    "robotjs": "jitsi/robotjs#jitsi"
+    "robotjs": "jitsi/robotjs#jitsi-d870ddb"
   },
   "devDependencies": {
     "eslint": ">=3",
