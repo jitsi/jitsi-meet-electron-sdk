@@ -1,7 +1,14 @@
 const os = require('os');
 const electron = require('electron');
+const robot = require("robotjs");
 const { BrowserWindow, ipcMain } = electron;
 const { SIZE } = require('./constants');
+
+/**
+ * The aspect ratio to preserve during AOT window resize
+ * @type {number}
+ */
+const ASPECT_RATIO = 16 / 9;
 
 /**
  * The coordinates(x and y) of the always on top window.
@@ -9,6 +16,17 @@ const { SIZE } = require('./constants');
  * @type {{x: number, y: number}}
  */
 let position = {};
+
+/**
+ * Stores the current size of the AOT during the conference
+ * @type {{width: number, height: number}}
+ */
+let size = Object.assign({}, SIZE);
+
+/**
+ * Keeps the old size of the window between resize handler calls
+ */
+let oldSize;
 
 /**
  * Handles new-window events for the main process in order to customize the
@@ -34,15 +52,11 @@ function onAlwaysOnTopWindow(
         const win = event.newGuest = new BrowserWindow(
             Object.assign(options, {
                 backgroundColor: 'transparent',
-                width: SIZE.width,
-                height: SIZE.height,
                 minWidth: SIZE.width,
                 minHeight: SIZE.height,
-                maxWidth: SIZE.width,
-                maxHeight: SIZE.height,
                 minimizable: false,
                 maximizable: false,
-                resizable: false,
+                resizable: true,
                 alwaysOnTop: true,
                 fullscreen: false,
                 fullscreenable: false,
@@ -50,13 +64,44 @@ function onAlwaysOnTopWindow(
                 titleBarStyle: undefined,
                 frame: false,
                 show: false
-            }, getPosition())
+            }, getPosition(), getSize())
         );
         win.once('ready-to-show', () => {
             if (win && !win.isDestroyed()) {
                 win.showInactive();
             }
         });
+
+        //for macOS we use the built-in setAspectRatio on resize, for other we use custom implementation
+        if (os.type() === 'Darwin') {
+            win.setAspectRatio(ASPECT_RATIO);
+        } else {
+            win.on('will-resize', (e, newBounds) => {
+                oldSize = win.getSize();
+                const mousePos = robot.getMousePos();
+                const windowBottomRightPos = {
+                    x: newBounds.x + newBounds.width - 16,
+                    y: newBounds.y + newBounds.height - 16,
+                };
+                //prevent resize from bottom right corner as it is buggy.
+                if (mousePos.x >= windowBottomRightPos.x && mousePos.y >= windowBottomRightPos.y) {
+                    e.preventDefault();
+                }
+            });
+            win.on('resize', () => {
+                let [width, height] = win.getSize();
+                //we scale either width or height according to the other by checking which of the 2
+                //changed the most since last resize.
+                if (Math.abs(oldSize[0] - width) >= Math.abs(oldSize[1] - height)) {
+                    height = Math.round(width / ASPECT_RATIO);
+                } else {
+                    width = Math.round(height * ASPECT_RATIO);
+                }
+                win.setSize(width, height);
+                size.width = width;
+                size.height = height;
+            });
+        }
         jitsiMeetWindow.webContents.send('jitsi-always-on-top', {
             type: 'event',
             data: {
@@ -126,7 +171,7 @@ function getPosition () {
         // only for windows. On Mac and Linux it is working as expected without
         // changing the coordinates.
         if (os.platform() === 'win32') {
-            const windowRectangle = Object.assign({}, position, SIZE);
+            const windowRectangle = Object.assign({}, position, size);
             const matchingScreen = Screen.getDisplayMatching(windowRectangle);
             if (matchingScreen) {
                 return positionWindowWithinScreenBoundaries(
@@ -145,9 +190,22 @@ function getPosition () {
     } = Screen.getDisplayNearestPoint(Screen.getCursorScreenPoint()).workArea;
 
     return {
-        x: x + width - SIZE.width,
+        x: x + width - size.width,
         y
     };
+}
+
+/**
+ * Gets the size to be set to the new AOT window.
+ * This is used in order to preserve the size on close and open of AOT during the same meeting
+ * @returns {{width: number, height: number}}
+ */
+function getSize () {
+    if (typeof size.width === 'number' && typeof size.height === 'number') {
+        return size;
+    }
+
+    return SIZE;
 }
 
 /**
@@ -165,6 +223,10 @@ module.exports = function setupAlwaysOnTopMain(jitsiMeetWindow) {
                 x,
                 y
             };
+        }
+
+        if (type === 'event' && data.name === 'resetSize') {
+            size = Object.assign({}, SIZE);
         }
     });
 

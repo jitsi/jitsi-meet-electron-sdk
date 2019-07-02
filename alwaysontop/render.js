@@ -97,7 +97,7 @@ class AlwaysOnTop extends EventEmitter {
      * @returns {HTMLElement|undefined} the large video.
      */
     get _alwaysOnTopWindowVideo() {
-        if(!this._alwaysOnTopWindow || !this._alwaysOnTopWindow.document) {
+        if (!this._alwaysOnTopWindow || !this._alwaysOnTopWindow.document) {
             return;
         }
         return this._alwaysOnTopWindow.document.getElementById('video');
@@ -147,6 +147,20 @@ class AlwaysOnTop extends EventEmitter {
     }
 
     /**
+     * Sends reset size command to the main process.
+     * This is needed in order to reset AOT to the default size after leaving a conference
+     * @private
+     */
+    _sendResetSize() {
+        ipcRenderer.send('jitsi-always-on-top', {
+            type: 'event',
+            data: {
+                name: 'resetSize',
+            }
+        });
+    }
+
+    /**
      * Handles videoConferenceJoined api event.
      *
      * @returns {void}
@@ -177,6 +191,7 @@ class AlwaysOnTop extends EventEmitter {
             'close',
             this._closeAlwaysOnTopWindow
         );
+        this._sendResetSize();
         this._closeAlwaysOnTopWindow();
     }
 
@@ -211,7 +226,7 @@ class AlwaysOnTop extends EventEmitter {
      * @param {string} type - The type of the message.
      * @param {Object} data - The payload of the message.
      */
-    _onMessageReceived(event, { type, data = {}}) {
+    _onMessageReceived(event, { type, data = {} }) {
         if (type === 'event' && data.name === 'new-window') {
             this._alwaysOnTopBrowserWindow
                 = remote.BrowserWindow.fromId(data.id);
@@ -224,7 +239,7 @@ class AlwaysOnTop extends EventEmitter {
      * @returns {void}
      */
     _openAlwaysOnTopWindow() {
-        if(this._alwaysOnTopWindow) {
+        if (this._alwaysOnTopWindow) {
             return;
         }
         ipcRenderer.on('jitsi-always-on-top', this._onMessageReceived);
@@ -234,7 +249,7 @@ class AlwaysOnTop extends EventEmitter {
         // cross-origin redirect can cause any set global variables to be blown
         // away.
         this._alwaysOnTopWindow = window.open('', 'AlwaysOnTop');
-        if(!this._alwaysOnTopWindow) {
+        if (!this._alwaysOnTopWindow) {
             return;
         }
         this._alwaysOnTopWindow.alwaysOnTop = {
@@ -265,15 +280,27 @@ class AlwaysOnTop extends EventEmitter {
              * @param x
              * @param y
              */
-            move: (x, y) => {
+            move: (x, y, initialSize) => {
                 if (this._alwaysOnTopBrowserWindow) {
                     this._alwaysOnTopBrowserWindow.setBounds({
                         x,
                         y,
-                        width: SIZE.width,
-                        height: SIZE.height
+                        width: initialSize.width,
+                        height: initialSize.height
                     });
                 }
+            },
+            /**
+             * Returns the current size of the AOT window
+             * @returns {{width: number, height: number}}
+             */
+            getCurrentSize: () => {
+                if (this._alwaysOnTopBrowserWindow) {
+                    const [width, height] = this._alwaysOnTopBrowserWindow.getSize();
+                    return { width, height };
+                }
+
+                return SIZE;
             }
         };
 
@@ -298,7 +325,7 @@ class AlwaysOnTop extends EventEmitter {
             const scriptTag
                 = this._alwaysOnTopWindow.document.createElement('script');
 
-            scriptTag.setAttribute('src',`file://${ jsPath }`);
+            scriptTag.setAttribute('src', `file://${ jsPath }`);
             this._alwaysOnTopWindow.document.head.appendChild(scriptTag);
         };
     }
@@ -319,7 +346,7 @@ class AlwaysOnTop extends EventEmitter {
             };
         }
 
-        if(this._alwaysOnTopWindow) {
+        if (this._alwaysOnTopWindow) {
             // we need to check the BrowserWindow reference here because
             // window.closed is not reliable due to Electron quirkiness
             if(this._alwaysOnTopBrowserWindow && !this._alwaysOnTopBrowserWindow.isDestroyed()) {
@@ -341,11 +368,11 @@ class AlwaysOnTop extends EventEmitter {
      * @returns {void}
      */
     _updateLargeVideoSrc() {
-        if(!this._alwaysOnTopWindowVideo) {
+        if (!this._alwaysOnTopWindowVideo) {
             return;
         }
 
-        if(!this._jitsiMeetLargeVideo) {
+        if (!this._jitsiMeetLargeVideo) {
             this._alwaysOnTopWindowVideo.style.display = 'none';
             this._alwaysOnTopWindowVideo.srcObject = null;
         } else {
