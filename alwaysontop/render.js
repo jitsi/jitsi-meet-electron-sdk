@@ -309,7 +309,7 @@ class AlwaysOnTop extends EventEmitter {
         if(this._alwaysOnTopWindow) {
             // we need to check the BrowserWindow reference here because
             // window.closed is not reliable due to Electron quirkiness
-            if(this._alwaysOnTopBrowserWindow &&!this._alwaysOnTopBrowserWindow.isDestroyed()) {
+            if(this._alwaysOnTopBrowserWindow && !this._alwaysOnTopBrowserWindow.isDestroyed()) {
                 this._alwaysOnTopWindow.close();
             }
 
