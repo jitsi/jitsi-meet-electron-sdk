@@ -57,7 +57,9 @@ function onAlwaysOnTopWindow(
             }, getPosition())
         );
         win.once('ready-to-show', () => {
-            win.showInactive();
+            if (win && !win.isDestroyed()) {
+                win.showInactive();
+            }
         });
         jitsiMeetWindow.webContents.send('jitsi-always-on-top', {
             type: 'event',
