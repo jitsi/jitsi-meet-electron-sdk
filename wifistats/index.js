@@ -78,16 +78,14 @@ function getWiFiStats() {
  * @param iframe - the iframe to use attaching the getWiFiStats function.
  */
 function setupWiFiStats(iframe) {
-    iframe.addEventListener('load', () => {
-        const ctx = iframe.contentWindow;
-        if(typeof ctx.JitsiMeetJS === "undefined")
-            ctx.JitsiMeetJS = {};
+    const ctx = iframe.contentWindow;
+    if(typeof ctx.JitsiMeetJS === "undefined")
+        ctx.JitsiMeetJS = {};
 
-        if(typeof ctx.JitsiMeetJS.app === "undefined")
-            ctx.JitsiMeetJS.app = {};
+    if(typeof ctx.JitsiMeetJS.app === "undefined")
+        ctx.JitsiMeetJS.app = {};
 
-        ctx.JitsiMeetJS.app.getWiFiStats = getWiFiStats;
-    });
+    ctx.JitsiMeetJS.app.getWiFiStats = getWiFiStats;
 }
 
 module.exports = {
