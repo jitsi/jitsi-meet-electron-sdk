@@ -5,6 +5,7 @@ const {
     setupAlwaysOnTopMain
 } = require('./alwaysontop');
 const { getWiFiStats, setupWiFiStats } = require('./wifistats');
+const { setupPowerMonitorRender, setupPowerMonitorMain } = require('./powermonitor');
 const {
     popupsConfigRegistry,
     initPopupsConfigurationMain,
@@ -18,6 +19,8 @@ module.exports = {
     setupScreenSharingForWindow,
     setupAlwaysOnTopRender,
     setupAlwaysOnTopMain,
+    setupPowerMonitorRender,
+    setupPowerMonitorMain,
     setupWiFiStats,
     popupsConfigRegistry,
     initPopupsConfigurationMain,
