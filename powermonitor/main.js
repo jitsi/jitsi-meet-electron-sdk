@@ -62,8 +62,11 @@ function systemIdleErrorResult(id, error) {
  * displays Jitsi Meet
  */
 module.exports = function setupPowerMonitorMain(jitsiMeetWindow) {
-    app.isReady() ? _attachEvents(jitsiMeetWindow)
-        : app.on('ready', () => _attachEvents(jitsiMeetWindow));
+    if (app.isReady()) {
+        _attachEvents(jitsiMeetWindow);
+    } else {
+        app.on('ready', () => _attachEvents(jitsiMeetWindow));
+    }
 
     ipcMain.on(POWER_MONITOR_QUERIES_CHANNEL, (source, { id, data }) => {
         switch(data.type) {

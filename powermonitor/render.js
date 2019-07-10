@@ -37,12 +37,9 @@ let eventsChannelListener = function (_, event) {
  * @param {Object} event the remote control event.
  */
 function _sendEvent(event) {
-    const powerMonitorEvent = Object.assign(
-        { name: POWER_MONITOR_MESSAGE_NAME },
-        event
-    );
-
-    _sendMessage({ data: powerMonitorEvent });
+    _sendMessage({
+        data: Object.assign({ name: POWER_MONITOR_MESSAGE_NAME }, event)
+    });
 }
 
 /**
@@ -61,7 +58,6 @@ function _sendMessage(message) {
  * Disposes the power monitor functionality.
  */
 function dispose() {
-
     ipcRenderer.removeListener(
         POWER_MONITOR_QUERIES_CHANNEL, queriesChannelListener);
     ipcRenderer.removeListener(
@@ -77,9 +73,11 @@ function dispose() {
  * Initializes the power monitor in the render process of the
  * window which displays Jitsi Meet.
  *
- * @param iframe - the iframe to send events to.
+ * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
  */
-module.exports = function setupPowerMonitorRender(iframe) {
+module.exports = function setupPowerMonitorRender(api) {
+    const iframe = api.getIFrame();
+
     iframe.addEventListener('load', () => {
         iframe.contentWindow.addEventListener(
             'unload',

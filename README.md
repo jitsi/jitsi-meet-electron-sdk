@@ -118,8 +118,8 @@ const {
     setupPowerMonitorRender
 } = require("jitsi-meet-electron-utils");
 
-// iframe - the Jitsi Meet iframe
-setupPowerMonitorRender(iframe);
+const api = new JitsiMeetExternalAPI(...);
+setupPowerMonitorRender(api);
 ```
 
 ## Example
