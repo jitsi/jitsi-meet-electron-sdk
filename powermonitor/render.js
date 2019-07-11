@@ -18,18 +18,18 @@ let _channel;
  * @param _ - Not used.
  * @param response - The response to send.
  */
-let queriesChannelListener = function (_, response) {
+function queriesChannelListener(_, response) {
     _sendMessage(response);
-};
+}
 
 /**
  * The listener we use to listen for power monitor events.
  * @param _ - Not used.
  * @param event - The event.
  */
-let eventsChannelListener = function (_, event) {
+function eventsChannelListener(_, event) {
     _sendEvent(event);
-};
+}
 
 /**
  * Sends event to Jitsi Meet.

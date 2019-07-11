@@ -31,13 +31,11 @@ function _attachEvents(jitsiMeetWindow) {
  * @param idleState - The result state retrieved.
  */
 function systemIdleResult(id, idleState) {
-    const response = {
+    browserWindow.webContents.send(POWER_MONITOR_QUERIES_CHANNEL, {
         id,
         result: idleState,
         type: 'response'
-    };
-
-    browserWindow.webContents.send(POWER_MONITOR_QUERIES_CHANNEL, response);
+    });
 }
 
 /**
@@ -46,13 +44,11 @@ function systemIdleResult(id, idleState) {
  * @param error - The error to send.
  */
 function systemIdleErrorResult(id, error) {
-    const response = {
+    browserWindow.webContents.send(POWER_MONITOR_QUERIES_CHANNEL, {
         id,
         error,
         type: 'response'
-    };
-
-    browserWindow.webContents.send(POWER_MONITOR_QUERIES_CHANNEL, response);
+    });
 }
 
 /**
