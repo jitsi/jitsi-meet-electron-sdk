@@ -5,7 +5,7 @@ const { EventEmitter } = require('events');
 const os = require('os');
 const path = require('path');
 
-const { ALWAYSONTOP_WILL_CLOSE } = require('./constants');
+const { ALWAYSONTOP_WILL_CLOSE, SIZE } = require('./constants');
 
 /**
  * Returieves and trying to parse a numeric value from the local storage.
@@ -257,9 +257,22 @@ class AlwaysOnTop extends EventEmitter {
              * this we'll implement drag ourselves.
              */
             shouldImplementDrag: os.type() !== 'Darwin',
+            /**
+             * Custom implementation for window move.
+             * We use setBounds in order to preserve the initial size of the window
+             * during drag. This is in order to fix:
+             * https://github.com/electron/electron/issues/9477
+             * @param x
+             * @param y
+             */
             move: (x, y) => {
                 if (this._alwaysOnTopBrowserWindow) {
-                    this._alwaysOnTopBrowserWindow.setPosition(x, y);
+                    this._alwaysOnTopBrowserWindow.setBounds({
+                        x,
+                        y,
+                        width: SIZE.width,
+                        height: SIZE.height
+                    });
                 }
             }
         };
