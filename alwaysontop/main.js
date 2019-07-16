@@ -1,11 +1,7 @@
 const os = require('os');
 const electron = require('electron');
 const { BrowserWindow, ipcMain } = electron;
-
-const SIZE = {
-    width: 320,
-    height: 180
-};
+const { SIZE } = require('./constants');
 
 /**
  * The coordinates(x and y) of the always on top window.
