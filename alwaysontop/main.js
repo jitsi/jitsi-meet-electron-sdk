@@ -72,36 +72,8 @@ function onAlwaysOnTopWindow(
             }
         });
 
-        //for macOS we use the built-in setAspectRatio on resize, for other we use custom implementation
-        if (os.type() === 'Darwin') {
-            win.setAspectRatio(ASPECT_RATIO);
-        } else {
-            win.on('will-resize', (e, newBounds) => {
-                oldSize = win.getSize();
-                const mousePos = robot.getMousePos();
-                const windowBottomRightPos = {
-                    x: newBounds.x + newBounds.width - 16,
-                    y: newBounds.y + newBounds.height - 16,
-                };
-                //prevent resize from bottom right corner as it is buggy.
-                if (mousePos.x >= windowBottomRightPos.x && mousePos.y >= windowBottomRightPos.y) {
-                    e.preventDefault();
-                }
-            });
-            win.on('resize', () => {
-                let [width, height] = win.getSize();
-                //we scale either width or height according to the other by checking which of the 2
-                //changed the most since last resize.
-                if (Math.abs(oldSize[0] - width) >= Math.abs(oldSize[1] - height)) {
-                    height = Math.round(width / ASPECT_RATIO);
-                } else {
-                    width = Math.round(height * ASPECT_RATIO);
-                }
-                win.setSize(width, height);
-                size.width = width;
-                size.height = height;
-            });
-        }
+        setAspectRatioToResizeableWindow(win, ASPECT_RATIO);
+
         jitsiMeetWindow.webContents.send('jitsi-always-on-top', {
             type: 'event',
             data: {
@@ -206,6 +178,52 @@ function getSize () {
     }
 
     return SIZE;
+}
+
+/**
+ * Changes the window resize functionality to respect the passed aspect ratio.
+ *
+ * @param {BrowserWindow} win - The target window.
+ * @param {number} aspectRatio - The aspect ratio to be set.
+ * @returns {void}
+ */
+function setAspectRatioToResizeableWindow(win, aspectRatio) {
+    //for macOS we use the built-in setAspectRatio on resize, for other we use custom implementation
+    if (os.type() === 'Darwin') {
+        win.setAspectRatio(aspectRatio);
+        win.on('resize', () => {
+            const [ width, height ] = win.getSize();
+            size.width = width;
+            size.height = height;
+        });
+    } else {
+        win.on('will-resize', (e, newBounds) => {
+            oldSize = win.getSize();
+            const mousePos = robot.getMousePos();
+            const windowBottomRightPos = {
+                x: newBounds.x + newBounds.width - 16,
+                y: newBounds.y + newBounds.height - 16,
+            };
+            //prevent resize from bottom right corner as it is buggy.
+            if (mousePos.x >= windowBottomRightPos.x && mousePos.y >= windowBottomRightPos.y) {
+                e.preventDefault();
+            }
+        });
+        win.on('resize', () => {
+            let [ width, height ] = win.getSize();
+
+            //we scale either width or height according to the other by checking which of the 2
+            //changed the most since last resize.
+            if (Math.abs(oldSize[0] - width) >= Math.abs(oldSize[1] - height)) {
+                height = Math.round(width / aspectRatio);
+            } else {
+                width = Math.round(height * aspectRatio);
+            }
+            win.setSize(width, height);
+            size.width = width;
+            size.height = height;
+        });
+    }
 }
 
 /**
