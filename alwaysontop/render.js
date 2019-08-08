@@ -357,6 +357,11 @@ class AlwaysOnTop extends EventEmitter {
                 this._onMessageReceived);
         }
 
+        //we need to tell the main process to close the BrowserWindow because when
+        //open and close AOT are called in quick succession, the reference to the new BrowserWindow
+        //instantiated on main process is set to undefined, thus we lose control over it
+        ipcRenderer.send('jitsi-always-on-top-should-close');
+
         this._alwaysOnTopBrowserWindow = undefined;
         this._alwaysOnTopWindow = undefined;
     }

@@ -66,6 +66,15 @@ function onAlwaysOnTopWindow(
                 show: false
             }, getPosition(), getSize())
         );
+
+        //the renderer process tells the main process to close the BrowserWindow
+        //this is needed when open and close AOT are called in quick succession on renderer process.
+        ipcMain.once('jitsi-always-on-top-should-close', () => {
+            if (win && !win.isDestroyed()) {
+                win.close();
+            }
+        });
+
         win.once('ready-to-show', () => {
             if (win && !win.isDestroyed()) {
                 win.showInactive();
