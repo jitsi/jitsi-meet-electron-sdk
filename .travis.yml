@@ -20,14 +20,14 @@ env:
     secure: <env>
   matrix:
 #  - TRAVIS_NODE_VERSION="6" ARCH="x86"
-  - TRAVIS_NODE_VERSION="10.15.1" ARCH="x64"
+  - TRAVIS_NODE_VERSION="12" ARCH="x64"
 #  - BINARY_BUILDER="true" TRAVIS_NODE_VERSION="8" ARCH="x86"
 # disable x86 for now because of weird errors with gyp under prebuild
 
 matrix:
   exclude:
   - os: osx
-    env: TRAVIS_NODE_VERSION="10.15.1" ARCH="x86"
+    env: TRAVIS_NODE_VERSION="12" ARCH="x86"
 
 before_install:
 

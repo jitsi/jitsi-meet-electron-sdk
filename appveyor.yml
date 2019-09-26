@@ -3,7 +3,7 @@ environment:
   prebuild_upload:
     secure: ISoUH9JZc7Vx2AkFPtCxh/Ml63yDs9w7oDKa7xNgwphOf2FWC3I5hMypxDH4cQlT
 
-  nodejs_version: "10.15.1"
+  nodejs_version: "12"
 
 platform:
   - x86

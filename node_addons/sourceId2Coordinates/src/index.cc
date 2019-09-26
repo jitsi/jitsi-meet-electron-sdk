@@ -8,7 +8,7 @@ using namespace v8;
 
 NAN_METHOD(sourceId2Coordinates)
 {
-	const int sourceID = info[0]->Int32Value();
+	const int sourceID =  Nan::To<int32_t>(info[0]).FromJust();
 	Local<Object> obj = Nan::New<Object>();
 	Point coordinates;
 	if(!sourceId2Coordinates(sourceID, &coordinates))
