@@ -98,7 +98,7 @@ class AlwaysOnTop extends EventEmitter {
      */
     get _alwaysOnTopWindowVideo() {
         if (!this._alwaysOnTopWindow || !this._alwaysOnTopWindow.document) {
-            return;
+            return undefined;
         }
         return this._alwaysOnTopWindow.document.getElementById('video');
     }
