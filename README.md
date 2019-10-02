@@ -122,6 +122,12 @@ const api = new JitsiMeetExternalAPI(...);
 setupPowerMonitorRender(api);
 ```
 
+### NOTE:
+If you are using electron 5 you'll need to add 'disable-site-isolation-trials' switch because of [https://github.com/electron/electron/issues/18214](https://github.com/electron/electron/issues/18214):
+```
+app.commandLine.appendSwitch('disable-site-isolation-trials')
+```
+
 ## Example
 
 For examples of installation and usage checkout the [Jitsi Meet Electron](https://github.com/jitsi/jitsi-meet-electron) project.

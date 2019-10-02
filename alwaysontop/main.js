@@ -63,7 +63,10 @@ function onAlwaysOnTopWindow(
                 skipTaskbar: true,
                 titleBarStyle: undefined,
                 frame: false,
-                show: false
+                show: false,
+                webPreferences: {
+                    contextIsolation: false
+                }
             }, getPosition(), getSize())
         );
 
