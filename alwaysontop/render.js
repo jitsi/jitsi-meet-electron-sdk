@@ -228,27 +228,35 @@ class AlwaysOnTop extends EventEmitter {
      */
     _onMessageReceived(event, { type, data = {} }) {
         if (type === 'event' && data.name === 'new-window') {
-            this._alwaysOnTopBrowserWindow
-                = remote.BrowserWindow.fromId(data.id);
+            this._onNewAlwaysOnTopBrowserWindow(data.id);
         }
     }
 
     /**
-     * Creates and opens the always on top window.
+     * Handles 'new-window' always on top events.
+     *
+     * @param {number} windowId - The id of the BrowserWindow instance.
+     * @returns {void}
+     */
+    _onNewAlwaysOnTopBrowserWindow(windowId) {
+        this._alwaysOnTopBrowserWindow = remote.BrowserWindow.fromId(windowId);
+        const { webContents } = this._alwaysOnTopBrowserWindow;
+        // if the window is still loading we may end up loosing the injected content when load finishes. We need to wait
+        // for the loading to be completed. We are using the browser windows events instead of the DOM window ones because
+        // it appears they are unreliable (readyState is always completed, most of the events are not fired!!!)
+        if (webContents.isLoading()) {
+            webContents.on('did-stop-loading', () => this._setupAlwaysOnTopWindow());
+        } else {
+            this._setupAlwaysOnTopWindow();
+        }
+    }
+
+    /**
+     * Sets all necessary content (HTML, CSS, JS) to the always on top window.
      *
      * @returns {void}
      */
-    _openAlwaysOnTopWindow() {
-        if (this._alwaysOnTopWindow) {
-            return;
-        }
-        ipcRenderer.on('jitsi-always-on-top', this._onMessageReceived);
-        this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
-
-        // Intentionally open about:blank. Otherwise if an origin is set, a
-        // cross-origin redirect can cause any set global variables to be blown
-        // away.
-        this._alwaysOnTopWindow = window.open('', 'AlwaysOnTop');
+    _setupAlwaysOnTopWindow() {
         if (!this._alwaysOnTopWindow) {
             return;
         }
@@ -304,19 +312,13 @@ class AlwaysOnTop extends EventEmitter {
             }
         };
 
-        // Change the dom of 'about:blank' to display the always on top content.
-        this._alwaysOnTopWindow.onload = () => {
-            if (!this._alwaysOnTopWindow) {
-                return;
-            }
-
             const cssPath = path.join(__dirname, './alwaysontop.css');
             const jsPath = path.join(__dirname, './alwaysontop.js');
 
             // Add the markup for the JS to manipulate and load the CSS.
             this._alwaysOnTopWindow.document.body.innerHTML = `
               <div id="react"></div>
-              <video autoplay="" id="video" style="transform: none;"></video>
+              <video autoplay="" id="video" style="transform: none;" muted></video>
               <link rel="stylesheet" href="file://${ cssPath }">
             `;
 
@@ -327,7 +329,24 @@ class AlwaysOnTop extends EventEmitter {
 
             scriptTag.setAttribute('src', `file://${ jsPath }`);
             this._alwaysOnTopWindow.document.head.appendChild(scriptTag);
-        };
+    }
+
+    /**
+     * Creates and opens the always on top window.
+     *
+     * @returns {void}
+     */
+    _openAlwaysOnTopWindow() {
+        if (this._alwaysOnTopWindow) {
+            return;
+        }
+        ipcRenderer.on('jitsi-always-on-top', this._onMessageReceived);
+        this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
+
+        // Intentionally open about:blank. Otherwise if an origin is set, a
+        // cross-origin redirect can cause any set global variables to be blown
+        // away.
+        this._alwaysOnTopWindow = window.open('', 'AlwaysOnTop');
     }
 
     /**
@@ -353,8 +372,7 @@ class AlwaysOnTop extends EventEmitter {
                 this._alwaysOnTopWindow.close();
             }
 
-            ipcRenderer.removeListener('jitsi-always-on-top',
-                this._onMessageReceived);
+            ipcRenderer.removeListener('jitsi-always-on-top', this._onMessageReceived);
         }
 
         //we need to tell the main process to close the BrowserWindow because when
