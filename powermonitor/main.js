@@ -65,19 +65,29 @@ module.exports = function setupPowerMonitorMain(jitsiMeetWindow) {
     }
 
     ipcMain.on(POWER_MONITOR_QUERIES_CHANNEL, (source, { id, data }) => {
+        const { powerMonitor } = electron;
+
         switch(data.type) {
             case METHODS.queryIdleState:
-                electron.powerMonitor.querySystemIdleState(
-                    data.idleThreshold,
-                    idleState => {
-                        systemIdleResult(id, idleState);
-                    });
+                if (typeof powerMonitor.getSystemIdleState === 'function') { // electron 5+
+                    systemIdleResult(id, powerMonitor.getSystemIdleState(data.idleThreshold));
+                } else { // electron 4 or older
+                    powerMonitor.querySystemIdleState(
+                        data.idleThreshold,
+                        idleState => {
+                            systemIdleResult(id, idleState);
+                        });
+                }
                 break;
             case METHODS.queryIdleTime:
-                    electron.powerMonitor.querySystemIdleTime(
+                if (typeof powerMonitor.getSystemIdleTime === 'function') { // electron 5+
+                    systemIdleResult(id, powerMonitor.getSystemIdleTime());
+                } else { // electron 4 or older
+                    powerMonitor.querySystemIdleTime(
                         idleTime => {
                             systemIdleResult(id, idleTime);
                         });
+                }
                 break;
             default: {
                 const error = 'Unknown event type!';
