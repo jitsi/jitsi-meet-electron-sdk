@@ -1,6 +1,6 @@
 {
   "name": "jitsi-meet-electron-utils",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Utilities for jitsi-meet-electron project",
   "main": "index.js",
   "scripts": {
@@ -35,7 +35,7 @@
     "eslint": ">=3",
     "eslint-plugin-jsdoc": "*",
     "mocha": "^4.0.1",
-    "prebuild": "^8.1.2",
+    "prebuild": "^9.1.1",
     "precommit-hook": "3.0.0"
   }
 }
