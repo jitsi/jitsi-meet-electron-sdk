@@ -222,6 +222,11 @@ function setAspectRatioToResizeableWindow(win, aspectRatio) {
             }
         });
         win.on('resize', () => {
+            if (!Array.isArray(oldSize) || oldSize.length !== 2) {
+                // Adding this check because of reports for JS errors that oldSize is undefined.
+                return;
+            }
+
             let [ width, height ] = win.getSize();
 
             //we scale either width or height according to the other by checking which of the 2
