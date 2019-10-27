@@ -5,7 +5,7 @@ const { EventEmitter } = require('events');
 const os = require('os');
 const path = require('path');
 
-const { ALWAYSONTOP_WILL_CLOSE } = require('./constants');
+const { ALWAYSONTOP_WILL_CLOSE, SIZE } = require('./constants');
 
 /**
  * Returieves and trying to parse a numeric value from the local storage.
@@ -97,8 +97,8 @@ class AlwaysOnTop extends EventEmitter {
      * @returns {HTMLElement|undefined} the large video.
      */
     get _alwaysOnTopWindowVideo() {
-        if(!this._alwaysOnTopWindow || !this._alwaysOnTopWindow.document) {
-            return;
+        if (!this._alwaysOnTopWindow || !this._alwaysOnTopWindow.document) {
+            return undefined;
         }
         return this._alwaysOnTopWindow.document.getElementById('video');
     }
@@ -147,6 +147,20 @@ class AlwaysOnTop extends EventEmitter {
     }
 
     /**
+     * Sends reset size command to the main process.
+     * This is needed in order to reset AOT to the default size after leaving a conference
+     * @private
+     */
+    _sendResetSize() {
+        ipcRenderer.send('jitsi-always-on-top', {
+            type: 'event',
+            data: {
+                name: 'resetSize',
+            }
+        });
+    }
+
+    /**
      * Handles videoConferenceJoined api event.
      *
      * @returns {void}
@@ -177,6 +191,7 @@ class AlwaysOnTop extends EventEmitter {
             'close',
             this._closeAlwaysOnTopWindow
         );
+        this._sendResetSize();
         this._closeAlwaysOnTopWindow();
     }
 
@@ -211,30 +226,38 @@ class AlwaysOnTop extends EventEmitter {
      * @param {string} type - The type of the message.
      * @param {Object} data - The payload of the message.
      */
-    _onMessageReceived(event, { type, data = {}}) {
+    _onMessageReceived(event, { type, data = {} }) {
         if (type === 'event' && data.name === 'new-window') {
-            this._alwaysOnTopBrowserWindow
-                = remote.BrowserWindow.fromId(data.id);
+            this._onNewAlwaysOnTopBrowserWindow(data.id);
         }
     }
 
     /**
-     * Creates and opens the always on top window.
+     * Handles 'new-window' always on top events.
+     *
+     * @param {number} windowId - The id of the BrowserWindow instance.
+     * @returns {void}
+     */
+    _onNewAlwaysOnTopBrowserWindow(windowId) {
+        this._alwaysOnTopBrowserWindow = remote.BrowserWindow.fromId(windowId);
+        const { webContents } = this._alwaysOnTopBrowserWindow;
+        // if the window is still loading we may end up loosing the injected content when load finishes. We need to wait
+        // for the loading to be completed. We are using the browser windows events instead of the DOM window ones because
+        // it appears they are unreliable (readyState is always completed, most of the events are not fired!!!)
+        if (webContents.isLoading()) {
+            webContents.on('did-stop-loading', () => this._setupAlwaysOnTopWindow());
+        } else {
+            this._setupAlwaysOnTopWindow();
+        }
+    }
+
+    /**
+     * Sets all necessary content (HTML, CSS, JS) to the always on top window.
      *
      * @returns {void}
      */
-    _openAlwaysOnTopWindow() {
-        if(this._alwaysOnTopWindow) {
-            return;
-        }
-        ipcRenderer.on('jitsi-always-on-top', this._onMessageReceived);
-        this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
-
-        // Intentionally open about:blank. Otherwise if an origin is set, a
-        // cross-origin redirect can cause any set global variables to be blown
-        // away.
-        this._alwaysOnTopWindow = window.open('', 'AlwaysOnTop');
-        if(!this._alwaysOnTopWindow) {
+    _setupAlwaysOnTopWindow() {
+        if (!this._alwaysOnTopWindow) {
             return;
         }
         this._alwaysOnTopWindow.alwaysOnTop = {
@@ -257,18 +280,37 @@ class AlwaysOnTop extends EventEmitter {
              * this we'll implement drag ourselves.
              */
             shouldImplementDrag: os.type() !== 'Darwin',
-            move: (x, y) => {
+            /**
+             * Custom implementation for window move.
+             * We use setBounds in order to preserve the initial size of the window
+             * during drag. This is in order to fix:
+             * https://github.com/electron/electron/issues/9477
+             * @param x
+             * @param y
+             */
+            move: (x, y, initialSize) => {
                 if (this._alwaysOnTopBrowserWindow) {
-                    this._alwaysOnTopBrowserWindow.setPosition(x, y);
+                    this._alwaysOnTopBrowserWindow.setBounds({
+                        x,
+                        y,
+                        width: initialSize.width,
+                        height: initialSize.height
+                    });
                 }
+            },
+            /**
+             * Returns the current size of the AOT window
+             * @returns {{width: number, height: number}}
+             */
+            getCurrentSize: () => {
+                if (this._alwaysOnTopBrowserWindow) {
+                    const [width, height] = this._alwaysOnTopBrowserWindow.getSize();
+                    return { width, height };
+                }
+
+                return SIZE;
             }
         };
-
-        // Change the dom of 'about:blank' to display the always on top content.
-        this._alwaysOnTopWindow.onload = () => {
-            if (!this._alwaysOnTopWindow) {
-                return;
-            }
 
             const cssPath = path.join(__dirname, './alwaysontop.css');
             const jsPath = path.join(__dirname, './alwaysontop.js');
@@ -276,7 +318,7 @@ class AlwaysOnTop extends EventEmitter {
             // Add the markup for the JS to manipulate and load the CSS.
             this._alwaysOnTopWindow.document.body.innerHTML = `
               <div id="react"></div>
-              <video autoplay="" id="video" style="transform: none;"></video>
+              <video autoplay="" id="video" style="transform: none;" muted></video>
               <link rel="stylesheet" href="file://${ cssPath }">
             `;
 
@@ -285,9 +327,26 @@ class AlwaysOnTop extends EventEmitter {
             const scriptTag
                 = this._alwaysOnTopWindow.document.createElement('script');
 
-            scriptTag.setAttribute('src',`file://${ jsPath }`);
+            scriptTag.setAttribute('src', `file://${ jsPath }`);
             this._alwaysOnTopWindow.document.head.appendChild(scriptTag);
-        };
+    }
+
+    /**
+     * Creates and opens the always on top window.
+     *
+     * @returns {void}
+     */
+    _openAlwaysOnTopWindow() {
+        if (this._alwaysOnTopWindow) {
+            return;
+        }
+        ipcRenderer.on('jitsi-always-on-top', this._onMessageReceived);
+        this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
+
+        // Intentionally open about:blank. Otherwise if an origin is set, a
+        // cross-origin redirect can cause any set global variables to be blown
+        // away.
+        this._alwaysOnTopWindow = window.open('', 'AlwaysOnTop');
     }
 
     /**
@@ -306,16 +365,20 @@ class AlwaysOnTop extends EventEmitter {
             };
         }
 
-        if(this._alwaysOnTopWindow) {
+        if (this._alwaysOnTopWindow) {
             // we need to check the BrowserWindow reference here because
             // window.closed is not reliable due to Electron quirkiness
             if(this._alwaysOnTopBrowserWindow && !this._alwaysOnTopBrowserWindow.isDestroyed()) {
                 this._alwaysOnTopWindow.close();
             }
 
-            ipcRenderer.removeListener('jitsi-always-on-top',
-                this._onMessageReceived);
+            ipcRenderer.removeListener('jitsi-always-on-top', this._onMessageReceived);
         }
+
+        //we need to tell the main process to close the BrowserWindow because when
+        //open and close AOT are called in quick succession, the reference to the new BrowserWindow
+        //instantiated on main process is set to undefined, thus we lose control over it
+        ipcRenderer.send('jitsi-always-on-top-should-close');
 
         this._alwaysOnTopBrowserWindow = undefined;
         this._alwaysOnTopWindow = undefined;
@@ -328,11 +391,11 @@ class AlwaysOnTop extends EventEmitter {
      * @returns {void}
      */
     _updateLargeVideoSrc() {
-        if(!this._alwaysOnTopWindowVideo) {
+        if (!this._alwaysOnTopWindowVideo) {
             return;
         }
 
-        if(!this._jitsiMeetLargeVideo) {
+        if (!this._jitsiMeetLargeVideo) {
             this._alwaysOnTopWindowVideo.style.display = 'none';
             this._alwaysOnTopWindowVideo.srcObject = null;
         } else {

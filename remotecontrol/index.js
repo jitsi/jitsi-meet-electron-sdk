@@ -1,4 +1,5 @@
 const electron = require("electron");
+const { remote } = electron;
 const os = require('os');
 const postis = require("postis");
 const robot = require("robotjs");
@@ -65,7 +66,7 @@ class RemoteControl {
      * @returns {void}
      */
     _setDisplayMetrics(sourceId) {
-        const displays = electron.screen.getAllDisplays();
+        const displays = remote.screen.getAllDisplays();
 
         switch(displays.length) {
             case 0:
@@ -77,7 +78,7 @@ class RemoteControl {
                 this._display = displays[0];
             break;
             // eslint-disable-next-line no-case-declarations
-            default: // > 1 display
+            default: { // > 1 display
                 // Remove the type part from the sourceId
                 const parsedSourceId = sourceId.replace('screen:', '');
                 const coordinates = sourceId2Coordinates(parsedSourceId);
@@ -87,7 +88,7 @@ class RemoteControl {
                     // Windows.
                     const { x, y } = coordinates;
                     const display
-                        = electron.screen.getDisplayNearestPoint({
+                        = remote.screen.getDisplayNearestPoint({
                             x: x + 1,
                             y: y + 1
                         });
@@ -116,6 +117,7 @@ class RemoteControl {
                     this._display
                         = displays.find(display => display.id === displayId);
                 }
+            }
         }
     }
 
@@ -130,7 +132,7 @@ class RemoteControl {
         this._displayMetricsChangeListener = () => {
             this._setDisplayMetrics(sourceId);
         };
-        electron.screen.on('display-metrics-changed', this._displayMetricsChangeListener);
+        remote.screen.on('display-metrics-changed', this._displayMetricsChangeListener);
         this._setDisplayMetrics(sourceId);
 
         const response = {
@@ -154,7 +156,7 @@ class RemoteControl {
     _stop() {
         this._display = undefined;
         if (this._displayMetricsChangeListener) {
-            electron.screen.removeListener('display-metrics-changed', this._displayMetricsChangeListener);
+            remote.screen.removeListener('display-metrics-changed', this._displayMetricsChangeListener);
             this._displayMetricsChangeListener = undefined;
         }
     }

@@ -97,6 +97,37 @@ const api = new JitsiMeetExternalAPI(...);
 setupWiFiStats(api.getIFrame());
 ```
 
+#### Power Monitor
+Provides a way to query electron for system idle and receive power monitor events.
+
+**enable power monitor:**
+In the **main** electron process:
+```Javascript
+const {
+    setupPowerMonitorMain
+} = require("jitsi-meet-electron-utils");
+
+// jitsiMeetWindow - The BrowserWindow instance
+// of the window where Jitsi Meet is loaded.
+setupPowerMonitorMain(jitsiMeetWindow);
+```
+
+In the **render** electron process of the window where Jitsi Meet is displayed:
+```Javascript
+const {
+    setupPowerMonitorRender
+} = require("jitsi-meet-electron-utils");
+
+const api = new JitsiMeetExternalAPI(...);
+setupPowerMonitorRender(api);
+```
+
+### NOTE:
+If you are using electron 5 you'll need to add 'disable-site-isolation-trials' switch because of [https://github.com/electron/electron/issues/18214](https://github.com/electron/electron/issues/18214):
+```
+app.commandLine.appendSwitch('disable-site-isolation-trials')
+```
+
 ## Example
 
 For examples of installation and usage checkout the [Jitsi Meet Electron](https://github.com/jitsi/jitsi-meet-electron) project.

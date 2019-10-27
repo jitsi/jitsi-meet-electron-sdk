@@ -28,7 +28,9 @@ function initPopupsConfiguration(jitsiMeetWindow) {
             event.newGuest = new BrowserWindow(Object.assign(options, {
                 titleBarStyle: undefined,
                 webPreferences: {
-                    nodeIntegration: false
+                    contextIsolation: false,
+                    nodeIntegration: false,
+                    webviewTag: true
                 }
             }));
         }
