@@ -1,4 +1,8 @@
+/* global process */
+
 const electron = require("electron");
+const semver = require('semver');
+
 module.exports = function setupScreenSharingForWindow(iframe) {
     // make sure that even after reload/redirect the screensharing will be
     // available
@@ -20,15 +24,21 @@ module.exports = function setupScreenSharingForWindow(iframe) {
              * 150px.
              */
             obtainDesktopStreams(callback, errorCallback, options = {}) {
-                electron.desktopCapturer.getSources(options,
-                    (error, sources) => {
-                        if (error) {
-                            errorCallback(error);
-                            return;
-                        }
+                if (semver.lt(process.versions.electron, '5.0.0')) {
+                    electron.desktopCapturer.getSources(options,
+                        (error, sources) => {
+                            if (error) {
+                                errorCallback(error);
+                                return;
+                            }
 
-                        callback(sources);
-                    });
+                            callback(sources);
+                        });
+                } else {
+                    electron.desktopCapturer.getSources(options)
+                        .then(sources => callback(sources))
+                        .catch(error => errorCallback(error));
+                }
             }
         };
     });
