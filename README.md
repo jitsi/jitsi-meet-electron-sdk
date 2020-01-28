@@ -80,6 +80,8 @@ alwaysOnTop.on('will-close', handleAlwaysOnTopClose);
 
 `setupAlwaysOnTopRender` return an instance of EventEmitter with the following events:
 
+* _dismissed_ - emitted when the always on top window is explicitly dismissed via its close button
+
 * _will-close_ - emitted right before the always on top window is going to close
 
 #### WiFi Stats

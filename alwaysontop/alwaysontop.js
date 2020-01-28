@@ -5,7 +5,8 @@ const {
     onload,
     onbeforeunload,
     shouldImplementDrag,
-    getCurrentSize
+    getCurrentSize,
+    dismiss
 } = window.alwaysOnTop;
 
 /**
@@ -14,6 +15,11 @@ const {
  * monitors with a scaling applied
  */
 let initialSize;
+
+const dismissButton = document.querySelector('.dismiss');
+if (dismissButton) {
+    dismissButton.addEventListener('click', dismiss);
+}
 
 window.addEventListener('beforeunload', onbeforeunload);
 
