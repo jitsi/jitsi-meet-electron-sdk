@@ -96,6 +96,7 @@ class ScreenShareMainHook {
         });
 
         this._screenShareTracker.sharingIdentity = this._identity;
+        // eslint-disable-next-line no-undef
         this._screenShareTracker.loadURL(`file://${__dirname}/screenSharingTracker.html?`);
     }
 }
