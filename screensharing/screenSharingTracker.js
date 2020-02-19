@@ -1,7 +1,6 @@
-const {ipcRenderer, remote} = require('electron');
+const { ipcRenderer, remote } = require('electron');
 
-const {SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS} = require('./constants');
-
+const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS } = require('./constants');
 
 const screenShareStop = document.getElementById("screen-share-marker-stop");
 const screenShareMinimize = document.getElementById("screen-share-marker-minimize");
@@ -12,7 +11,7 @@ sharingIdentity.innerHTML = remote.getCurrentWindow().sharingIdentity;
 /**
  * Minimize the window.
  */
-screenShareMinimize.addEventListener("click",function() {
+screenShareMinimize.addEventListener("click", function() {
     remote.BrowserWindow.getFocusedWindow().minimize();
 });
 
@@ -20,7 +19,7 @@ screenShareMinimize.addEventListener("click",function() {
  * When the user clicks the stop button, send a message that will eventually be processed by
  * {@link ScreenShareRenderHook} which will toggle the screen sharing session using the jitsi-meet api.
  */
-screenShareStop.addEventListener("click",function() {
+screenShareStop.addEventListener("click", function() {
     ipcRenderer.send(SCREEN_SHARE_EVENTS_CHANNEL, {
         data: {
             name: SCREEN_SHARE_EVENTS.STOP_SCREEN_SHARE
