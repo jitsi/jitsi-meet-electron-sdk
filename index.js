@@ -1,5 +1,5 @@
 const RemoteControl = require('./remotecontrol');
-const {setupScreenSharingForWindow, setupScreenSharingMain} = require('./screensharing');
+const { setupScreenSharingForWindow, setupScreenSharingMain } = require('./screensharing');
 const {
     setupAlwaysOnTopRender,
     setupAlwaysOnTopMain

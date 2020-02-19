@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, screen } = require('electron');
+/* global __dirname */
+const electron = require('electron');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, TRACKER_SIZE } = require('./constants');
 
@@ -22,11 +23,11 @@ class ScreenShareMainHook {
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
 
         // Listen for events coming in from the main render window and the screen share tracker window.
-        ipcMain.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+        electron.ipcMain.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
 
         // Clean up ipcMain handlers to avoid leaks.
-        app.once('window-all-closed', () => {
-            ipcMain.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+        this._jitsiMeetWindow.on('closed', () => {
+            electron.ipcMain.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
         });
     }
 
@@ -67,8 +68,8 @@ class ScreenShareMainHook {
         }
 
         // Display always on top screen sharing tracker window in the center bottom of the screen.
-        let display = screen.getPrimaryDisplay();
-        this._screenShareTracker = new BrowserWindow({
+        let display = electron.screen.getPrimaryDisplay();
+        this._screenShareTracker = new electron.BrowserWindow({
             height: TRACKER_SIZE.height,
             width: TRACKER_SIZE.width,
             x:(display.bounds.width - TRACKER_SIZE.width) / 2,
@@ -96,7 +97,6 @@ class ScreenShareMainHook {
         });
 
         this._screenShareTracker.sharingIdentity = this._identity;
-        // eslint-disable-next-line no-undef
         this._screenShareTracker.loadURL(`file://${__dirname}/screenSharingTracker.html?`);
     }
 }
