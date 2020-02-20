@@ -15,14 +15,11 @@ class ScreenShareRenderHook {
     /**
      * Creates a ScreenShareRenderHook hooked to jitsi meet iframe events.
      *
-     * @param {iframe} iframe - The jitsi Meet iframe object. This may seem redundant as we can access it from
-     * the api object, however we need it here for backwards compatibility as some clients are setup is such a
-     * way that they may end up calling the old jitsi-meet-electron-utils with the updated api, causing crashes.
      * @param {JitsiIFrameApi} api - The Jitsi Meet iframe api object.
      */
-    constructor(iframe, api) {
+    constructor(api) {
         this._api = api;
-        this._iframe = iframe;
+        this._iframe = this._api.getIFrame();
 
         this._onScreenSharingStatusChanged = this._onScreenSharingStatusChanged.bind(this);
         this._sendCloseTrackerEvent = this._sendCloseTrackerEvent.bind(this);
@@ -156,9 +153,8 @@ class ScreenShareRenderHook {
  * Initializes the screen sharing electron specific functionality in the renderer process containing the
  * jitsi meet iframe.
  *
- * @param {iframe} iframe - The jitsi Meet iframe object.
  * @param {JitsiIFrameApi} api - The Jitsi Meet iframe api object.
  */
-module.exports = function setupScreenSharingForWindow(iframe, api) {
-    return new ScreenShareRenderHook(iframe, api);
+module.exports = function setupScreenSharingRender(api) {
+    return new ScreenShareRenderHook(api);
 };
