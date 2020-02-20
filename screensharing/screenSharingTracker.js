@@ -1,4 +1,5 @@
 const { ipcRenderer, remote } = require('electron');
+const querystring = require('querystring');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS } = require('./constants');
 
@@ -6,7 +7,7 @@ const screenShareStop = document.getElementById("screen-share-marker-stop");
 const screenShareMinimize = document.getElementById("screen-share-marker-minimize");
 const sharingIdentity = document.getElementById("sharing-identity");
 
-sharingIdentity.innerHTML = remote.getCurrentWindow().sharingIdentity;
+sharingIdentity.innerHTML = querystring.parse(global.location.search)['?sharingIdentity'];
 
 /**
  * Minimize the window.

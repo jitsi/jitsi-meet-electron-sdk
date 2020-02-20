@@ -96,8 +96,8 @@ class ScreenShareMainHook {
             }
         });
 
-        this._screenShareTracker.sharingIdentity = this._identity;
-        this._screenShareTracker.loadURL(`file://${__dirname}/screenSharingTracker.html?`);
+        this._screenShareTracker
+            .loadURL(`file://${__dirname}/screenSharingTracker.html?sharingIdentity=${this._identity}`);
     }
 }
 
