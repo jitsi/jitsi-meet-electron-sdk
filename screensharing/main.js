@@ -89,8 +89,6 @@ class ScreenShareMainHook {
             }
         });
 
-        this._screenShareTracker.openDevTools();
-        
         // Prevent newly created window to take focus from main application.
         this._screenShareTracker.once('ready-to-show', () => {
             if (this._screenShareTracker && !this._screenShareTracker.isDestroyed()) {
