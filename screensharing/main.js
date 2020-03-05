@@ -73,7 +73,7 @@ class ScreenShareMainHook {
             height: TRACKER_SIZE.height,
             width: TRACKER_SIZE.width,
             x:(display.workArea.width - TRACKER_SIZE.width) / 2,
-            y:display.workArea.height - TRACKER_SIZE.height - 10,
+            y:display.workArea.height - TRACKER_SIZE.height - 5,
             transparent: true,
             minimizable: true,
             maximizable: false,
@@ -89,6 +89,8 @@ class ScreenShareMainHook {
             }
         });
 
+        this._screenShareTracker.openDevTools();
+        
         // Prevent newly created window to take focus from main application.
         this._screenShareTracker.once('ready-to-show', () => {
             if (this._screenShareTracker && !this._screenShareTracker.isDestroyed()) {
