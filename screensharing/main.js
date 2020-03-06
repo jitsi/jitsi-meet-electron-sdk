@@ -72,8 +72,8 @@ class ScreenShareMainHook {
         this._screenShareTracker = new electron.BrowserWindow({
             height: TRACKER_SIZE.height,
             width: TRACKER_SIZE.width,
-            x:(display.bounds.width - TRACKER_SIZE.width) / 2,
-            y:display.bounds.height - TRACKER_SIZE.height - 10,
+            x:(display.workArea.width - TRACKER_SIZE.width) / 2,
+            y:display.workArea.height - TRACKER_SIZE.height - 5,
             transparent: true,
             minimizable: true,
             maximizable: false,
@@ -81,7 +81,7 @@ class ScreenShareMainHook {
             alwaysOnTop: true,
             fullscreen: false,
             fullscreenable: false,
-            skipTaskbar: true,
+            skipTaskbar: false,
             frame: false,
             show: false,
             webPreferences: {
