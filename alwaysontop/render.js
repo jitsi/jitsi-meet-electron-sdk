@@ -8,6 +8,16 @@ const path = require('path');
 const { ALWAYSONTOP_DISMISSED, ALWAYSONTOP_WILL_CLOSE, SIZE } = require('./constants');
 
 /**
+ * Checks if a BrowserWindow object is defined and that it's not destroyed
+ *
+ * @param  {BrowserWindow} win - electron BrowserWindow instance to be checked
+ * @return {boolean} - whether the window object exists and can be worked with
+ */
+function exists(win) {
+  return win && !win.isDestroyed();
+}
+
+/**
  * Returieves and trying to parse a numeric value from the local storage.
  *
  * @param {string} localStorageKey - The key of the value that has to be
@@ -47,6 +57,8 @@ class AlwaysOnTop extends EventEmitter {
         this._updateLargeVideoSrc = this._updateLargeVideoSrc.bind(this);
         this._openAlwaysOnTopWindow = this._openAlwaysOnTopWindow.bind(this);
         this._closeAlwaysOnTopWindow = this._closeAlwaysOnTopWindow.bind(this);
+        this._showAlwaysOnTopWindow = this._showAlwaysOnTopWindow.bind(this);
+        this._hideAlwaysOnTopWindow = this._hideAlwaysOnTopWindow.bind(this);
         this._onMessageReceived = this._onMessageReceived.bind(this);
         this._onConferenceJoined = this._onConferenceJoined.bind(this);
         this._onConferenceLeft = this._onConferenceLeft.bind(this);
@@ -168,7 +180,7 @@ class AlwaysOnTop extends EventEmitter {
      */
     _onConferenceJoined() {
         this._jitsiMeetElectronWindow.on('blur', this._openAlwaysOnTopWindow);
-        this._jitsiMeetElectronWindow.on('focus', this._closeAlwaysOnTopWindow);
+        this._jitsiMeetElectronWindow.on('focus', this._hideAlwaysOnTopWindow);
         this._jitsiMeetElectronWindow.on('close', this._closeAlwaysOnTopWindow);
         this._intersectionObserver.observe(this._api.getIFrame());
     }
@@ -186,7 +198,7 @@ class AlwaysOnTop extends EventEmitter {
         );
         this._jitsiMeetElectronWindow.removeListener(
             'focus',
-            this._closeAlwaysOnTopWindow
+            this._hideAlwaysOnTopWindow
         );
         this._jitsiMeetElectronWindow.removeListener(
             'close',
@@ -206,14 +218,14 @@ class AlwaysOnTop extends EventEmitter {
         const singleEntry = entries.pop();
         this._jitsiMeetElectronWindow.removeListener(
             'focus',
-            this._closeAlwaysOnTopWindow
+            this._hideAlwaysOnTopWindow
         );
 
         if (singleEntry.isIntersecting) {
-            this._closeAlwaysOnTopWindow();
+            this._hideAlwaysOnTopWindow();
             this._jitsiMeetElectronWindow.on(
                 'focus',
-                this._closeAlwaysOnTopWindow
+                this._hideAlwaysOnTopWindow
             );
         } else {
             this._openAlwaysOnTopWindow();
@@ -350,6 +362,7 @@ class AlwaysOnTop extends EventEmitter {
      */
     _openAlwaysOnTopWindow() {
         if (this._alwaysOnTopWindow) {
+            this._showAlwaysOnTopWindow();
             return;
         }
         ipcRenderer.on('jitsi-always-on-top', this._onMessageReceived);
@@ -367,7 +380,7 @@ class AlwaysOnTop extends EventEmitter {
      * @returns {void}
      */
     _closeAlwaysOnTopWindow() {
-        if (this._alwaysOnTopBrowserWindow && !this._alwaysOnTopBrowserWindow.isDestroyed()) {
+        if (exists(this._alwaysOnTopBrowserWindow)) {
             const position =
                 this._alwaysOnTopBrowserWindow.getPosition();
 
@@ -380,7 +393,7 @@ class AlwaysOnTop extends EventEmitter {
         if (this._alwaysOnTopWindow) {
             // we need to check the BrowserWindow reference here because
             // window.closed is not reliable due to Electron quirkiness
-            if(this._alwaysOnTopBrowserWindow && !this._alwaysOnTopBrowserWindow.isDestroyed()) {
+            if(exists(this._alwaysOnTopBrowserWindow)) {
                 this._alwaysOnTopWindow.close();
             }
 
@@ -394,6 +407,28 @@ class AlwaysOnTop extends EventEmitter {
 
         this._alwaysOnTopBrowserWindow = undefined;
         this._alwaysOnTopWindow = undefined;
+    }
+
+    /**
+     * Shows the always on top window.
+     *
+     * @returns {void}
+     */
+    _showAlwaysOnTopWindow() {
+      if (exists(this._alwaysOnTopBrowserWindow)) {
+        this._alwaysOnTopBrowserWindow.showInactive();
+      }
+    }
+
+    /**
+     * Hides the always on top window.
+     *
+     * @returns {void}
+     */
+    _hideAlwaysOnTopWindow() {
+      if (exists(this._alwaysOnTopBrowserWindow)) {
+        this._alwaysOnTopBrowserWindow.hide();
+      }
     }
 
     /**
