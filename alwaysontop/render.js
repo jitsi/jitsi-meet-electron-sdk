@@ -241,6 +241,10 @@ class AlwaysOnTop extends EventEmitter {
      */
     _onNewAlwaysOnTopBrowserWindow(windowId) {
         this._alwaysOnTopBrowserWindow = remote.BrowserWindow.fromId(windowId);
+        if (!this._alwaysOnTopBrowserWindow || this._alwaysOnTopBrowserWindow.isDestroyed()){
+            return;
+        }
+
         const { webContents } = this._alwaysOnTopBrowserWindow;
         // if the window is still loading we may end up loosing the injected content when load finishes. We need to wait
         // for the loading to be completed. We are using the browser windows events instead of the DOM window ones because
