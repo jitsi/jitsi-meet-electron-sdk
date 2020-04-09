@@ -1,6 +1,6 @@
 {
   "name": "jitsi-meet-electron-utils",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Utilities for jitsi-meet-electron project",
   "main": "index.js",
   "scripts": {
@@ -26,6 +26,7 @@
   "license": "Apache-2.0",
   "gypfile": true,
   "dependencies": {
+    "mac-screen-capture-permissions": "^1.1.0",
     "nan": "^2.14.0",
     "postis": "^2.2.0",
     "prebuild-install": "^5.3.0",
