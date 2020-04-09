@@ -56,7 +56,8 @@ const {
 // jitsiMeetWindow - The BrowserWindow instance of the window where Jitsi Meet is loaded.
 // appName - Application name which will be displayed inside the content sharing tracking window
 // i.e. [appName] is sharing your screen.
-setupScreenSharingMain(mainWindow, appName);
+// osxBundleId - Mac Application bundleId for which screen capturer permissions will be reset if user denied them.  
+setupScreenSharingMain(mainWindow, appName, osxBundleId);
 ```
 
 
