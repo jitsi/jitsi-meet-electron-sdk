@@ -3,6 +3,7 @@ const electron = require('electron');
 const robot = require("robotjs");
 const { BrowserWindow, ipcMain } = electron;
 const { SIZE } = require('./constants');
+const log = require('jitsi-meet-logger');
 
 /**
  * The aspect ratio to preserve during AOT window resize
@@ -29,6 +30,11 @@ let size = Object.assign({}, SIZE);
 let oldSize;
 
 /**
+ * The logger instance
+ */
+let logger;
+
+/**
  * Handles new-window events for the main process in order to customize the
  * BrowserWindow options of the always on top window. This handler will be
  * executed in the context of the main process.
@@ -47,6 +53,7 @@ function onAlwaysOnTopWindow(
         frameName,
         disposition,
         options) {
+    logInfo('onAlwaysOnTopWindow');
     if (frameName === 'AlwaysOnTop') {
         event.preventDefault();
         const win = event.newGuest = new BrowserWindow(
@@ -73,23 +80,29 @@ function onAlwaysOnTopWindow(
         //the renderer process tells the main process to close the BrowserWindow
         //this is needed when open and close AOT are called in quick succession on renderer process.
         ipcMain.once('jitsi-always-on-top-should-close', () => {
+            logInfo("jitsi-always-on-top-should-close");
             if (win && !win.isDestroyed()) {
+                logInfo('jitsi-always-on-top-should-close: closing window');
                 win.close();
+                logInfo('jitsi-always-on-top-should-close: window closed');
             }
         });
 
         win.once('ready-to-show', () => {
+            logInfo('ready-to-show');
             if (win && !win.isDestroyed()) {
+                logInfo('ready-to-show: shoInactive');
                 win.showInactive();
+                logInfo('ready-to-show: showInactive end');
             }
         });
 
         win.webContents.on('error', error => {
-            console.warn(error, 'Unhandled AOT webContents error');
+            logError(error);
         });
 
         setAspectRatioToResizeableWindow(win, ASPECT_RATIO);
-
+        logInfo('send jitsi-always-on-to new-window');
         jitsiMeetWindow.webContents.send('jitsi-always-on-top', {
             type: 'event',
             data: {
@@ -97,6 +110,7 @@ function onAlwaysOnTopWindow(
                 name: 'new-window'
             }
         });
+        logInfo('onAlwaysOnTopWindow end');
     }
 }
 
@@ -116,6 +130,8 @@ function onAlwaysOnTopWindow(
 function positionWindowWithinScreenBoundaries(
         windowRectangle,
         screenRectangle) {
+          
+    logInfo('positionWindowWithinScreenBoundaries');
     // The min value for y coordinate of the window in order to place it within
     // the boundaries of the screen. This will be the use case where the top
     // edge of the window is exactly on the top boundary of the screen.
@@ -138,6 +154,7 @@ function positionWindowWithinScreenBoundaries(
     const maxX
         = screenRectangle.x + screenRectangle.width - windowRectangle.width;
 
+    logInfo('positionWindowWithinScreenBoundaries end');
     return {
         x: Math.min(Math.max(windowRectangle.x, minX), maxX),
         y: Math.min(Math.max(windowRectangle.y, minY), maxY)
@@ -152,6 +169,7 @@ function positionWindowWithinScreenBoundaries(
  * @returns {{x: number, y: number}}
  */
 function getPosition () {
+    logInfo('getPosition');
     const Screen = electron.screen;
 
     if (typeof position.x === 'number' && typeof position.y === 'number') {
@@ -177,6 +195,7 @@ function getPosition () {
         width
     } = Screen.getDisplayNearestPoint(Screen.getCursorScreenPoint()).workArea;
 
+    logInfo('getPosition end');
     return {
         x: x + width - size.width,
         y
@@ -189,10 +208,11 @@ function getPosition () {
  * @returns {{width: number, height: number}}
  */
 function getSize () {
+    logInfo('getSize');
     if (typeof size.width === 'number' && typeof size.height === 'number') {
         return size;
     }
-
+    logInfo('getSize end');
     return SIZE;
 }
 
@@ -204,6 +224,7 @@ function getSize () {
  * @returns {void}
  */
 function setAspectRatioToResizeableWindow(win, aspectRatio) {
+    logInfo('setAspectRatioToResizeableWindow'); 
     //for macOS we use the built-in setAspectRatio on resize, for other we use custom implementation
     if (os.type() === 'Darwin') {
         win.setAspectRatio(aspectRatio);
@@ -245,15 +266,36 @@ function setAspectRatioToResizeableWindow(win, aspectRatio) {
             size.height = height;
         });
     }
+    logInfo('setAspectRatioToResizeableWindow end');
+}
+
+/**
+ * Wrapper over the loger's info
+ *
+ * @param {string} info - The info text
+ */
+function logInfo(info) {
+    logger.info(`[MAIN] ${info}`);
+}
+
+/**
+ * Wrapper over the loger's error
+ *
+ * @param {Object} err - the error object
+ */
+function logError(err) {
+    logger.error({err} , '[MAIN ERROR]');
 }
 
 /**
  * Initializes the always on top functionality in the main electron process.
  *
  * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which
+ * @param {Logger} loggerTransports - external loggers
  * displays Jitsi Meet
  */
-module.exports = function setupAlwaysOnTopMain(jitsiMeetWindow) {
+module.exports = function setupAlwaysOnTopMain(jitsiMeetWindow, loggerTransports) {
+    logger = log.getLogger('AOT', loggerTransports || []);
     ipcMain.on('jitsi-always-on-top', (event, { type, data = {} }) => {
         if (type === 'event' && data.name === 'position') {
             const { x, y } = data;
