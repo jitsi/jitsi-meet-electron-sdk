@@ -298,7 +298,7 @@ class AlwaysOnTop extends EventEmitter {
                 );
             },
             ondblclick: () => {
-                this._closeAlwaysOnTopWindow();
+                this._hideAlwaysOnTopWindow();
                 this._jitsiMeetElectronWindow.show();
             },
             /**
@@ -425,11 +425,11 @@ class AlwaysOnTop extends EventEmitter {
      * @returns {void}
      */
     _showAlwaysOnTopWindow() {
-      if (exists(this._alwaysOnTopBrowserWindow)) {
-        try {
-          this._alwaysOnTopBrowserWindow.showInactive();
-        } catch (ignore) {}
-      }
+        if (exists(this._alwaysOnTopBrowserWindow)) {
+            try {
+                this._alwaysOnTopBrowserWindow.showInactive();
+            } catch (ignore) {}
+        }
     }
 
     /**
@@ -438,11 +438,12 @@ class AlwaysOnTop extends EventEmitter {
      * @returns {void}
      */
     _hideAlwaysOnTopWindow() {
-      if (exists(this._alwaysOnTopBrowserWindow)) {
-        try {
-          this._alwaysOnTopBrowserWindow.hide();
-        } catch (ignore) {}
-      }
+        if (exists(this._alwaysOnTopBrowserWindow)) {
+            this.emit(ALWAYSONTOP_WILL_CLOSE);
+            try {
+                this._alwaysOnTopBrowserWindow.hide();
+            } catch (ignore) {}
+        }
     }
 
     /**
