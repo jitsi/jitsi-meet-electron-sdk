@@ -86,7 +86,7 @@ function onAlwaysOnTopWindow(
 
         win.webContents.on('error', error => {
             console.warn(error, 'Unhandled AOT webContents error');
-        })
+        });
 
         setAspectRatioToResizeableWindow(win, ASPECT_RATIO);
 

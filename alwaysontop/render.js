@@ -68,6 +68,7 @@ class AlwaysOnTop extends EventEmitter {
         this._api = api;
         this._jitsiMeetElectronWindow = remote.getCurrentWindow();
         this._intersectionObserver = new IntersectionObserver(this._onIntersection);
+        this._isHidden = true;
 
         if (!api) {
             throw new Error('Wrong arguments!');
@@ -292,6 +293,7 @@ class AlwaysOnTop extends EventEmitter {
             onload: this._updateLargeVideoSrc,
             onbeforeunload: () => {
                 this.emit(ALWAYSONTOP_WILL_CLOSE);
+                this._isHidden = true;
                 this._api.removeListener(
                     'largeVideoChanged',
                     this._updateLargeVideoSrc
@@ -324,7 +326,9 @@ class AlwaysOnTop extends EventEmitter {
                             width: initialSize.width,
                             height: initialSize.height
                         });
-                    } catch (ignore) {}
+                    } catch (ignore) {
+                        // ignore
+                    }
                 }
             },
             /**
@@ -336,31 +340,33 @@ class AlwaysOnTop extends EventEmitter {
                     try {
                         const [width, height] = this._alwaysOnTopBrowserWindow.getSize();
                         return { width, height };
-                    } catch (ignore) {}
+                    } catch (ignore) {
+                        // ignore
+                    }
                 }
 
                 return SIZE;
             }
         };
 
-            const cssPath = path.join(__dirname, './alwaysontop.css');
-            const jsPath = path.join(__dirname, './alwaysontop.js');
+        const cssPath = path.join(__dirname, './alwaysontop.css');
+        const jsPath = path.join(__dirname, './alwaysontop.js');
 
-            // Add the markup for the JS to manipulate and load the CSS.
-            this._alwaysOnTopWindow.document.body.innerHTML = `
-              <div id="react"></div>
-              <video autoplay="" id="video" style="transform: none;" muted></video>
-              <div class="dismiss"></div>
-              <link rel="stylesheet" href="file://${ cssPath }">
-            `;
+        // Add the markup for the JS to manipulate and load the CSS.
+        this._alwaysOnTopWindow.document.body.innerHTML = `
+            <div id="react"></div>
+            <video autoplay="" id="video" style="transform: none;" muted></video>
+            <div class="dismiss"></div>
+            <link rel="stylesheet" href="file://${ cssPath }">
+        `;
 
-            // JS must be loaded through a script tag, as setting it through
-            // inner HTML maybe not trigger script load.
-            const scriptTag
-                = this._alwaysOnTopWindow.document.createElement('script');
+        // JS must be loaded through a script tag, as setting it through
+        // inner HTML maybe not trigger script load.
+        const scriptTag
+            = this._alwaysOnTopWindow.document.createElement('script');
 
-            scriptTag.setAttribute('src', `file://${ jsPath }`);
-            this._alwaysOnTopWindow.document.head.appendChild(scriptTag);
+        scriptTag.setAttribute('src', `file://${ jsPath }`);
+        this._alwaysOnTopWindow.document.head.appendChild(scriptTag);
     }
 
     /**
@@ -380,6 +386,7 @@ class AlwaysOnTop extends EventEmitter {
         // cross-origin redirect can cause any set global variables to be blown
         // away.
         this._alwaysOnTopWindow = window.open('', 'AlwaysOnTop');
+        this._isHidden = false;
     }
 
     /**
@@ -397,7 +404,9 @@ class AlwaysOnTop extends EventEmitter {
                     x: position[0],
                     y: position[1]
                 };
-            } catch (ignore) {}
+            } catch (ignore) {
+                // ignore
+            }
         }
 
         if (this._alwaysOnTopWindow) {
@@ -405,6 +414,7 @@ class AlwaysOnTop extends EventEmitter {
             // window.closed is not reliable due to Electron quirkiness
             if(exists(this._alwaysOnTopBrowserWindow)) {
                 this._alwaysOnTopWindow.close();
+                this._isHidden = true;
             }
 
             ipcRenderer.removeListener('jitsi-always-on-top', this._onMessageReceived);
@@ -426,9 +436,13 @@ class AlwaysOnTop extends EventEmitter {
      */
     _showAlwaysOnTopWindow() {
         if (exists(this._alwaysOnTopBrowserWindow)) {
+            this._isHidden = false;
+            this._updateLargeVideoSrc();
             try {
                 this._alwaysOnTopBrowserWindow.showInactive();
-            } catch (ignore) {}
+            } catch (ignore) {
+                // ignore
+            }
         }
     }
 
@@ -442,7 +456,12 @@ class AlwaysOnTop extends EventEmitter {
             this.emit(ALWAYSONTOP_WILL_CLOSE);
             try {
                 this._alwaysOnTopBrowserWindow.hide();
-            } catch (ignore) {}
+                this._isHidden = true;
+                this._alwaysOnTopWindowVideo.style.display = 'none';
+                this._alwaysOnTopWindowVideo.srcObject = null;
+            } catch (ignore) {
+                // ignore
+            }
         }
     }
 
@@ -453,7 +472,7 @@ class AlwaysOnTop extends EventEmitter {
      * @returns {void}
      */
     _updateLargeVideoSrc() {
-        if (!this._alwaysOnTopWindowVideo) {
+        if (this._isHidden || !this._alwaysOnTopWindowVideo) {
             return;
         }
 
