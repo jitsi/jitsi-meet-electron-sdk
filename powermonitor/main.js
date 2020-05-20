@@ -19,7 +19,9 @@ function _attachEvents(jitsiMeetWindow) {
     browserWindow = jitsiMeetWindow;
     Object.values(POWER_MONITOR_EVENTS).forEach(event => {
         electron.powerMonitor.on(event, () => {
-            jitsiMeetWindow.webContents.send(POWER_MONITOR_EVENTS_CHANNEL, { event });
+            if (!browserWindow || !browserWindow.isDestroyed()) {
+                browserWindow.webContents.send(POWER_MONITOR_EVENTS_CHANNEL, { event });
+            }
         });
     });
 }
