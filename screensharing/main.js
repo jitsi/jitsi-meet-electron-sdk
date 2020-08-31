@@ -3,7 +3,6 @@ const electron = require('electron');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, TRACKER_SIZE } = require('./constants');
 const { isMac } = require('./utils');
-const macScreenCapturePermissions = require('mac-screen-capture-permissions');
 
 /**
  * Main process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -121,7 +120,7 @@ class ScreenShareMainHook {
             hasPromptedForPermission,
             hasScreenCapturePermission,
             resetPermissions,
-        } = macScreenCapturePermissions;
+        } = require('mac-screen-capture-permissions');
 
         const hasPermission = hasScreenCapturePermission();
         const promptedAlready = hasPromptedForPermission();
