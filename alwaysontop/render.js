@@ -69,12 +69,15 @@ class AlwaysOnTop extends EventEmitter {
         this._onConferenceJoined = this._onConferenceJoined.bind(this);
         this._onConferenceLeft = this._onConferenceLeft.bind(this);
         this._onIntersection = this._onIntersection.bind(this);
+        this._onFocus = this._onFocus.bind(this);
+        this._onBlur = this._onBlur.bind(this);
         this._dismiss = this._dismiss.bind(this);
 
         this._api = api;
         this._jitsiMeetElectronWindow = remote.getCurrentWindow();
         this._intersectionObserver = new IntersectionObserver(this._onIntersection);
         this._isHidden = true;
+        this._isIntersecting = true;
 
         this.logInfo('constructor');
         if (!api) {
@@ -104,6 +107,25 @@ class AlwaysOnTop extends EventEmitter {
 
         this._sendPosition(this._position);
         this.logInfo('constructor end');
+    }
+
+    /**
+     * Event handler for window focus.
+     */
+    _onFocus() {
+        this.logInfo('_onFocus');
+        if (this._isIntersecting) {
+            this.logInfo('hide aot');
+            this._hideAlwaysOnTopWindow();
+        }
+    }
+
+    /**
+     * Event handler for window blur.
+     */
+    _onBlur() {
+        this.logInfo('_onBlur');
+        this._openAlwaysOnTopWindow();
     }
 
     /**
@@ -211,8 +233,9 @@ class AlwaysOnTop extends EventEmitter {
      */
     _onConferenceJoined() {
         this.logInfo('_onConferenceJoined');
-        this._jitsiMeetElectronWindow.on('blur', this._openAlwaysOnTopWindow);
-        this._jitsiMeetElectronWindow.on('focus', this._hideAlwaysOnTopWindow);
+        this._isIntersecting = true;
+        this._jitsiMeetElectronWindow.on('blur', this._onBlur);
+        this._jitsiMeetElectronWindow.on('focus', this._onFocus);
         this._jitsiMeetElectronWindow.on('close', this._closeAlwaysOnTopWindow);
         this._intersectionObserver.observe(this._api.getIFrame());
         this.logInfo('_onConferenceJoined end');
@@ -228,11 +251,11 @@ class AlwaysOnTop extends EventEmitter {
         this._intersectionObserver.unobserve(this._api.getIFrame());
         this._jitsiMeetElectronWindow.removeListener(
             'blur',
-            this._openAlwaysOnTopWindow
+            this._onBlur
         );
         this._jitsiMeetElectronWindow.removeListener(
             'focus',
-            this._hideAlwaysOnTopWindow
+            this._onFocus
         );
         this._jitsiMeetElectronWindow.removeListener(
             'close',
@@ -252,20 +275,16 @@ class AlwaysOnTop extends EventEmitter {
     _onIntersection(entries) {
         this.logInfo('_onIntersection');
         const singleEntry = entries.pop();
-        this._jitsiMeetElectronWindow.removeListener(
-            'focus',
-            this._hideAlwaysOnTopWindow
-        );
+        this._isIntersecting = singleEntry.isIntersecting;
 
         if (singleEntry.isIntersecting) {
+            this.logInfo('isIntersecting: true');
             this._hideAlwaysOnTopWindow();
-            this._jitsiMeetElectronWindow.on(
-                'focus',
-                this._hideAlwaysOnTopWindow
-            );
         } else {
+            this.logInfo('isIntersecting: false');
             this._openAlwaysOnTopWindow();
         }
+
         this.logInfo('_onIntersection end');
     }
 
