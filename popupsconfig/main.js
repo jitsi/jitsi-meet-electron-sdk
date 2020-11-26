@@ -1,7 +1,8 @@
 const electron = require('electron');
-const { BrowserWindow, ipcMain } = electron;
+const { BrowserWindow } = electron;
 const popupsConfigRegistry = require('./PopupsConfigRegistry');
 const { testMatchPatterns } = require('./functions');
+const { popupConfigs } = require('./constants');
 
 /**
  * Initializes the popup configuration module.
@@ -10,9 +11,7 @@ const { testMatchPatterns } = require('./functions');
  * rendered
  */
 function initPopupsConfiguration(jitsiMeetWindow) {
-    ipcMain.on('jitsi-popups-configuration', (event, configs = {}) => {
-        popupsConfigRegistry.registerPopupConfigs(configs);
-    });
+    popupsConfigRegistry.registerPopupConfigs(popupConfigs);
 
     // Configuration for the google auth popup.
     jitsiMeetWindow.webContents.on('new-window', (
@@ -28,9 +27,12 @@ function initPopupsConfiguration(jitsiMeetWindow) {
             event.newGuest = new BrowserWindow(Object.assign(options, {
                 titleBarStyle: undefined,
                 webPreferences: {
-                    contextIsolation: false,
+                    contextIsolation: true,
+                    enableBlinkFeatures: undefined,
+                    enableRemoteModule: false,
                     nodeIntegration: false,
-                    webviewTag: true
+                    preload: false,
+                    webSecurity: true
                 }
             }));
         }
@@ -44,8 +46,12 @@ function initPopupsConfiguration(jitsiMeetWindow) {
                 = event.newGuest = new BrowserWindow(Object.assign(options, {
                     titleBarStyle: undefined,
                     webPreferences: {
+                        contextIsolation: true,
+                        enableBlinkFeatures: undefined,
+                        enableRemoteModule: false,
                         nodeIntegration: false,
-                        webSecurity: false,
+                        preload: false,
+                        webSecurity: true,
                         sandbox: true
                     }
                 }));

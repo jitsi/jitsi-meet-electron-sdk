@@ -7,14 +7,6 @@ const { ipcRenderer, remote } = require('electron');
  * @param {JitsiMeetExternalAPI} api - The iframe api instance.
  */
 function initPopupsConfiguration(api) {
-    if (typeof api._getElectronPopupsConfig === 'function') {
-        api._getElectronPopupsConfig()
-            .then(configs => {
-                ipcRenderer.send('jitsi-popups-configuration', configs);
-            })
-            .catch(error => console.log(error));
-    }
-
     function _navigateListener(event, url, frameName, winId) {
         if (url.indexOf('/static/oauth.html#') !== -1) {
             const iframe = api.getIFrame();
