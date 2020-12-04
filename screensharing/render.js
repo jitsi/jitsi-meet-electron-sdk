@@ -1,7 +1,5 @@
-/* global process */
 
 const { ipcRenderer, desktopCapturer } = require('electron');
-const semver = require('semver');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS } = require('./constants');
 
@@ -55,21 +53,10 @@ class ScreenShareRenderHook {
              * 150px.
              */
             obtainDesktopStreams(callback, errorCallback, options = {}) {
-                if (semver.lt(process.versions.electron, '5.0.0')) {
-                    desktopCapturer.getSources(options, (error, sources) => {
-                        if (error) {
-                            errorCallback(error);
-                            return;
-                        }
-
-                        callback(sources);
-                    });
-                } else {
-                    desktopCapturer
-                        .getSources(options)
-                        .then((sources) => callback(sources))
-                        .catch((error) => errorCallback(error));
-                }
+                desktopCapturer
+                    .getSources(options)
+                    .then((sources) => callback(sources))
+                    .catch((error) => errorCallback(error));
             }
         };
     }
