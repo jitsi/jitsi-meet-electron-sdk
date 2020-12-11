@@ -113,7 +113,19 @@ class RemoteControl {
                 } else {
                     // On Mac OS the sourceId = 'screen' + displayId.
                     // Try to match displayId with sourceId.
-                    const displayId = Number(parsedSourceId);
+                    let displayId = Number(parsedSourceId);
+
+                    if (isNaN(displayId)) {
+                        // The source id may have the following format "desktop_id:0".
+
+                        const idArr = parsedSourceId.split(":");
+
+                        if (idArr.length <= 1) {
+                            return;
+                        }
+
+                        displayId = Number(idArr[0]);
+                    }
                     this._display
                         = displays.find(display => display.id === displayId);
                 }
