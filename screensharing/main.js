@@ -2,7 +2,6 @@
 const electron = require('electron');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, TRACKER_SIZE } = require('./constants');
-const { isMac } = require('./utils');
 
 /**
  * Main process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -18,14 +17,10 @@ class ScreenShareMainHook {
      * @param {string} identity - Name of the application doing screen sharing, will be displayed in the
      * screen sharing tracker window text i.e. {identity} is sharing your screen.
      */
-    constructor(jitsiMeetWindow, identity, osxBundleId) {
+    constructor(jitsiMeetWindow, identity) {
         this._jitsiMeetWindow = jitsiMeetWindow;
         this._identity = identity;
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
-
-        if (osxBundleId && isMac()) {
-            this._verifyScreenCapturePermissions(osxBundleId);
-        }
 
         // Listen for events coming in from the main render window and the screen share tracker window.
         electron.ipcMain.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
@@ -108,27 +103,6 @@ class ScreenShareMainHook {
         this._screenShareTracker
             .loadURL(`file://${__dirname}/screenSharingTracker.html?sharingIdentity=${this._identity}`);
     }
-
-    /**
-     * Verifies whether app has already asked for capture permissions.
-     * If it did but the user denied, resets permissions for the app
-     *
-     * @param {string} bundleId- OSX Application BundleId
-     */
-    _verifyScreenCapturePermissions(bundleId) {
-        const {
-            hasPromptedForPermission,
-            hasScreenCapturePermission,
-            resetPermissions,
-        } = require('mac-screen-capture-permissions');
-
-        const hasPermission = hasScreenCapturePermission();
-        const promptedAlready = hasPromptedForPermission();
-
-        if (promptedAlready && !hasPermission) {
-            resetPermissions({ bundleId });
-        }
-    }
 }
 
 /**
@@ -137,8 +111,7 @@ class ScreenShareMainHook {
  * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which displays Jitsi Meet
  * @param {string} identity - Name of the application doing screen sharing, will be displayed in the
  * screen sharing tracker window text i.e. {identity} is sharing your screen.
- * @param {string} bundleId- OSX Application BundleId
  */
-module.exports = function setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId) {
-    return new ScreenShareMainHook(jitsiMeetWindow, identity, osxBundleId);
+module.exports = function setupScreenSharingMain(jitsiMeetWindow, identity) {
+    return new ScreenShareMainHook(jitsiMeetWindow, identity);
 };
