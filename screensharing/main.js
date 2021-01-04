@@ -17,7 +17,7 @@ class ScreenShareMainHook {
      * @param {string} identity - Name of the application doing screen sharing, will be displayed in the
      * screen sharing tracker window text i.e. {identity} is sharing your screen.
      */
-    constructor(jitsiMeetWindow, identity, osxBundleId) {
+    constructor(jitsiMeetWindow, identity) {
         this._jitsiMeetWindow = jitsiMeetWindow;
         this._identity = identity;
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
@@ -111,8 +111,7 @@ class ScreenShareMainHook {
  * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which displays Jitsi Meet
  * @param {string} identity - Name of the application doing screen sharing, will be displayed in the
  * screen sharing tracker window text i.e. {identity} is sharing your screen.
- * @param {string} bundleId- OSX Application BundleId
  */
-module.exports = function setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId) {
-    return new ScreenShareMainHook(jitsiMeetWindow, identity, osxBundleId);
+module.exports = function setupScreenSharingMain(jitsiMeetWindow, identity) {
+    return new ScreenShareMainHook(jitsiMeetWindow, identity);
 };
