@@ -12,7 +12,7 @@
   "pre-commit": [
     "lint"
   ],
-  "repository": "https://www.github.com/jitsi/jitsi-meet-electron-utils",
+  "repository": "https://www.github.com/csett86/jitsi-meet-electron-utils",
   "keywords": [
     "jingle",
     "webrtc",
