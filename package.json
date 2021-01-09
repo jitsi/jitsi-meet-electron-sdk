@@ -26,7 +26,6 @@
   "license": "Apache-2.0",
   "gypfile": true,
   "dependencies": {
-    "mac-screen-capture-permissions": "^1.1.0",
     "nan": "^2.14.0",
     "postis": "^2.2.0",
     "prebuild-install": "^5.3.0",
@@ -40,5 +39,8 @@
     "node-abi": "^2.30.0",
     "prebuild": "^10.0.1",
     "precommit-hook": "3.0.0"
+  },
+  "optionalDependencies": {
+    "mac-screen-capture-permissions": "github:csett86/mac-screen-capture-permissions#v1.2.2"
   }
 }
