@@ -41,6 +41,6 @@
     "precommit-hook": "3.0.0"
   },
   "optionalDependencies": {
-    "mac-screen-capture-permissions": "github:csett86/mac-screen-capture-permissions#v1.2.2"
+    "mac-screen-capture-permissions": "github:csett86/mac-screen-capture-permissions#v1.2.3"
   }
 }
