@@ -19,6 +19,7 @@ jobs:
     - uses: actions/setup-node@v1
       with:
         node-version: 12.x
+    - run: npm install
     - run: npx prebuild -t 9.4.0 -t 10.2.0 -t 11.1.1 -r electron --arch x64 -u ${{ secrets.GITHUB_TOKEN }}
     - run: npx prebuild -t 9.4.0 -t 10.2.0 -t 11.1.1 -r electron --arch arm64 -u ${{ secrets.GITHUB_TOKEN }}
       if: startsWith(matrix.os, 'macos')
