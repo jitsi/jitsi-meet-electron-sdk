@@ -37,6 +37,7 @@
     "eslint": ">=3",
     "eslint-plugin-jsdoc": "*",
     "mocha": "^8.2.1",
+    "node-abi": "^2.19.3",
     "prebuild": "^9.1.1",
     "precommit-hook": "3.0.0"
   },
