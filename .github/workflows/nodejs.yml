@@ -22,9 +22,6 @@ jobs:
     - name: Install robotjs dependencies for ubuntu
       run: sudo apt install libxtst-dev libpng++-dev
       if: startsWith(matrix.os, 'ubuntu')
-    - name: Install windows build dependencies
-      run: npm install --global windows-build-tools
-      if: startsWith(matrix.os, 'windows')
     - run: npm install
     - run: npx prebuild -t 9.4.0 -t 10.2.0 -t 11.1.1 -r electron --arch x64 -u ${{ secrets.GITHUB_TOKEN }}
     - run: npx prebuild -t 11.1.1 -r electron --arch arm64 -u ${{ secrets.GITHUB_TOKEN }}
