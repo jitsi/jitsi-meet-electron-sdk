@@ -30,7 +30,6 @@
     "postis": "^2.2.0",
     "prebuild-install": "^6.0.0",
     "robotjs": "0.6.0",
-    "semver": "7.3.4",
     "jitsi-meet-logger": "github:jitsi/jitsi-meet-logger#v1.0.0"
   },
   "devDependencies": {

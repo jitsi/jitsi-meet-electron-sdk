@@ -77,6 +77,9 @@ function onAlwaysOnTopWindow(
             }, getPosition(), getSize())
         );
 
+        // Required to allow the window to be rendered on top of full screen apps
+        win.setAlwaysOnTop(true, 'screen-saver');
+
         //the renderer process tells the main process to close the BrowserWindow
         //this is needed when open and close AOT are called in quick succession on renderer process.
         ipcMain.once('jitsi-always-on-top-should-close', () => {
