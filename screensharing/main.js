@@ -90,7 +90,8 @@ class ScreenShareMainHook {
             frame: false,
             show: false,
             webPreferences: {
-                // TODO: these 2 should be removed.
+                // TODO: these 3 should be removed.
+                contextIsolation: false,
                 enableRemoteModule: true,
                 nodeIntegration: true
             }
