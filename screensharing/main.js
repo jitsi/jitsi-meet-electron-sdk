@@ -97,6 +97,9 @@ class ScreenShareMainHook {
             }
         });
 
+        // Avoid this window from being captured.
+        this._screenShareTracker.setContentProtection(true);
+
         this._screenShareTracker.on('closed', () => {
             this._screenShareTracker = undefined;
         });
