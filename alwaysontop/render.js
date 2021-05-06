@@ -6,7 +6,12 @@ const os = require('os');
 const path = require('path');
 const log = require('jitsi-meet-logger');
 
-const { ALWAYSONTOP_DISMISSED, ALWAYSONTOP_WILL_CLOSE, SIZE } = require('./constants');
+const {
+  ALWAYSONTOP_DISMISSED,
+  ALWAYSONTOP_DOUBLE_CLICK,
+  ALWAYSONTOP_WILL_CLOSE,
+  SIZE
+} = require('./constants');
 
 /**
  * The logger instance
@@ -369,6 +374,7 @@ class AlwaysOnTop extends EventEmitter {
                 this.logInfo('_setupAlwaysOnTopWindow: ondblclick');
                 this._hideAlwaysOnTopWindow();
                 this._jitsiMeetElectronWindow.show();
+                this.emit(ALWAYSONTOP_DOUBLE_CLICK);
                 this.logInfo('_setupAlwaysOnTopWindow: ondblclick end');
             },
             /**
