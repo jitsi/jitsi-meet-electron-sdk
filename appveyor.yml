@@ -29,7 +29,7 @@ build_script:
 test_script:
 - ps: >
     if ($env:publish_binary -eq "true") {
-      node_modules\\.bin\\prebuild --all -u $env:prebuild_upload
+      node_modules\\.bin\\prebuild -t 9.0.0 -t 10.0.0 -t 11.0.0 -t 12.0.0 -u $env:prebuild_upload
     }
     true;
 deploy: OFF
