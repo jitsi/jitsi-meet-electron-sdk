@@ -70,5 +70,5 @@ script:
 # if publishing, do it
 - >
   if [[ $PUBLISH_BINARY == true ]]; then
-    ./node_modules/.bin/prebuild --all -u $prebuild_upload;
+    ./node_modules/.bin/prebuild -t 9.0.0 -t 10.0.0 -t 11.0.0 -t 12.0.0 -r electron -u $prebuild_upload;
   fi;
