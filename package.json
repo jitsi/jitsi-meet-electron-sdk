@@ -1,13 +1,12 @@
 {
   "name": "jitsi-meet-electron-utils",
-  "version": "2.0.25",
+  "version": "3.0.0",
   "description": "Utilities for jitsi-meet-electron project",
   "main": "index.js",
   "scripts": {
     "lint": "eslint .",
     "test": "TESTING=true mocha",
-    "validate": "npm ls",
-    "install": "prebuild-install || node-gyp rebuild"
+    "validate": "npm ls"
   },
   "pre-commit": [
     "lint"
@@ -24,21 +23,15 @@
   "author": "",
   "readmeFilename": "README.md",
   "license": "Apache-2.0",
-  "gypfile": true,
   "dependencies": {
+    "jitsi-meet-logger": "github:jitsi/jitsi-meet-logger#v1.0.0",
     "mac-screen-capture-permissions": "^2.0.0",
-    "nan": "^2.14.0",
-    "postis": "^2.2.0",
-    "prebuild-install": "^6.0.0",
-    "robotjs": "0.6.0",
-    "jitsi-meet-logger": "github:jitsi/jitsi-meet-logger#v1.0.0"
+    "postis": "^2.2.0"
   },
   "devDependencies": {
     "eslint": ">=3",
     "eslint-plugin-jsdoc": "*",
     "mocha": "^8.2.1",
-    "node-abi": "^2.26.0",
-    "prebuild": "^10.0.1",
     "precommit-hook": "3.0.0"
   }
 }

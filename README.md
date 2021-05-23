@@ -3,34 +3,7 @@ Utilities for jitsi-meet-electron project.
 
 Supported Electron versions: >= 9.
 
-## Installation
-jitsi-meet-electron-utils contains native code for some utilities. You'll need [node-gyp](https://github.com/nodejs/node-gyp) to build it and also you'll need to rebuild the package for Electron. For more information see [Using Native Node Modules](https://github.com/electron/electron/blob/master/docs/tutorial/using-native-node-modules.md) and [electron-rebuild](https://github.com/electron/electron-rebuild).
-
-NOTE: For Linux install libxtst-dev and libpng++-dev (`sudo apt-get install libxtst-dev libpng++-dev`). This dependancies are related to RobotJS which is a dependency of jitsi-meet-electron-utils. You can see the build instructions for RobotJS [here](https://github.com/jitsi/robotjs/tree/jitsi#building)
-
 ## Usage
-#### Remote Control
-
-**Requirements**:
-The remote control utility requires iframe HTML Element that will load Jitsi Meet.
-
-**Enable the remote control:**
-```Javascript
-const {
-    RemoteControl
-} = require("jitsi-meet-electron-utils");
-
-// iframe - the Jitsi Meet iframe
-const remoteControl = new RemoteControl(iframe);
-```
-
-To disable the remote control:
-```Javascript
-remoteControl.dispose();
-```
-
-NOTE: `dispose` method will be called automatically when the Jitsi Meet iframe unload.
-
 #### Screen Sharing
 
 **Requirements**:
