@@ -130,17 +130,16 @@ class ScreenShareMainHook {
      * @param {string} bundleId- OSX Application BundleId
      */
     _verifyScreenCapturePermissions(bundleId) {
-        const {
-            hasPromptedForPermission,
-            hasScreenCapturePermission,
-            resetPermissions,
-        } = require('mac-screen-capture-permissions');
+        const hasPermission = electron.systemPreferences.getMediaAccessStatus('screen') === 'granted';
+        if (!hasPermission) {
+            exec('tccutil reset ScreenCapture ' + bundleId, (err, out) => {
+                if (err) {
+                    console.warn('screen capture permissions could not be reset: ' + err);
+                    return;
+                }
 
-        const hasPermission = hasScreenCapturePermission();
-        const promptedAlready = hasPromptedForPermission();
-
-        if (promptedAlready && !hasPermission) {
-            resetPermissions({ bundleId });
+                console.log(out);
+            });
         }
     }
 }
