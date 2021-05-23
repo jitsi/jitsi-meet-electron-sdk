@@ -1,6 +1,5 @@
 const os = require('os');
 const electron = require('electron');
-const robot = require('robotjs');
 const { BrowserWindow, ipcMain } = electron;
 const { SIZE } = require('./constants');
 const log = require('jitsi-meet-logger');
@@ -247,7 +246,7 @@ function setAspectRatioToResizeableWindow(win, aspectRatio) {
     } else {
         win.on('will-resize', (e, newBounds) => {
             oldSize = win.getSize();
-            const mousePos = robot.getMousePos();
+            const mousePos = electron.screen.getCursorScreenPoint();
             const windowBottomRightPos = {
                 x: newBounds.x + newBounds.width - 16,
                 y: newBounds.y + newBounds.height - 16,
