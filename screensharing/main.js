@@ -133,14 +133,7 @@ class ScreenShareMainHook {
     _verifyScreenCapturePermissions(bundleId) {
         const hasPermission = electron.systemPreferences.getMediaAccessStatus('screen') === 'granted';
         if (!hasPermission) {
-            exec('tccutil reset ScreenCapture ' + bundleId, (err, out) => {
-                if (err) {
-                    console.warn('screen capture permissions could not be reset: ' + err);
-                    return;
-                }
-
-                console.log(out);
-            });
+            exec('tccutil reset ScreenCapture ' + bundleId);
         }
     }
 }
