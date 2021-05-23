@@ -30,7 +30,7 @@
   "devDependencies": {
     "eslint": ">=6",
     "eslint-plugin-jsdoc": "*",
-    "mocha": "^8.2.1",
+    "mocha": "^8.4.0",
     "precommit-hook": "3.0.0"
   },
   "optionalDependencies": {
