@@ -1,6 +1,6 @@
 const os = require('os');
 const electron = require('electron');
-const robot = require("robotjs");
+const robot = require('robotjs');
 const { BrowserWindow, ipcMain } = electron;
 const { SIZE } = require('./constants');
 const log = require('jitsi-meet-logger');
@@ -80,13 +80,18 @@ function onAlwaysOnTopWindow(
         // Required to allow the window to be rendered on top of full screen apps
         win.setAlwaysOnTop(true, 'screen-saver');
 
-        // Avoid this window from being captured.
-        win.setContentProtection(true);
+        // Once this bug is fixed on Electron side we'll re-enable this for Windows 10 Version 2004 or newer:
+        // https://github.com/electron/electron/issues/29085
+        if (os.platform() !== 'win32') {
+            logInfo('setContentProtection');
+            // Avoid this window from being captured.
+            win.setContentProtection(true);
+        }
 
         //the renderer process tells the main process to close the BrowserWindow
         //this is needed when open and close AOT are called in quick succession on renderer process.
         ipcMain.once('jitsi-always-on-top-should-close', () => {
-            logInfo("jitsi-always-on-top-should-close");
+            logInfo('jitsi-always-on-top-should-close');
             if (win && !win.isDestroyed()) {
                 logInfo('jitsi-always-on-top-should-close: closing window');
                 win.close();

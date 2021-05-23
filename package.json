@@ -26,7 +26,7 @@
   "license": "Apache-2.0",
   "gypfile": true,
   "dependencies": {
-    "mac-screen-capture-permissions": "github:saghul/mac-screen-capture-permissions#14568eba35b0eebcf2b1b5c40d2c35fec3d88e89",
+    "mac-screen-capture-permissions": "^2.0.0",
     "nan": "^2.14.0",
     "postis": "^2.2.0",
     "prebuild-install": "^6.0.0",
@@ -37,7 +37,7 @@
     "eslint": ">=3",
     "eslint-plugin-jsdoc": "*",
     "mocha": "^8.2.1",
-    "node-abi": "^2.21.0",
+    "node-abi": "^2.26.0",
     "prebuild": "^10.0.1",
     "precommit-hook": "3.0.0"
   }

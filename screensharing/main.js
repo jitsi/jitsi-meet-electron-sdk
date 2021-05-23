@@ -1,8 +1,10 @@
 /* global __dirname */
 const electron = require('electron');
+const os = require('os');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, TRACKER_SIZE } = require('./constants');
 const { isMac } = require('./utils');
+const { windowsEnableScreenProtection } = require('../helpers/functions');
 
 /**
  * Main process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -97,8 +99,14 @@ class ScreenShareMainHook {
             }
         });
 
-        // Avoid this window from being captured.
-        this._screenShareTracker.setContentProtection(true);
+        // for Windows OS, only enable protection for builds higher or equal to Windows 10 Version 2004
+        // which have the flag WDA_EXCLUDEFROMCAPTURE(which makes the window completely invisible on capture)
+        // For older Windows versions, we leave the window completely visible, including content, on capture,
+        // otherwise we'll have a black content window on share.
+        if (os.platform() !== 'win32' || windowsEnableScreenProtection(os.release())) {
+            // Avoid this window from being captured.
+            this._screenShareTracker.setContentProtection(true);
+        }
 
         this._screenShareTracker.on('closed', () => {
             this._screenShareTracker = undefined;

@@ -24,20 +24,18 @@ html:hover .dismiss {
 
 .dismiss {
     align-items: center;
-    background-color: rgba(40, 52, 71, 0.7);
-    border-radius: 50%;
+    background-color: #474747;
+    border-radius: 6px;
     color: white;
     cursor: pointer;
     display: flex;
     font-size: 20px;
-    height: 25px;
+    height: 32px;
     justify-content: center;
-    opacity: 0;
     position: absolute;
     right: 8px;
-    top: 16px;
-    transition: opacity .25s linear;
-    width: 25px;
+    top: 8px;
+    width: 32px;
 }
 
 .dismiss:after, .dismiss:before {
@@ -46,7 +44,7 @@ html:hover .dismiss {
     height: 2px;
     background-color: white;
     position: absolute;
-    width: calc(100% - 12px);
+    width: calc(100% - 15px);
 }
 
 .dismiss:after {
