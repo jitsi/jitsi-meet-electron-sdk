@@ -28,8 +28,8 @@
     "postis": "^2.2.0"
   },
   "devDependencies": {
-    "eslint": ">=3",
-  "eslint-plugin-jsdoc": "*",
+    "eslint": ">=6",
+    "eslint-plugin-jsdoc": "*",
     "mocha": "^8.2.1",
     "precommit-hook": "3.0.0"
   },
