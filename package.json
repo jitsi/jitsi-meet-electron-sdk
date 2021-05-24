@@ -28,7 +28,7 @@
     "postis": "^2.2.0"
   },
   "devDependencies": {
-    "eslint": ">=6",
+    "eslint": ">=7",
     "eslint-plugin-jsdoc": "*",
     "mocha": "^8.4.0",
     "precommit-hook": "3.0.0"
