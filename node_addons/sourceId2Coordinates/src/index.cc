@@ -33,4 +33,4 @@ NAN_MODULE_INIT(Init)
 	);
 }
 
-NODE_MODULE(sourceId2CoordinatesModule, Init)
+NAN_MODULE_WORKER_ENABLED(sourceId2CoordinatesModule, Init)
