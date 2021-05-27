@@ -23,12 +23,10 @@ class ScreenShareRenderHook {
         this._sendCloseTrackerEvent = this._sendCloseTrackerEvent.bind(this);
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
         this._onIframeApiLoad = this._onIframeApiLoad.bind(this);
-        this._cleanContext = this._cleanContext.bind(this);
+        this._cleanTrackerContext = this._cleanTrackerContext.bind(this);
+        this._onApiDispose = this._onApiDispose.bind(this);
 
-        ipcRenderer.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
-        this._api.on('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
-        this._api.on('videoConferenceLeft', this._cleanContext);
-        this._api.on('_willDispose', this._cleanContext);
+        this._api.on('_willDispose', this._onApiDispose);
         this._iframe.addEventListener('load', this._onIframeApiLoad);
     }
 
@@ -59,6 +57,10 @@ class ScreenShareRenderHook {
                     .catch((error) => errorCallback(error));
             }
         };
+
+        ipcRenderer.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+        this._api.on('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
+        this._api.on('videoConferenceLeft', this._cleanTrackerContext);
     }
 
     /**
@@ -121,18 +123,31 @@ class ScreenShareRenderHook {
     }
 
     /**
-     * Clear all event handler in order to avoid any potential leaks and close the screen sharing tracker
-     * window in the event that it's currently being displayed.
+     * Clear all event handlers related to the tracker in order to avoid any potential leaks and closes it in the event
+     * that it's currently being displayed.
      *
      * @returns {void}
      */
-    _cleanContext() {
+    _cleanTrackerContext() {
         ipcRenderer.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
         this._api.removeListener('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
-        this._api.removeListener('videoConferenceLeft', this._sendCloseTrackerEvent);
-        this._api.removeListener('_willDispose', this._sendCloseTrackerEvent);
-        this._iframe.removeEventListener('load', this._onIframeApiLoad);
+        this._api.removeListener('videoConferenceLeft', this._cleanTrackerContext);
         this._sendCloseTrackerEvent();
+    }
+
+    /**
+     * Clear all event handlers in order to avoid any potential leaks.
+     *
+     * NOTE: It is very important to remove the load listener only when we are sure that the iframe won't be used
+     * anymore. Otherwise if we use the videoConferenceLeft event for example, when the iframe is internally reloaded
+     * because of an error and then loads again we won't initialize the screen sharing functionality.
+     *
+     * @returns {void}
+     */
+    _onApiDispose() {
+        this._cleanTrackerContext();
+        this._api.removeListener('_willDispose', this._onApiDispose);
+        this._iframe.removeEventListener('load', this._onIframeApiLoad);
     }
 }
 
