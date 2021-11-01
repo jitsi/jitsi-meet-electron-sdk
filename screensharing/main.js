@@ -56,6 +56,11 @@ class ScreenShareMainHook {
                     this._screenShareTracker = undefined;
                 }
                 break;
+            case SCREEN_SHARE_EVENTS.HIDE_TRACKER:
+                if (this._screenShareTracker) {
+                    this._screenShareTracker.minimize();
+                }
+                break;
             case SCREEN_SHARE_EVENTS.STOP_SCREEN_SHARE:
                 this._jitsiMeetWindow.webContents.send(SCREEN_SHARE_EVENTS_CHANNEL, { data });
                 break;
