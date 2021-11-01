@@ -5,6 +5,7 @@ const os = require('os');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, TRACKER_SIZE } = require('./constants');
 const { isMac } = require('./utils');
+const { windowsEnableScreenProtection } = require('../helpers/functions');
 
 /**
  * Main process component that sets up electron specific screen sharing functionality, like screen sharing
