@@ -1,7 +1,7 @@
 # jitsi-meet-electron-utils
 Utilities for jitsi-meet-electron project.
 
-Supported Electron versions: >= 9.
+Supported Electron versions: >= 11.
 
 ## Installation
 jitsi-meet-electron-utils contains native code for some utilities. You'll need [node-gyp](https://github.com/nodejs/node-gyp) to build it and also you'll need to rebuild the package for Electron. For more information see [Using Native Node Modules](https://github.com/electron/electron/blob/master/docs/tutorial/using-native-node-modules.md) and [electron-rebuild](https://github.com/electron/electron-rebuild).

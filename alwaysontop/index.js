@@ -1,5 +1,5 @@
-const setupAlwaysOnTopRender = require('./render.js');
-const setupAlwaysOnTopMain = require('./main.js');
+const setupAlwaysOnTopRender = require('./render');
+const setupAlwaysOnTopMain = require('./main');
 const { popupsConfigRegistry } = require('../popupsconfig');
 
 popupsConfigRegistry.registerPopupConfig('always-on-top', {
