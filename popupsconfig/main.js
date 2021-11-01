@@ -55,9 +55,21 @@ function initPopupsConfiguration(jitsiMeetWindow) {
                         sandbox: true
                     }
                 }));
+
+            const closeHandler = () => {
+                if (win) {
+                    win.close();
+                }
+            };
+
+            electron.ipcMain.on('jitsi-popups-close', closeHandler);
+            win.on('close', () => {
+                electron.ipcMain.removeListener('jitsi-popups-close', closeHandler);
+            });
+
             win.webContents.on('did-navigate', (event, url) => {
                 jitsiMeetWindow.webContents.send(
-                    'jitsi-popups-navigate', url, frameName, win.id);
+                    'jitsi-popups-navigate', url, frameName);
             });
         }
     });
