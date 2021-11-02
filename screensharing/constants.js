@@ -18,6 +18,7 @@ const TRACKER_SIZE = {
 const SCREEN_SHARE_EVENTS = {
     OPEN_TRACKER: 'open-tracker-window' ,
     CLOSE_TRACKER: 'close-tracker-window',
+    HIDE_TRACKER: 'hide-tracker-window',
     STOP_SCREEN_SHARE: 'stop-screen-share'
 };
 
