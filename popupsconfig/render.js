@@ -1,4 +1,4 @@
-const { ipcRenderer, remote } = require('electron');
+const { ipcRenderer } = require('electron');
 
 
 /**
@@ -7,7 +7,7 @@ const { ipcRenderer, remote } = require('electron');
  * @param {JitsiMeetExternalAPI} api - The iframe api instance.
  */
 function initPopupsConfiguration(api) {
-    function _navigateListener(event, url, frameName, winId) {
+    function _navigateListener(event, url, frameName) {
         if (url.indexOf('/static/oauth.html#') !== -1) {
             const iframe = api.getIFrame();
 
@@ -24,10 +24,7 @@ function initPopupsConfiguration(api) {
                 && typeof iframeWindow.JitsiMeetJS.app.oauthCallbacks[frameName]
                     !== 'undefined') {
                 iframeWindow.JitsiMeetJS.app.oauthCallbacks[frameName](url);
-                const popup = remote.BrowserWindow.fromId(winId);
-                if(popup) {
-                    popup.close();
-                }
+                ipcRenderer.send('jitsi-popups-close');
             }
         }
     }
