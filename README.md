@@ -15,6 +15,9 @@ NOTE: For Linux install libxtst-dev and libpng++-dev (`sudo apt-get install libx
 The remote control utility requires iframe HTML Element that will load Jitsi Meet.
 
 **Enable the remote control:**
+
+In the **render** electron process of the window where Jitsi Meet is displayed:
+
 ```Javascript
 const {
     RemoteControl
@@ -30,6 +33,17 @@ remoteControl.dispose();
 ```
 
 NOTE: `dispose` method will be called automatically when the Jitsi Meet iframe unload.
+
+In the **main** electron process:
+
+```Javascript
+const {
+    RemoteControlMain
+} = require("jitsi-meet-electron-utils");
+
+// jitsiMeetWindow - The BrowserWindow instance of the window where Jitsi Meet is loaded.
+const remoteControl = new RemoteControlMain(mainWindow);
+```
 
 #### Screen Sharing
 
