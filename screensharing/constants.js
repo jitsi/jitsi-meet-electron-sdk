@@ -9,7 +9,7 @@ const SCREEN_SHARE_EVENTS_CHANNEL = 'jitsi-screen-sharing-marker';
  */
 const TRACKER_SIZE = {
     height: 40,
-    width: 530.
+    width: 530
 };
 
 /**
