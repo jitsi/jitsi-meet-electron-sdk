@@ -1,36 +1,28 @@
-#include <node.h>
-#include <nan.h>
-#include <v8.h>
-#include <stdio.h>
+#include <napi.h>
 #include "sourceId2Coordinates.h"
 
-using namespace v8;
-
-NAN_METHOD(sourceId2Coordinates)
+Napi::Value sourceId2CoordinatesWrapper(const Napi::CallbackInfo& info)
 {
-	const int sourceID =  Nan::To<int32_t>(info[0]).FromJust();
-	Local<Object> obj = Nan::New<Object>();
+	Napi::Env env = info.Env();
+	const int sourceID =  info[0].As<Napi::Number>().Int32Value();
+	Napi::Object obj = Napi::Object::New(env);
 	Point coordinates;
 	if(!sourceId2Coordinates(sourceID, &coordinates))
 	{ // return undefined if sourceId2Coordinates function fail.
-		info.GetReturnValue().Set(Nan::Undefined());
+		return env.Undefined();
 	}
 	else
 	{ // return the coordinates if sourceId2Coordinates function succeed.
-		Nan::Set(obj, Nan::New("x").ToLocalChecked(), Nan::New(coordinates.x));
-		Nan::Set(obj, Nan::New("y").ToLocalChecked(), Nan::New(coordinates.y));
-		info.GetReturnValue().Set(obj);
+		obj.Set(Napi::String::New(env, "x"), Napi::Number::New(env, coordinates.x));
+		obj.Set(Napi::String::New(env, "y"), Napi::Number::New(env, coordinates.y));
+		return obj;
 	}
 }
 
-NAN_MODULE_INIT(Init)
-{
-	Nan::Set(
-		target,
-		Nan::New("sourceId2Coordinates").ToLocalChecked(),
-		Nan::GetFunction(Nan::New<FunctionTemplate>(sourceId2Coordinates))
-			.ToLocalChecked()
-	);
+Napi::Object Init(Napi::Env env, Napi::Object exports) {
+	exports.Set(Napi::String::New(env, "sourceId2Coordinates"), Napi::Function::New(env, sourceId2CoordinatesWrapper));
+
+	return exports;
 }
 
-NAN_MODULE_WORKER_ENABLED(sourceId2CoordinatesModule, Init)
+NODE_API_MODULE(sourceId2CoordinatesModule, Init)

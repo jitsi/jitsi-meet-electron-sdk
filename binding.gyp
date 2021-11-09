@@ -1,16 +1,17 @@
 {
     'targets': [{
         'target_name': 'sourceId2Coordinates',
+        'cflags!': [ '-fno-exceptions' ],
+        'cflags_cc!': [ '-fno-exceptions' ],
+        'xcode_settings': { 'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+          'CLANG_CXX_LIBRARY': 'libc++',
+          'MACOSX_DEPLOYMENT_TARGET': '10.7',
+        },
+        'msvs_settings': {
+          'VCCLCompilerTool': { 'ExceptionHandling': 1 },
+        },
         'include_dirs': [
-            "<!(node -e \"require('nan')\")"
-        ],
-
-        'cflags': [
-            '-Wall',
-            '-Wparentheses',
-            '-Winline',
-            '-Wbad-function-cast',
-            '-Wdisabled-optimization'
+          '<!(node -p "require(\'node-addon-api\').include_dir")',
         ],
 
         'conditions': [
@@ -24,8 +25,4 @@
             'node_addons/sourceId2Coordinates/src/sourceId2Coordinates.cc'
         ]
     }],
-
-    'variables': {
-        'build_v8_with_gn': 0
-    },
 }
