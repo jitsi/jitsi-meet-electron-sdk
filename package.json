@@ -1,5 +1,5 @@
 {
-  "name": "jitsi-meet-electron-utils",
+  "name": "@jitsi/electron-sdk",
   "version": "3.0.0",
   "description": "Utilities for jitsi-meet-electron project",
   "main": "index.js",

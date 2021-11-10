@@ -1,12 +1,13 @@
-# jitsi-meet-electron-utils
-Utilities for jitsi-meet-electron project.
+# Jitsi Meet Electron SDK
+
+SDK for integrating Jitsi Meet into Electron applications.
 
 Supported Electron versions: >= 11.
 
 ## Installation
-jitsi-meet-electron-utils contains native code for some utilities. You'll need [node-gyp](https://github.com/nodejs/node-gyp) to build it and also you'll need to rebuild the package for Electron. For more information see [Using Native Node Modules](https://github.com/electron/electron/blob/master/docs/tutorial/using-native-node-modules.md) and [electron-rebuild](https://github.com/electron/electron-rebuild).
+This package contains native code for some utilities. You'll need [node-gyp](https://github.com/nodejs/node-gyp) to build it and also you'll need to rebuild the package for Electron. For more information see [Using Native Node Modules](https://github.com/electron/electron/blob/master/docs/tutorial/using-native-node-modules.md) and [electron-rebuild](https://github.com/electron/electron-rebuild).
 
-NOTE: For Linux install libxtst-dev and libpng++-dev (`sudo apt-get install libxtst-dev libpng++-dev`). This dependancies are related to RobotJS which is a dependency of jitsi-meet-electron-utils. You can see the build instructions for RobotJS [here](https://github.com/jitsi/robotjs/tree/jitsi#building)
+NOTE: For Linux install libxtst-dev and libpng++-dev (`sudo apt-get install libxtst-dev libpng++-dev`). This dependencies are related to RobotJS which is a dependency of this package. You can see the build instructions for RobotJS [here](https://github.com/jitsi/robotjs/tree/jitsi#building)
 
 ## Usage
 #### Remote Control
@@ -21,7 +22,7 @@ In the **render** electron process of the window where Jitsi Meet is displayed:
 ```Javascript
 const {
     RemoteControl
-} = require("jitsi-meet-electron-utils");
+} = require("@jitsi/electron-sdk");
 
 // iframe - the Jitsi Meet iframe
 const remoteControl = new RemoteControl(iframe);
@@ -39,7 +40,7 @@ In the **main** electron process:
 ```Javascript
 const {
     RemoteControlMain
-} = require("jitsi-meet-electron-utils");
+} = require("@jitsi/electron-sdk");
 
 // jitsiMeetWindow - The BrowserWindow instance of the window where Jitsi Meet is loaded.
 const remoteControl = new RemoteControlMain(mainWindow);
@@ -57,7 +58,7 @@ In the **render** electron process of the window where Jitsi Meet is displayed:
 ```Javascript
 const {
     setupScreenSharingRender
-} = require("jitsi-meet-electron-utils");
+} = require("@jitsi/electron-sdk");
 
 // api - The Jitsi Meet iframe api object.
 setupScreenSharingRender(api);
@@ -67,7 +68,7 @@ In the **main** electron process:
 ```Javascript
 const {
     setupScreenSharingMain
-} = require("jitsi-meet-electron-utils");
+} = require("@jitsi/electron-sdk");
 
 // jitsiMeetWindow - The BrowserWindow instance of the window where Jitsi Meet is loaded.
 // appName - Application name which will be displayed inside the content sharing tracking window
@@ -91,7 +92,7 @@ In the **main** electron process:
 ```Javascript
 const {
     setupAlwaysOnTopMain
-} = require("jitsi-meet-electron-utils");
+} = require("@jitsi/electron-sdk");
 
 // jitsiMeetWindow - The BrowserWindow instance
 // of the window where Jitsi Meet is loaded.
@@ -102,7 +103,7 @@ In the **render** electron process of the window where Jitsi Meet is displayed:
 ```Javascript
 const {
     setupAlwaysOnTopRender
-} = require("jitsi-meet-electron-utils");
+} = require("@jitsi/electron-sdk");
 
 const api = new JitsiMeetExternalAPI(...);
 const alwaysOnTop = setupAlwaysOnTopRender(api);
@@ -125,7 +126,7 @@ In the **render** electron process of the window where Jitsi Meet is displayed:
 ```Javascript
 const {
     setupWiFiStats
-} = require("jitsi-meet-electron-utils");
+} = require("@jitsi/electron-sdk");
 
 const api = new JitsiMeetExternalAPI(...);
 setupWiFiStats(api.getIFrame());
@@ -139,7 +140,7 @@ In the **main** electron process:
 ```Javascript
 const {
     setupPowerMonitorMain
-} = require("jitsi-meet-electron-utils");
+} = require("@jitsi/electron-sdk");
 
 // jitsiMeetWindow - The BrowserWindow instance
 // of the window where Jitsi Meet is loaded.
@@ -150,7 +151,7 @@ In the **render** electron process of the window where Jitsi Meet is displayed:
 ```Javascript
 const {
     setupPowerMonitorRender
-} = require("jitsi-meet-electron-utils");
+} = require("@jitsi/electron-sdk");
 
 const api = new JitsiMeetExternalAPI(...);
 setupPowerMonitorRender(api);
