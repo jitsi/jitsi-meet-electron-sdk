@@ -1,7 +1,7 @@
 const { ipcRenderer } = require('electron');
 const os = require('os');
 const postis = require("postis");
-const robot = require("robotjs");
+const robot = require("@jitsi/robotjs");
 const constants = require("./constants");
 const {
     EVENTS,
