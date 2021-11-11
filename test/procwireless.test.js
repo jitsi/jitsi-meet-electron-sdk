@@ -1,5 +1,5 @@
-const procwireless = require('./../wifistats/procwireless');
-const assert = require('assert');
+import { _parseProcWirelessResults, _parseIPAddressResults } from './../wifistats/procwireless';
+import { equal, deepEqual } from 'assert';
 
 const exampleProcWirelessResult =
 `Inter-| sta-|   Quality        |   Discarded packets               | Missed | WE
@@ -18,20 +18,20 @@ const exampleIPAddressResult =
 describe('procwireless', () => {
     describe('_parseProcWirelessResults', () => {
         it('returns an object with signal values', () => {
-            const result = procwireless._parseProcWirelessResults(exampleProcWirelessResult);
+            const result = _parseProcWirelessResults(exampleProcWirelessResult);
 
-            assert.equal(-256, result.noise);
-            assert.equal(-60, result.rssi);
-            assert.equal(50, result.signal);
-            assert.equal('wlp6s0', result.interface);
+            equal(-256, result.noise);
+            equal(-60, result.rssi);
+            equal(50, result.signal);
+            equal('wlp6s0', result.interface);
         });
     });
     describe('_parseIPAddressResults', () => {
         it('returns an object with addresses values', () => {
             const result
-                = procwireless._parseIPAddressResults(exampleIPAddressResult);
+                = _parseIPAddressResults(exampleIPAddressResult);
 
-            assert.deepEqual([
+            deepEqual([
                     '157.60.14.11',
                     '2001:db8:21da:7:713e:a426:d167:37ab'],
                 result);

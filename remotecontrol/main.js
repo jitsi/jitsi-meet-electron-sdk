@@ -1,8 +1,5 @@
-const { 
-    app,
-    ipcMain
-} = require('electron');
-const sourceId2Coordinates = require("../node_addons/sourceId2Coordinates");
+import { app, ipcMain } from 'electron';
+import sourceId2Coordinates from '../node_addons/sourceId2Coordinates';
 
 /**
  * Module to run on main process to get display dimensions for remote control.
@@ -99,4 +96,4 @@ class RemoteControlMain {
     }
 }
 
-module.exports = RemoteControlMain;
+export default RemoteControlMain;

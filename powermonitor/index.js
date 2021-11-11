@@ -1,7 +1,7 @@
-const setupPowerMonitorMain = require('./main');
-const setupPowerMonitorRender = require('./render');
+import setupPowerMonitorMain from './main';
+import setupPowerMonitorRender from './render';
 
-module.exports = {
+export default {
     setupPowerMonitorRender,
     setupPowerMonitorMain
 };

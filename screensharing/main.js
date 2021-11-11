@@ -1,11 +1,10 @@
 /* global __dirname */
-const { exec } = require('child_process');
-const electron = require('electron');
-const os = require('os');
+import { exec } from 'child_process';
+import { ipcMain, screen, BrowserWindow, systemPreferences } from 'electron';
+import { platform, release } from 'os';
 
-const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, TRACKER_SIZE } = require('./constants');
-const { isMac } = require('./utils');
-const { windowsEnableScreenProtection } = require('../helpers/functions');
+import { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, TRACKER_SIZE } from './constants';
+import { windowsEnableScreenProtection } from '../helpers/functions';
 
 /**
  * Main process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -26,16 +25,16 @@ class ScreenShareMainHook {
         this._identity = identity;
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
 
-        if (osxBundleId && isMac()) {
+        if (osxBundleId && platform() === 'darwin') {
             this._verifyScreenCapturePermissions(osxBundleId);
         }
 
         // Listen for events coming in from the main render window and the screen share tracker window.
-        electron.ipcMain.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+        ipcMain.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
 
         // Clean up ipcMain handlers to avoid leaks.
         this._jitsiMeetWindow.on('closed', () => {
-            electron.ipcMain.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+            ipcMain.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
         });
     }
 
@@ -81,8 +80,8 @@ class ScreenShareMainHook {
         }
 
         // Display always on top screen sharing tracker window in the center bottom of the screen.
-        let display = electron.screen.getPrimaryDisplay();
-        this._screenShareTracker = new electron.BrowserWindow({
+        let display = screen.getPrimaryDisplay();
+        this._screenShareTracker = new BrowserWindow({
             height: TRACKER_SIZE.height,
             width: TRACKER_SIZE.width,
             x: (display.workArea.width - TRACKER_SIZE.width) / 2,
@@ -109,7 +108,7 @@ class ScreenShareMainHook {
         // which have the flag WDA_EXCLUDEFROMCAPTURE(which makes the window completely invisible on capture)
         // For older Windows versions, we leave the window completely visible, including content, on capture,
         // otherwise we'll have a black content window on share.
-        if (os.platform() !== 'win32' || windowsEnableScreenProtection(os.release())) {
+        if (platform() !== 'win32' || windowsEnableScreenProtection(release())) {
             // Avoid this window from being captured.
             this._screenShareTracker.setContentProtection(true);
         }
@@ -136,7 +135,7 @@ class ScreenShareMainHook {
      * @param {string} bundleId- OSX Application BundleId
      */
     _verifyScreenCapturePermissions(bundleId) {
-        const hasPermission = electron.systemPreferences.getMediaAccessStatus('screen') === 'granted';
+        const hasPermission = systemPreferences.getMediaAccessStatus('screen') === 'granted';
         if (!hasPermission) {
             exec('tccutil reset ScreenCapture ' + bundleId);
         }
@@ -151,6 +150,6 @@ class ScreenShareMainHook {
  * screen sharing tracker window text i.e. {identity} is sharing your screen.
  * @param {string} bundleId- OSX Application BundleId
  */
-module.exports = function setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId) {
+export default function setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId) {
     return new ScreenShareMainHook(jitsiMeetWindow, identity, osxBundleId);
-};
+}

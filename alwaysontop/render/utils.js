@@ -1,13 +1,13 @@
-const log = require('jitsi-meet-logger');
+import { getLogger } from 'jitsi-meet-logger';
 
 let logger;
 
 const setLogger = loggerTransports => {
-    logger = log.getLogger('AOT', loggerTransports || []);
+    logger = getLogger('AOT', loggerTransports || []);
 };
 
 /**
- * Wrapper over the loger's info
+ * Wrapper over the logger's info
  *
  * @param {string} info - The info text
  */
@@ -32,7 +32,7 @@ const logError = err => {
     logger.error({ err }, '[RENDERER ERROR]');
 };
 
-module.exports = {
+export default {
     logError,
     logInfo,
     setLogger

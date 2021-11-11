@@ -1,4 +1,4 @@
-const popupsConfigRegistry = require('./PopupsConfigRegistry');
+import { getAllConfigs } from './PopupsConfigRegistry';
 
 /**
  * Finds a config object from the popup config registry that will match the
@@ -10,7 +10,7 @@ const popupsConfigRegistry = require('./PopupsConfigRegistry');
  * or undefined if no config object has been found.
  */
 function _findConfig(url, frameName) {
-    return popupsConfigRegistry.getAllConfigs().find(({ matchPatterns }) =>
+    return getAllConfigs().find(({ matchPatterns }) =>
         testMatchPatterns(url, frameName, matchPatterns));
 }
 
@@ -59,7 +59,7 @@ function getPopupTarget(url, frameName) {
     return config.target;
 }
 
-module.exports = {
+export default {
     getPopupTarget,
     testMatchPatterns
 };

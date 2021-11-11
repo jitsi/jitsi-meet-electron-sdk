@@ -1,6 +1,4 @@
-const sourceId2Coordinates
-    = require("../../build/Release/sourceId2Coordinates.node")
-        .sourceId2Coordinates;
+import { sourceId2Coordinates } from '../../build/Release/sourceId2Coordinates.node';
 
 /**
  * Returns the coordinates of a desktop using the passed desktop sharing source
@@ -11,7 +9,7 @@ const sourceId2Coordinates
  * top left corner of the desktop. Currently works only for windows. Returns
  * undefined for Mac OS, Linux.
  */
-module.exports = function(sourceId) {
+export default function(sourceId) {
     if(typeof sourceId !== "string" || sourceId === '') {
         return undefined;
     }
@@ -23,4 +21,4 @@ module.exports = function(sourceId) {
         return sourceId2Coordinates(id);
     }
     return undefined;
-};
+}

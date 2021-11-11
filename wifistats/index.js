@@ -1,10 +1,10 @@
 /* global process */
-const exec          = require('child_process').exec;
+import { exec } from 'child_process';
 
 // The tools
-const airport       = require('./airport');
-const procwireless  = require('./procwireless');
-const netsh         = require('./netsh');
+import airport from './airport';
+import procwireless from './procwireless';
+import netsh from './netsh';
 
 let toolInstance;
 let supportWifiStats = true;
@@ -90,6 +90,6 @@ function setupWiFiStats(iframe) {
     });
 }
 
-module.exports = {
-    setupWiFiStats: setupWiFiStats
+export default {
+    setupWiFiStats
 };

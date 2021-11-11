@@ -1,5 +1,5 @@
 /* global process */
-const exec = require('child_process').exec;
+import { exec } from 'child_process';
 
 const systemRoot = process.env.SystemRoot || 'C:\\Windows';
 const cmdLine    = systemRoot + '\\System32\\netsh.exe wlan show interfaces';
@@ -147,4 +147,4 @@ if (process.env.TESTING) {
     netsh._parseIPConfigResults = _parseIPConfigResults;
 }
 
-module.exports = netsh;
+export default netsh;

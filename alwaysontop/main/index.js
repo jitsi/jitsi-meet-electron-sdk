@@ -1,9 +1,8 @@
-const electron = require('electron');
-const os = require('os');
-const { BrowserWindow, ipcMain } = electron;
+import { BrowserWindow, ipcMain } from 'electron';
+import { platform } from 'os';
 
-const { EVENTS, STATES, AOT_WINDOW_NAME } = require('../constants');
-const {
+import { EVENTS, STATES, AOT_WINDOW_NAME } from '../constants';
+import {
     getPosition,
     getSize,
     logError,
@@ -13,8 +12,8 @@ const {
     setAspectRatioToResizeableWindow,
     setLogger,
     windowExists
-} = require('./utils');
-const aotConfig = require('./config');
+} from './utils';
+import aotConfig from './config';
 
 /**
  * The main window instance
@@ -55,7 +54,7 @@ const openAotWindow = (event, options) => {
 
     // Once this bug is fixed on Electron side we'll re-enable this for Windows 10 Version 2004 or newer:
     // https://github.com/electron/electron/issues/29085
-    if (os.platform() !== 'win32') {
+    if (platform() !== 'win32') {
         // Avoid this window from being captured.
         aotWindow.setContentProtection(true);
     }
@@ -226,7 +225,7 @@ const onMove = (event, { x, y }) => {
  * @param {Logger} loggerTransports - external loggers
  * displays Jitsi Meet
  */
- module.exports = (jitsiMeetWindow, loggerTransports) => {
+ export default (jitsiMeetWindow, loggerTransports) => {
     setLogger(loggerTransports);
 
     mainWindow = jitsiMeetWindow;

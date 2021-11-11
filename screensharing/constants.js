@@ -22,9 +22,8 @@ const SCREEN_SHARE_EVENTS = {
     STOP_SCREEN_SHARE: 'stop-screen-share'
 };
 
-module.exports = {
+export default {
     SCREEN_SHARE_EVENTS_CHANNEL,
     SCREEN_SHARE_EVENTS,
     TRACKER_SIZE
 };
-

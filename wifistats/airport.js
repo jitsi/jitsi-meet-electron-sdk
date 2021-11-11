@@ -1,5 +1,5 @@
 /* global process */
-const exec = require('child_process').exec;
+import { exec } from 'child_process';
 
 const cmdLine = '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I';
 const cmdExtractWifiAddresses = 'DEVICE_OUT=`networksetup -listallhardwareports | grep -C1 Wi-Fi| grep Device` && DEVICE_OUT=${DEVICE_OUT/Device: /} && ifconfig $DEVICE_OUT';
@@ -119,4 +119,4 @@ if (process.env.TESTING) {
     airport._parseNetworkSetupResults = _parseNetworkSetupResults;
 }
 
-module.exports = airport;
+export default airport;

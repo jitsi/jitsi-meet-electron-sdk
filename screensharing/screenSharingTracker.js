@@ -1,13 +1,13 @@
-const { ipcRenderer } = require('electron');
-const querystring = require('querystring');
+import { ipcRenderer } from 'electron';
+import { parse } from 'querystring';
 
-const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS } = require('./constants');
+import { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS } from './constants';
 
 const screenShareStop = document.getElementById("screen-share-marker-stop");
 const screenShareMinimize = document.getElementById("screen-share-marker-minimize");
 const sharingIdentity = document.getElementById("sharing-identity");
 
-sharingIdentity.innerHTML = querystring.parse(global.location.search)['?sharingIdentity'];
+sharingIdentity.innerHTML = parse(global.location.search)['?sharingIdentity'];
 
 /**
  * Minimize the window.
@@ -31,4 +31,3 @@ screenShareStop.addEventListener("click", function() {
         }
     });
 });
-
