@@ -34,7 +34,7 @@ jobs:
       if: github.event_name == 'release' && github.event.action == 'published' && startsWith(matrix.os, 'windows')
       run: npx prebuild --all -r napi --arch ia32 -u ${{ secrets.PUBLISH_TOKEN }}
     - name: Release to npm
-      if: github.event_name == 'release' && github.event.action == 'published'
+      if: github.event_name == 'release' && github.event.action == 'published' && startsWith(matrix.os, 'macos')
       run: npm publish --access public
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
