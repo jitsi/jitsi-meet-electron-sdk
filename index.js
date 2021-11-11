@@ -1,19 +1,16 @@
-const { RemoteControl, RemoteControlMain } = require('./remotecontrol');
-const { setupScreenSharingRender, setupScreenSharingMain } = require('./screensharing');
-const {
-    setupAlwaysOnTopRender,
-    setupAlwaysOnTopMain
-} = require('./alwaysontop');
-const { getWiFiStats, setupWiFiStats } = require('./wifistats');
-const { setupPowerMonitorRender, setupPowerMonitorMain } = require('./powermonitor');
-const {
+import { RemoteControl, RemoteControlMain } from './remotecontrol';
+import { setupScreenSharingRender, setupScreenSharingMain } from './screensharing';
+import { setupAlwaysOnTopRender, setupAlwaysOnTopMain } from './alwaysontop';
+import { getWiFiStats, setupWiFiStats } from './wifistats';
+import { setupPowerMonitorRender, setupPowerMonitorMain } from './powermonitor';
+import {
     popupsConfigRegistry,
     initPopupsConfigurationMain,
     initPopupsConfigurationRender,
     getPopupTarget
-} = require('./popupsconfig');
+} from './popupsconfig';
 
-module.exports = {
+export default {
     getWiFiStats,
     RemoteControl,
     RemoteControlMain,

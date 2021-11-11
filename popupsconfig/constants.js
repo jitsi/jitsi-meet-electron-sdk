@@ -13,6 +13,6 @@ const popupConfigs = {
     }
 };
 
-module.exports = {
+export default {
     popupConfigs
 };

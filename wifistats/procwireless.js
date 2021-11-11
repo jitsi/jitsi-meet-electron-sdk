@@ -1,5 +1,5 @@
 /* global process */
-const exec = require('child_process').exec;
+import { exec } from 'child_process';
 
 const cmdLine = 'cat /proc/net/wireless';
 
@@ -147,4 +147,4 @@ if (process.env.TESTING) {
     procWireless._parseIPAddressResults = _parseIPAddressResults;
 }
 
-module.exports = procWireless;
+export default procWireless;

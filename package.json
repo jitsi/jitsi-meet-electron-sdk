@@ -2,6 +2,7 @@
   "name": "@jitsi/electron-sdk",
   "version": "3.0.0",
   "description": "Utilities for jitsi-meet-electron project",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "lint": "eslint .",

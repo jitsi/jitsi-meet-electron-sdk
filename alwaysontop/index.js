@@ -1,6 +1,6 @@
-const setupAlwaysOnTopRender = require('./render');
-const setupAlwaysOnTopMain = require('./main');
-const { popupsConfigRegistry } = require('../popupsconfig');
+import setupAlwaysOnTopRender from './render';
+import setupAlwaysOnTopMain from './main';
+import { popupsConfigRegistry } from '../popupsconfig';
 
 popupsConfigRegistry.registerPopupConfig('always-on-top', {
     matchPatterns: {
@@ -9,7 +9,7 @@ popupsConfigRegistry.registerPopupConfig('always-on-top', {
     target: 'electron'
 });
 
-module.exports = {
+export default {
     setupAlwaysOnTopRender,
     setupAlwaysOnTopMain
 };

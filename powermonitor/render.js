@@ -1,12 +1,11 @@
-const electron = require('electron');
-const postis = require('postis');
-const { ipcRenderer } = electron;
+import { ipcRenderer } from 'electron';
+import postis from 'postis';
 
-const {
+import {
     POWER_MONITOR_EVENTS_CHANNEL,
     POWER_MONITOR_MESSAGE_NAME,
     POWER_MONITOR_QUERIES_CHANNEL
-} = require('./constants');
+} from './constants';
 
 /**
  * The channel we use to communicate with Jitsi Meet window.
@@ -75,7 +74,7 @@ function dispose() {
  *
  * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
  */
-module.exports = function setupPowerMonitorRender(api) {
+export default function setupPowerMonitorRender(api) {
     const iframe = api.getIFrame();
 
     iframe.addEventListener('load', () => {
@@ -99,4 +98,4 @@ module.exports = function setupPowerMonitorRender(api) {
             });
         });
     });
-};
+}

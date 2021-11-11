@@ -1,5 +1,5 @@
-const netsh = require('./../wifistats/netsh');
-const assert = require('assert');
+import { _parseNetshResults, _parseIPConfigResults } from './../wifistats/netsh';
+import { equal, deepEqual } from 'assert';
 
 const exampleNetshResult =
 `    Name                   : Wi-Fi
@@ -63,27 +63,27 @@ const exampleIPAddressResult2 =
 describe('netsh', () => {
     describe('_parseNetshResults', () => {
         it('returns an object with signal values', () => {
-            const result = netsh._parseNetshResults(exampleNetshResult);
+            const result = _parseNetshResults(exampleNetshResult);
 
-            assert.equal(80, result.signal);
-            assert.equal('Wi-Fi', result.interface);
+            equal(80, result.signal);
+            equal('Wi-Fi', result.interface);
         });
     });
     describe('_parseIPAddressResults', () => {
         it('returns an object with addresses values for example 1', () => {
             const result
-                = netsh._parseIPConfigResults(exampleIPAddressResult1, 'Wi-Fi');
+                = _parseIPConfigResults(exampleIPAddressResult1, 'Wi-Fi');
 
-            assert.deepEqual([
+            deepEqual([
                     '2001:db8:21da:7:713e:a426:d167:37ab',
                     '157.60.14.11'],
                 result);
         });
         it('returns an object with addresses values for example 2', () => {
             const result
-                = netsh._parseIPConfigResults(exampleIPAddressResult2, 'Wi-Fi');
+                = _parseIPConfigResults(exampleIPAddressResult2, 'Wi-Fi');
 
-            assert.deepEqual([
+            deepEqual([
                     '2001:db8:21da:7:713e:a426:d167:37ab',
                     '157.60.14.11'],
                 result);

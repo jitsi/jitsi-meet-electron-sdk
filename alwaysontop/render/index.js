@@ -1,12 +1,12 @@
 /* global __dirname */
 
-const { EventEmitter } = require('events');
-const { ipcRenderer } = require('electron');
-const os = require('os');
-const path = require('path');
-const { logInfo, setLogger } = require('../main/utils');
+import { EventEmitter } from 'events';
+import { ipcRenderer } from 'electron';
+import { type } from 'os';
+import { join } from 'path';
+import { logInfo, setLogger } from '../main/utils';
 
-const { EVENTS, STATES, AOT_WINDOW_NAME, EXTERNAL_EVENTS } = require('../constants');
+import { EVENTS, STATES, AOT_WINDOW_NAME, EXTERNAL_EVENTS } from '../constants';
 
 /**
  * Sends an update state event to main process
@@ -144,11 +144,11 @@ class AlwaysOnTop extends EventEmitter {
              * (-webkit-app-region: drag) all mouse events are blocked. To fix
              * this we'll implement drag ourselves.
              */
-            shouldImplementDrag: os.type() !== 'Darwin'
+            shouldImplementDrag: type() !== 'Darwin'
         };
 
-        const cssPath = path.join(__dirname, './alwaysontop.css');
-        const jsPath = path.join(__dirname, './alwaysontop.js');
+        const cssPath = join(__dirname, './alwaysontop.css');
+        const jsPath = join(__dirname, './alwaysontop.js');
 
         // Add the markup for the JS to manipulate and load the CSS.
         this._aotWindow.document.body.innerHTML = `
@@ -241,7 +241,7 @@ class AlwaysOnTop extends EventEmitter {
 * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
 * @param {Logger} loggerTransports - external loggers
 */
-module.exports = (api, loggerTransports) => {
+export default (api, loggerTransports) => {
     setLogger(loggerTransports);
 
     return new AlwaysOnTop(api, loggerTransports);

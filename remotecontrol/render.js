@@ -1,16 +1,22 @@
-const { ipcRenderer } = require('electron');
-const os = require('os');
-const postis = require("postis");
-const robot = require("@jitsi/robotjs");
-const constants = require("./constants");
-const {
+import { ipcRenderer } from 'electron';
+import { type as _type } from 'os';
+import postis from 'postis';
+import {
+    dragMouse,
+    moveMouse,
+    mouseToggle,
+    mouseClick,
+    scrollMouse,
+    keyToggle
+}from '@jitsi/robotjs';
+import {
     EVENTS,
     KEY_ACTIONS_FROM_EVENT_TYPE,
     MOUSE_ACTIONS_FROM_EVENT_TYPE,
     MOUSE_BUTTONS,
     REMOTE_CONTROL_MESSAGE_NAME,
     REQUESTS
-} = constants;
+} from './constants';
 
 /**
  * Parses the remote control events and executes them via robotjs.
@@ -55,7 +61,7 @@ class RemoteControl {
      * @returns {number} The scale factor.
      */
     _getDisplayScaleFactor() {
-        return os.type() === 'Darwin' ? 1 : this._display.scaleFactor || 1;
+        return _type() === 'Darwin' ? 1 : this._display.scaleFactor || 1;
     }
 
     /**
@@ -153,9 +159,9 @@ class RemoteControl {
                 const destX = data.x * width * scaleFactor + x;
                 const destY = data.y * height * scaleFactor + y;
                 if(this._mouseButtonStatus === "down") {
-                    robot.dragMouse(destX, destY);
+                    dragMouse(destX, destY);
                 } else {
-                    robot.moveMouse(destX, destY);
+                    moveMouse(destX, destY);
                 }
                 break;
             }
@@ -163,14 +169,14 @@ class RemoteControl {
             case EVENTS.mouseup: {
                 this._mouseButtonStatus
                     = MOUSE_ACTIONS_FROM_EVENT_TYPE[data.type];
-                robot.mouseToggle(
+                mouseToggle(
                     this._mouseButtonStatus,
                     (data.button
                             ? MOUSE_BUTTONS[data.button] : undefined));
                 break;
             }
             case EVENTS.mousedblclick: {
-                robot.mouseClick(
+                mouseClick(
                     (data.button
                         ? MOUSE_BUTTONS[data.button] : undefined),
                     true);
@@ -179,13 +185,13 @@ class RemoteControl {
             case EVENTS.mousescroll:{
                 const { x, y } = data;
                 if(x !== 0 || y !== 0) {
-                    robot.scrollMouse(x, y);
+                    scrollMouse(x, y);
                 }
                 break;
             }
             case EVENTS.keydown:
             case EVENTS.keyup: {
-                robot.keyToggle(
+                keyToggle(
                     data.key,
                     KEY_ACTIONS_FROM_EVENT_TYPE[data.type],
                     data.modifiers);
@@ -230,4 +236,4 @@ class RemoteControl {
     }
 }
 
-module.exports = RemoteControl;
+export default RemoteControl;

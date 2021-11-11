@@ -1,5 +1,5 @@
-const airport = require('./../wifistats/airport');
-const assert = require('assert');
+import { _parseAirportResults, _parseNetworkSetupResults } from './../wifistats/airport';
+import { equal, deepEqual } from 'assert';
 
 const exampleAirportResult = `
      agrCtlRSSI: -64
@@ -30,20 +30,20 @@ en0: flags=8863<UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST> mtu 1500
 describe('airport', () => {
     describe('_parseAirportResults', () => {
         it('returns an object with signal values', () => {
-            const result = airport._parseAirportResults(exampleAirportResult);
+            const result = _parseAirportResults(exampleAirportResult);
 
-            assert.equal(-92, result.noise);
-            assert.equal(-64, result.rssi);
-            assert.equal(28, result.signal);
+            equal(-92, result.noise);
+            equal(-64, result.rssi);
+            equal(28, result.signal);
         });
     });
     describe('_parseNetworkSetupResults', () => {
         it('returns an object with addresses values', () => {
             const result
-                = airport._parseNetworkSetupResults(exampleNetworkSetupResult);
+                = _parseNetworkSetupResults(exampleNetworkSetupResult);
 
-            assert.equal('en0', result.interface);
-            assert.deepEqual([
+            equal('en0', result.interface);
+            deepEqual([
                     '2001:db8:21da:7:713e:a426:d167:37ab',
                     '157.60.14.11'],
                 result.addresses);

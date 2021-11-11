@@ -1,20 +1,18 @@
-const { SIZE } = require("../constants");
+import { SIZE } from '../constants';
 
-module.exports = {
-    backgroundColor: 'transparent',
-    minWidth: SIZE.width,
-    minHeight: SIZE.height,
-    minimizable: false,
-    maximizable: false,
-    resizable: true,
-    alwaysOnTop: true,
-    fullscreen: false,
-    fullscreenable: false,
-    skipTaskbar: true,
-    titleBarStyle: undefined,
-    frame: false,
-    show: false,
-    webPreferences: {
-        contextIsolation: false
-    }
+export const backgroundColor = 'transparent';
+export const minWidth = SIZE.width;
+export const minHeight = SIZE.height;
+export const minimizable = false;
+export const maximizable = false;
+export const resizable = true;
+export const alwaysOnTop = true;
+export const fullscreen = false;
+export const fullscreenable = false;
+export const skipTaskbar = true;
+export const titleBarStyle = undefined;
+export const frame = false;
+export const show = false;
+export const webPreferences = {
+    contextIsolation: false
 };

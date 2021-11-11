@@ -1,5 +1,4 @@
-const { ipcRenderer } = require('electron');
-
+import { ipcRenderer } from 'electron';
 
 /**
  * Initializes the popup configuration module.
@@ -35,4 +34,4 @@ function initPopupsConfiguration(api) {
     });
 }
 
-module.exports = initPopupsConfiguration;
+export default initPopupsConfiguration;

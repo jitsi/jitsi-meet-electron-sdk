@@ -49,4 +49,4 @@ class PopupsConfigRegistry {
     }
 }
 
-module.exports = new PopupsConfigRegistry();
+export default new PopupsConfigRegistry();

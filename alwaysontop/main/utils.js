@@ -1,8 +1,8 @@
-const Store = require('electron-store');
-const electron = require('electron');
-const os = require('os');
-const log = require('jitsi-meet-logger');
-const { SIZE, ASPECT_RATIO, STORAGE } = require('../constants');
+import Store from 'electron-store';
+import { screen } from 'electron';
+import { type, platform } from 'os';
+import { getLogger } from 'jitsi-meet-logger';
+import { SIZE, ASPECT_RATIO, STORAGE } from '../constants';
 
 /**
  * Stores the current size of the AOT during the conference
@@ -34,7 +34,7 @@ const store = new Store();
  */
  const setAspectRatioToResizeableWindow = (win, aspectRatio = ASPECT_RATIO) => {
     //for macOS we use the built-in setAspectRatio on resize, for other we use custom implementation
-    if (os.type() === 'Darwin') {
+    if (type() === 'Darwin') {
         win.setAspectRatio(aspectRatio);
         win.on('resize', () => {
             const [ width, height ] = win.getSize();
@@ -44,7 +44,7 @@ const store = new Store();
     } else {
         win.on('will-resize', (e, newBounds) => {
             oldSize = win.getSize();
-            const mousePos = electron.screen.getCursorScreenPoint();
+            const mousePos = screen.getCursorScreenPoint();
             const windowBottomRightPos = {
                 x: newBounds.x + newBounds.width - 16,
                 y: newBounds.y + newBounds.height - 16,
@@ -119,7 +119,7 @@ const positionWindowWithinScreenBoundaries = (windowRectangle, screenRectangle) 
 };
 
 const setLogger = loggerTransports => {
-    logger = log.getLogger('AOT', loggerTransports || []);
+    logger = getLogger('AOT', loggerTransports || []);
 };
 
 /**
@@ -156,7 +156,7 @@ const logError = err => {
  * @returns {{x: number, y: number}}
  */
 const getPosition = () => {
-    const Screen = electron.screen;
+    const Screen = screen;
     const position = {
         x: store.get(STORAGE.AOT_X),
         y: store.get(STORAGE.AOT_Y)
@@ -166,7 +166,7 @@ const getPosition = () => {
         // Position the window within the screen boundaries. This is needed
         // only for windows. On Mac and Linux it is working as expected without
         // changing the coordinates.
-        if (os.platform() === 'win32') {
+        if (platform() === 'win32') {
             const windowRectangle = Object.assign({}, position, size);
             const matchingScreen = Screen.getDisplayMatching(windowRectangle);
             if (matchingScreen) {
@@ -232,7 +232,7 @@ const windowExists = browserWindow => {
     return browserWindow && !browserWindow.isDestroyed();
 };
 
-module.exports = {
+export default {
     getPosition,
     getSize,
     logError,
