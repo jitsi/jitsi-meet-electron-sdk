@@ -19,6 +19,7 @@ jobs:
     - uses: actions/setup-node@v2
       with:
         node-version: '16'
+        registry-url: 'https://registry.npmjs.org'
     - name: Install dependencies
       if: startsWith(matrix.os, 'ubuntu')
       run: sudo apt-get install libxtst-dev libpng++-dev
@@ -32,3 +33,8 @@ jobs:
     - name: Release prebuilt artifacts (win ia32)
       if: github.event_name == 'release' && github.event.action == 'published' && startsWith(matrix.os, 'windows')
       run: npx prebuild --all -r napi --arch ia32 -u ${{ secrets.PUBLISH_TOKEN }}
+    - name: Release to npm
+      if: github.event_name == 'release' && github.event.action == 'published'
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
