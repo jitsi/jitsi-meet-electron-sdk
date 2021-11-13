@@ -7,7 +7,7 @@
     "lint": "eslint .",
     "test": "TESTING=true mocha",
     "validate": "npm ls",
-    "install": "prebuild-install || node-gyp rebuild"
+    "install": "prebuild-install --runtime napi || node-gyp rebuild"
   },
   "pre-commit": [
     "lint"
@@ -31,12 +31,12 @@
     ]
   },
   "dependencies": {
+    "@jitsi/robotjs": "^0.6.5",
     "electron-store": "^8.0.1",
     "jitsi-meet-logger": "github:jitsi/jitsi-meet-logger#v1.0.0",
     "node-addon-api": "^4.2.0",
     "postis": "^2.2.0",
-    "prebuild-install": "^5.3.0",
-    "@jitsi/robotjs": "^0.6.5"
+    "prebuild-install": "^7.0.0"
   },
   "devDependencies": {
     "eslint": ">=3",
