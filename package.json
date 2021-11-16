@@ -31,7 +31,7 @@
     ]
   },
   "dependencies": {
-    "@jitsi/robotjs": "^0.6.5",
+    "@jitsi/robotjs": "^0.6.7",
     "electron-store": "^8.0.1",
     "jitsi-meet-logger": "github:jitsi/jitsi-meet-logger#v1.0.0",
     "node-addon-api": "^4.2.0",
