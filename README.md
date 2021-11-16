@@ -166,3 +166,13 @@ app.commandLine.appendSwitch('disable-site-isolation-trials')
 ## Example
 
 For examples of installation and usage checkout the [Jitsi Meet Electron](https://github.com/jitsi/jitsi-meet-electron) project.
+
+## Publishing
+
+1. Create release branch: `git checkout -b release-1-2-3`, replacing 1-2-3 with the desired release version
+2. Increment the version: `npm version patch`, replacing `patch` with `minor` or `major` as required
+3. Push to github: `git push`
+4. Create PR: `gh pr create`
+5. Once PR is merged, create and publish Github release: `gh release create v1.2.3`, replacing v1.2.3 with the desired release version
+6. Github action will prebuild binaries and attach to the published release
+7. Github action will publish release to npm
