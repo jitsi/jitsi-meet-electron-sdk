@@ -5,9 +5,12 @@ SDK for integrating Jitsi Meet into Electron applications.
 Supported Electron versions: >= 11.
 
 ## Installation
-This package contains native code for some utilities. You'll need [node-gyp](https://github.com/nodejs/node-gyp) to build it and also you'll need to rebuild the package for Electron. For more information see [Using Native Node Modules](https://github.com/electron/electron/blob/master/docs/tutorial/using-native-node-modules.md) and [electron-rebuild](https://github.com/electron/electron-rebuild).
 
-NOTE: For Linux install libxtst-dev and libpng++-dev (`sudo apt-get install libxtst-dev libpng++-dev`). This dependencies are related to RobotJS which is a dependency of this package. You can see the build instructions for RobotJS [here](https://github.com/jitsi/robotjs/tree/jitsi#building)
+Install from npm:
+
+    npm install @jitsi/electron-sdk
+
+Note: This package contains native code for the remote control module. Binary prebuilds are downloaded during install for Windows x64 and ia32, Linux x64 and Mac x64 and arm64.
 
 ## Usage
 #### Remote Control
@@ -166,6 +169,12 @@ app.commandLine.appendSwitch('disable-site-isolation-trials')
 ## Example
 
 For examples of installation and usage checkout the [Jitsi Meet Electron](https://github.com/jitsi/jitsi-meet-electron) project.
+
+## Development
+
+To rebuild the native code, use:
+
+    npx node-gyp rebuild
 
 ## Publishing
 
