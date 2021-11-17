@@ -1,4 +1,4 @@
-const log = require('jitsi-meet-logger');
+const log = require('@jitsi/logger');
 
 let logger;
 
