@@ -1,7 +1,7 @@
 const Store = require('electron-store');
 const electron = require('electron');
 const os = require('os');
-const log = require('jitsi-meet-logger');
+const log = require('@jitsi/logger');
 const { SIZE, ASPECT_RATIO, STORAGE } = require('../constants');
 
 /**
