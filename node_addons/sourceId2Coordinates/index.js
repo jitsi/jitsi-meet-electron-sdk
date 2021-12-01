@@ -1,6 +1,5 @@
-const sourceId2Coordinates
-    = require("../../build/Release/sourceId2Coordinates.node")
-        .sourceId2Coordinates;
+// eslint-disable-next-line no-undef
+const sourceId2Coordinates = require('node-gyp-build')(__dirname + '/../../').sourceId2Coordinates;
 
 /**
  * Returns the coordinates of a desktop using the passed desktop sharing source

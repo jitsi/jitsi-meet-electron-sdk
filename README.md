@@ -183,5 +183,4 @@ To rebuild the native code, use:
 3. Push to github: `git push`
 4. Create PR: `gh pr create`
 5. Once PR is merged, create and publish Github release: `gh release create v1.2.3`, replacing v1.2.3 with the desired release version
-6. Github action will prebuild binaries and attach to the published release
-7. Github action will publish release to npm
+7. Github action will prebuildify and publish release to npm
