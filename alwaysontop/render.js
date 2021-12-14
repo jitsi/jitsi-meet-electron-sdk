@@ -278,7 +278,7 @@ class AlwaysOnTop extends EventEmitter {
         );
         this._sendResetSize();
         this._closeAlwaysOnTopWindow();
-        this._isJoined= false;
+        this._isJoined = false;
         this.logInfo('_onConferenceLeft end');
     }
 
