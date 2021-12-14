@@ -83,6 +83,7 @@ class AlwaysOnTop extends EventEmitter {
         this._intersectionObserver = new IntersectionObserver(this._onIntersection);
         this._isHidden = true;
         this._isIntersecting = true;
+        this._isJoined = false;
 
         this.logInfo('constructor');
         if (!api) {
@@ -238,6 +239,11 @@ class AlwaysOnTop extends EventEmitter {
      */
     _onConferenceJoined() {
         this.logInfo('_onConferenceJoined');
+        if (this._isJoined) {
+            this.logInfo('already joined');
+            return;
+        }
+        this._isJoined = true;
         this._isIntersecting = true;
         this._jitsiMeetElectronWindow.on('blur', this._onBlur);
         this._jitsiMeetElectronWindow.on('focus', this._onFocus);
@@ -253,6 +259,10 @@ class AlwaysOnTop extends EventEmitter {
      */
     _onConferenceLeft() {
         this.logInfo('_onConferenceLeft');
+        if (!this._isJoined) {
+            this.logInfo('already left');
+            return;
+        }
         this._intersectionObserver.unobserve(this._api.getIFrame());
         this._jitsiMeetElectronWindow.removeListener(
             'blur',
@@ -268,6 +278,7 @@ class AlwaysOnTop extends EventEmitter {
         );
         this._sendResetSize();
         this._closeAlwaysOnTopWindow();
+        this._isJoined= false;
         this.logInfo('_onConferenceLeft end');
     }
 
