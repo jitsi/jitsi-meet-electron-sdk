@@ -44,6 +44,7 @@ class AlwaysOnTop extends EventEmitter {
         this._onStateChange = this._onStateChange.bind(this);
         this._switchToMainWindow = this._switchToMainWindow.bind(this);
         this._updateLargeVideoSrc = this._updateLargeVideoSrc.bind(this);
+        this._alreadyJoined = false;
 
         this._api.on('_willDispose', this._closeWindow);
         this._api.on('videoConferenceJoined', this._onConferenceJoined);
@@ -72,6 +73,11 @@ class AlwaysOnTop extends EventEmitter {
     }
 
     _onConferenceJoined() {
+        if (this._alreadyJoined) {
+            return;
+        }
+
+        this._alreadyJoined = true;
         ipcRenderer.on(EVENTS.UPDATE_STATE, this._onStateChange);
 
         sendStateUpdate(STATES.CONFERENCE_JOINED);
@@ -208,6 +214,8 @@ class AlwaysOnTop extends EventEmitter {
             this._aotWindow.close();
             this._aotWindow = null;
         }
+
+        this._alreadyJoined = false;
     }
 
     /**
