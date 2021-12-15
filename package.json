@@ -46,7 +46,6 @@
     "eslint": ">=3",
     "eslint-plugin-jsdoc": "*",
     "mocha": "^8.2.1",
-    "node-abi": "^2.30.0",
     "prebuildify": "^5.0.0",
     "precommit-hook": "3.0.0"
   }
