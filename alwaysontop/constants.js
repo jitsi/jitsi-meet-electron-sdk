@@ -21,7 +21,9 @@ module.exports = {
         HIDE: 'aot-hide',
         OPEN: 'aot-open',
         SHOW: 'aot-show',
-        SHOW_MAIN_WINDOW: 'aot-main-window-show'
+        SHOW_MAIN_WINDOW: 'aot-main-window-show',
+        SHOW_AOT_WINDOW: 'show-aot-window',
+        HIDE_AOT_WINDOW: 'hide-aot-window'
     },
     STORAGE: {
         AOT_X: 'aot-x',

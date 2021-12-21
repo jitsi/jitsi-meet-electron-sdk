@@ -37,13 +37,14 @@ class AlwaysOnTop extends EventEmitter {
         super();
 
         this._api = api;
-
         this._closeWindow = this._closeWindow.bind(this);
         this._dismiss = this._dismiss.bind(this);
         this._onConferenceJoined = this._onConferenceJoined.bind(this);
         this._onStateChange = this._onStateChange.bind(this);
         this._switchToMainWindow = this._switchToMainWindow.bind(this);
         this._updateLargeVideoSrc = this._updateLargeVideoSrc.bind(this);
+        this._onIntersection = this._onIntersection.bind(this);
+        this._intersectionObserver = new IntersectionObserver(this._onIntersection);
 
         this._api.on('_willDispose', this._closeWindow);
         this._api.on('videoConferenceJoined', this._onConferenceJoined);
@@ -75,6 +76,25 @@ class AlwaysOnTop extends EventEmitter {
         ipcRenderer.on(EVENTS.UPDATE_STATE, this._onStateChange);
 
         sendStateUpdate(STATES.CONFERENCE_JOINED);
+
+        this._intersectionObserver.observe(this._api.getIFrame());
+    }
+
+    /**
+     * Handles intersection events for the instance's IntersectionObserver
+     *
+     * @param {IntersectionObserverEntry[]} entries
+     * @param {IntersectionObserver} observer
+     */
+    _onIntersection(entries) {
+        logInfo('handling main window intersection');
+        const singleEntry = entries.pop();
+
+        if (singleEntry.isIntersecting) {
+            sendStateUpdate(STATES.HIDE_AOT_WINDOW);
+        } else {
+            sendStateUpdate(STATES.SHOW_AOT_WINDOW);
+        }
     }
 
     /**
@@ -193,6 +213,7 @@ class AlwaysOnTop extends EventEmitter {
     _closeWindow() {
         logInfo(`closing window and cleaning listeners`);
 
+        this._intersectionObserver.unobserve(this._api.getIFrame());
         this.emit(EXTERNAL_EVENTS.ALWAYSONTOP_WILL_CLOSE);
 
         sendStateUpdate(STATES.CLOSE);
