@@ -60,7 +60,7 @@ class ScreenShareRenderHook {
 
         ipcRenderer.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
         this._api.on('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
-        this._api.on('videoConferenceLeft', this._cleanTrackerContext);
+        this._api.on('videoConferenceLeft', this._sendCloseTrackerEvent);
     }
 
     /**
@@ -131,7 +131,7 @@ class ScreenShareRenderHook {
     _cleanTrackerContext() {
         ipcRenderer.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
         this._api.removeListener('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
-        this._api.removeListener('videoConferenceLeft', this._cleanTrackerContext);
+        this._api.removeListener('videoConferenceLeft', this._sendCloseTrackerEvent);
         this._sendCloseTrackerEvent();
     }
 
