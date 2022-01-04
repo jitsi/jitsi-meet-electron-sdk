@@ -88,10 +88,10 @@ const onNewWindow = (event, url, frameName, disposition, options) => {
 };
 
 /**
- * Handle blur event on mainWindow
+ * Handle show aot event.
  */
-const onBlur = () => {
-    logInfo('handling main window blur');
+const showAot = () => {
+    logInfo('show aot handler');
 
     let state;
 
@@ -106,10 +106,10 @@ const onBlur = () => {
 };
 
 /**
- * Handle blur event on mainWindow
+ * Handle hide aot event.
  */
- const onFocus = () => {
-    logInfo('handling main window focus');
+ const hideAot = () => {
+    logInfo('hide aot handler');
 
     hideWindow();
 };
@@ -129,8 +129,8 @@ const onClose = () => {
 const addWindowHandlers = () => {
     logInfo(`adding main window event handlers`);
 
-    mainWindow.on('blur', onBlur);
-    mainWindow.on('focus', onFocus);
+    mainWindow.on('blur', showAot);
+    mainWindow.on('focus', hideAot);
 
     // this might be redundant, since child windows will be closed anyway
     mainWindow.on('close', onClose);
@@ -142,8 +142,8 @@ const addWindowHandlers = () => {
 const removeWindowHandlers = () => {
     logInfo(`removing main window event handlers`);
 
-    mainWindow.removeListener('blur', onBlur);
-    mainWindow.removeListener('focus', onFocus);
+    mainWindow.removeListener('blur', showAot);
+    mainWindow.removeListener('focus', hideAot);
     mainWindow.removeListener('close', onClose);
 };
 
@@ -193,6 +193,12 @@ const onStateChange = (event, { value }) => {
         case STATES.SHOW_MAIN_WINDOW:
             // this will switch focus to main window, which in turns triggers hide on aot
             mainWindow.show();
+            break;
+        case STATES.SHOW_AOT_WINDOW:
+            showAot();
+            break;
+        case STATES.HIDE_AOT_WINDOW:
+            hideAot();
             break;
         default:
             break;
