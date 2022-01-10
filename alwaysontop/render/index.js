@@ -37,7 +37,8 @@ class AlwaysOnTop extends EventEmitter {
         super();
 
         this._api = api;
-        this._closeWindow = this._closeWindow.bind(this);
+        this._onConferenceLeft = this._onConferenceLeft.bind(this);
+        this._disposeWindow = this._disposeWindow.bind(this);
         this._dismiss = this._dismiss.bind(this);
         this._onConferenceJoined = this._onConferenceJoined.bind(this);
         this._onStateChange = this._onStateChange.bind(this);
@@ -46,9 +47,10 @@ class AlwaysOnTop extends EventEmitter {
         this._onIntersection = this._onIntersection.bind(this);
         this._intersectionObserver = new IntersectionObserver(this._onIntersection);
 
-        this._api.on('_willDispose', this._closeWindow);
+        this._api.on('_willDispose', this._onConferenceLeft);
         this._api.on('videoConferenceJoined', this._onConferenceJoined);
-        this._api.on('videoConferenceLeft', this._closeWindow);
+        this._api.on('videoConferenceLeft', this._onConferenceLeft);
+        this._api.on('readyToClose', this._disposeWindow);
     }
 
     /**
@@ -73,11 +75,28 @@ class AlwaysOnTop extends EventEmitter {
     }
 
     _onConferenceJoined() {
+        logInfo('on conference joined');
         ipcRenderer.on(EVENTS.UPDATE_STATE, this._onStateChange);
 
         sendStateUpdate(STATES.CONFERENCE_JOINED);
 
         this._intersectionObserver.observe(this._api.getIFrame());
+    }
+
+    _onConferenceLeft() {
+        logInfo('on conference left');
+
+        this._intersectionObserver.unobserve(this._api.getIFrame());
+        this.emit(EXTERNAL_EVENTS.ALWAYSONTOP_WILL_CLOSE);
+
+        sendStateUpdate(STATES.CLOSE);
+
+        ipcRenderer.removeListener(EVENTS.UPDATE_STATE, this._onStateChange);
+
+        if (this._aotWindow) {
+            this._aotWindow.close();
+            this._aotWindow = null;
+        }
     }
 
     /**
@@ -91,9 +110,9 @@ class AlwaysOnTop extends EventEmitter {
         const singleEntry = entries.pop();
 
         if (singleEntry.isIntersecting) {
-            sendStateUpdate(STATES.HIDE_AOT_WINDOW);
+            sendStateUpdate(STATES.IS_INTERSECTING);
         } else {
-            sendStateUpdate(STATES.SHOW_AOT_WINDOW);
+            sendStateUpdate(STATES.IS_NOT_INTERSECTING);
         }
     }
 
@@ -207,21 +226,22 @@ class AlwaysOnTop extends EventEmitter {
     }
 
     /**
-     * Closes the aot window
+     * Disposes the aot window
      * 
      */
-    _closeWindow() {
-        logInfo(`closing window and cleaning listeners`);
+     _disposeWindow() {
+        logInfo('disposing window');
 
         this._intersectionObserver.unobserve(this._api.getIFrame());
         this.emit(EXTERNAL_EVENTS.ALWAYSONTOP_WILL_CLOSE);
 
         sendStateUpdate(STATES.CLOSE);
 
-        this._api.removeListener('_willDispose', this._closeWindow);
+        this._api.removeListener('_willDispose', this._onConferenceLeft);
         this._api.removeListener('largeVideoChanged', this._updateLargeVideoSrc);
         this._api.removeListener('videoConferenceJoined', this._onConferenceJoined);
-        this._api.removeListener('videoConferenceLeft', this._closeWindow);
+        this._api.removeListener('videoConferenceLeft', this._onConferenceLeft);
+        this._api.removeListener('readyToClose', this._disposeWindow);
 
         ipcRenderer.removeListener(EVENTS.UPDATE_STATE, this._onStateChange);
 

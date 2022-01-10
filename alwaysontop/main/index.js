@@ -27,6 +27,11 @@ let aotWindow;
 let mainWindow;
 
 /**
+ * Whether the meeting is currently in view.
+ */
+let isIntersecting;
+
+/**
  * Sends an update state event to renderer process
  * @param {string} value the updated aot window state
  */
@@ -110,8 +115,10 @@ const showAot = () => {
  */
  const hideAot = () => {
     logInfo('hide aot handler');
-
-    hideWindow();
+    if (isIntersecting) {
+        logInfo('is intersecting. hiding');
+        hideWindow();
+    }
 };
 
 /**
@@ -194,10 +201,12 @@ const onStateChange = (event, { value }) => {
             // this will switch focus to main window, which in turns triggers hide on aot
             mainWindow.show();
             break;
-        case STATES.SHOW_AOT_WINDOW:
+        case STATES.IS_NOT_INTERSECTING:
+            isIntersecting = false;
             showAot();
             break;
-        case STATES.HIDE_AOT_WINDOW:
+        case STATES.IS_INTERSECTING:
+            isIntersecting = true;
             hideAot();
             break;
         default:

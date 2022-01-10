@@ -22,8 +22,8 @@ module.exports = {
         OPEN: 'aot-open',
         SHOW: 'aot-show',
         SHOW_MAIN_WINDOW: 'aot-main-window-show',
-        SHOW_AOT_WINDOW: 'show-aot-window',
-        HIDE_AOT_WINDOW: 'hide-aot-window'
+        IS_NOT_INTERSECTING: 'is-not-intersecting',
+        IS_INTERSECTING: 'is-intersecting'
     },
     STORAGE: {
         AOT_X: 'aot-x',
