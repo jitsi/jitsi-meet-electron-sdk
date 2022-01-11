@@ -20,11 +20,12 @@ const { EVENTS, STATES, AOT_WINDOW_NAME, EXTERNAL_EVENTS } = require('../constan
 
 /**
  * Sends a move command to the main process
- * @param {Number} x 
- * @param {Number} y 
+ * @param {Number} x
+ * @param {Number} y
+ * @param {Object} initialSize - The size of the window on move start.
  */
-const move = (x, y) => {
-    ipcRenderer.send(EVENTS.MOVE, { x, y } );
+const move = (x, y, initialSize) => {
+    ipcRenderer.send(EVENTS.MOVE, { x, y }, initialSize);
 };
 
 class AlwaysOnTop extends EventEmitter {
