@@ -218,13 +218,14 @@ const onStateChange = (event, { value }) => {
  * Handler for move event
  * @param {Event} event trigger event
  * @param {Object} options event params
+ * @param {Object} initialSize the window size before move
  */
-const onMove = (event, { x, y }) => {
+const onMove = (event, { x, y }, initialSize) => {
     if (!windowExists(aotWindow)) {
         return;
     }
 
-    const [width, height] = aotWindow.getSize();
+    const { width, height } = initialSize;
 
     aotWindow.setBounds({
         x,

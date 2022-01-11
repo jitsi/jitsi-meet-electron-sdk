@@ -7,6 +7,8 @@ const {
     dismiss
 } = window.alwaysOnTop;
 
+let initialSize;
+
 const dismissButton = document.querySelector('.dismiss');
 if (dismissButton) {
     dismissButton.addEventListener('click', dismiss);
@@ -28,6 +30,10 @@ api._getAlwaysOnTopResources().forEach(src => loadFile(src));
 function setupDraggable() {
     if (shouldImplementDrag) {
         window.addEventListener('mousedown', mouseDownEvent => {
+            initialSize = {
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
             pageX = mouseDownEvent.pageX;
             pageY = mouseDownEvent.pageY;
             window.addEventListener('mousemove', drag);
@@ -58,7 +64,7 @@ function drag(mouseMoveEvent) {
     mouseMoveEvent.stopPropagation();
     mouseMoveEvent.preventDefault();
     const { screenX, screenY } = mouseMoveEvent;
-    move(screenX - pageX, screenY - pageY);
+    move(screenX - pageX, screenY - pageY, initialSize);
 }
 
 /**
