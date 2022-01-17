@@ -34,7 +34,10 @@ jobs:
       with:
         node-version: '16'
         architecture: ${{ matrix.arch }}
-    - run: npm install
+    - run: npm ci
+    - run: npm run lint
+    - run: TESTING=true npx mocha
+      shell: bash
     - name: Prebuildify
       run: npm run prebuild-$BUILD_GROUP
       shell: bash
