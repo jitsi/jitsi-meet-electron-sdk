@@ -124,21 +124,25 @@ class AlwaysOnTop extends EventEmitter {
      * @returns {void}
      */
      _updateLargeVideoSrc() {
-        if (!this._aotWindow) {
-            return;
-        }
-
-        if (!this._jitsiMeetLargeVideo) {
-            this._aotWindowVideo.style.display = 'none';
-            this._aotWindowVideo.srcObject = null;
-        } else {
-            this._aotWindowVideo.style.display = 'block';
-            const mediaStream = this._jitsiMeetLargeVideo.srcObject;
-            const transform = this._jitsiMeetLargeVideo.style.transform;
-            this._aotWindowVideo.srcObject = mediaStream;
-            this._aotWindowVideo.style.transform = transform;
-            this._aotWindowVideo.play();
-        }
+         // adding a small timeout before updating media seems to fix the black screen preview
+         // in the bottom right corner during screen share.
+         setTimeout(() => {
+            if (!this._aotWindow) {
+                return;
+            }
+    
+            if (!this._jitsiMeetLargeVideo) {
+                this._aotWindowVideo.style.display = 'none';
+                this._aotWindowVideo.srcObject = null;
+            } else {
+                this._aotWindowVideo.style.display = 'block';
+                const mediaStream = this._jitsiMeetLargeVideo.srcObject;
+                const transform = this._jitsiMeetLargeVideo.style.transform;
+                this._aotWindowVideo.srcObject = mediaStream;
+                this._aotWindowVideo.style.transform = transform;
+                this._aotWindowVideo.play();
+            }
+         }, 100);
     }
 
     /**
@@ -163,6 +167,7 @@ class AlwaysOnTop extends EventEmitter {
      */
     _openNewWindow() {
         this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
+        this._api.on('videoMuteStatusChanged', this._updateLargeVideoSrc);
 
         this._aotWindow = window.open('', AOT_WINDOW_NAME);
         this._aotWindow.alwaysOnTop = {
@@ -211,6 +216,7 @@ class AlwaysOnTop extends EventEmitter {
      */
     _hideWindow() {
         this._api.removeListener('largeVideoChanged', this._updateLargeVideoSrc);
+        this._api.removeListener('videoMuteStatusChanged', this._updateLargeVideoSrc);
 
         this.emit(EXTERNAL_EVENTS.ALWAYSONTOP_WILL_CLOSE);
 
@@ -222,6 +228,7 @@ class AlwaysOnTop extends EventEmitter {
      */
     _showWindow() {
         this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
+        this._api.on('videoMuteStatusChanged', this._updateLargeVideoSrc);
 
         this._updateLargeVideoSrc();
     }
@@ -240,6 +247,7 @@ class AlwaysOnTop extends EventEmitter {
 
         this._api.removeListener('_willDispose', this._onConferenceLeft);
         this._api.removeListener('largeVideoChanged', this._updateLargeVideoSrc);
+        this._api.removeListener('videoMuteStatusChanged', this._updateLargeVideoSrc);
         this._api.removeListener('videoConferenceJoined', this._onConferenceJoined);
         this._api.removeListener('videoConferenceLeft', this._onConferenceLeft);
         this._api.removeListener('readyToClose', this._disposeWindow);
