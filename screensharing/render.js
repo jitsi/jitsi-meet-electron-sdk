@@ -1,7 +1,7 @@
 
-const { ipcRenderer, desktopCapturer } = require('electron');
+const { ipcRenderer } = require('electron');
 
-const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS } = require('./constants');
+const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES } = require('./constants');
 
 /**
  * Renderer process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -51,8 +51,7 @@ class ScreenShareRenderHook {
              * 150px.
              */
             obtainDesktopStreams(callback, errorCallback, options = {}) {
-                desktopCapturer
-                    .getSources(options)
+                ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
                     .then((sources) => callback(sources))
                     .catch((error) => errorCallback(error));
             }

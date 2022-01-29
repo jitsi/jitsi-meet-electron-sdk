@@ -3,7 +3,7 @@ const { exec } = require('child_process');
 const electron = require('electron');
 const os = require('os');
 
-const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, TRACKER_SIZE } = require('./constants');
+const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES, TRACKER_SIZE } = require('./constants');
 const { isMac } = require('./utils');
 const { windowsEnableScreenProtection } = require('../helpers/functions');
 
@@ -32,11 +32,25 @@ class ScreenShareMainHook {
 
         // Listen for events coming in from the main render window and the screen share tracker window.
         electron.ipcMain.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+        electron.ipcMain.handle(SCREEN_SHARE_GET_SOURCES, this._onGetSourcesInvoke);
 
         // Clean up ipcMain handlers to avoid leaks.
         this._jitsiMeetWindow.on('closed', () => {
             electron.ipcMain.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+            electron.ipcMain.removeHandler(SCREEN_SHARE_GET_SOURCES);
         });
+    }
+
+    /**
+     * Returns the desktopCapturer sources according to
+     * https://www.electronjs.org/docs/latest/breaking-changes#removed-desktopcapturergetsources-in-the-renderer
+     *
+     * @param {Object} _event - Electron event data, unused
+     * @param {Object} opts - parameters for desktopCapturer.getSources()
+     * @returns {Promise<DesktopCapturerSource[]>} The return value of desktopCapturer.getSources()
+     */
+    _onGetSourcesInvoke(_event, opts) {
+        return electron.desktopCapturer.getSources(opts);
     }
 
     /**
