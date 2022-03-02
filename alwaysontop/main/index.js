@@ -122,15 +122,6 @@ const showAot = () => {
 };
 
 /**
- * Handle close event on main window
- */
-const onClose = () => {
-    logInfo('handling main window close');
-
-    closeWindow();
-};
-
-/**
  * Attaches event handlers on the main window
  */
 const addWindowHandlers = () => {
@@ -138,9 +129,6 @@ const addWindowHandlers = () => {
 
     mainWindow.on('blur', showAot);
     mainWindow.on('focus', hideAot);
-
-    // this might be redundant, since child windows will be closed anyway
-    mainWindow.on('close', onClose);
 };
 
 /**
@@ -151,7 +139,6 @@ const removeWindowHandlers = () => {
 
     mainWindow.removeListener('blur', showAot);
     mainWindow.removeListener('focus', hideAot);
-    mainWindow.removeListener('close', onClose);
 };
 
 
