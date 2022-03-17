@@ -7,10 +7,8 @@
     "lint": "eslint .",
     "test": "TESTING=true mocha",
     "validate": "npm ls",
-    "install": "node-gyp-build",
-    "prebuild-darwin-universal": "prebuildify -t 16.0.0 --napi --strip --arch x64+arm64",
-    "prebuild-darwin-x64": "prebuildify -t 16.0.0 --napi --strip --arch x64 && lipo -remove arm64 prebuilds/darwin-x64/node.napi.node -output prebuilds/darwin-x64/node.napi.node",
-    "prebuild-linux-x64": "prebuildify -t 16.0.0 --napi --strip",
+    "install": "node install.js",
+    "node-gyp-build": "node-gyp-build",
     "prebuild-win32-x86": "prebuildify -t 16.0.0 --napi --strip",
     "prebuild-win32-x64": "prebuildify -t 16.0.0 --napi --strip"
   },

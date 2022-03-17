@@ -2,7 +2,7 @@ const {
     app,
     ipcMain
 } = require('electron');
-const sourceId2Coordinates = require("../node_addons/sourceId2Coordinates");
+const process = require('process');
 
 /**
  * Module to run on main process to get display dimensions for remote control.
@@ -47,36 +47,38 @@ class RemoteControlMain {
             default: { // > 1 display
                 // Remove the type part from the sourceId
                 const parsedSourceId = sourceId.replace('screen:', '');
-                const coordinates = sourceId2Coordinates(parsedSourceId);
-                if(coordinates) {
-                    // Currently sourceId2Coordinates will return undefined for
-                    // any OS except Windows. This code will be executed only on
-                    // Windows.
-                    const { x, y } = coordinates;
-                    const display
-                        = screen.getDisplayNearestPoint({
-                            x: x + 1,
-                            y: y + 1
-                        });
 
-                    if (typeof display !== 'undefined') {
-                        // We need to use x and y returned from sourceId2Coordinates because the ones returned from
-                        // Electron don't seem to respect the scale factors of the other displays.
-                        const { width, height } = display.bounds;
+                // Currently native code sourceId2Coordinates is only necessary for windows.
+                if (process.platform === 'win32') {
+                    const sourceId2Coordinates = require("../node_addons/sourceId2Coordinates");
+                    const coordinates = sourceId2Coordinates(parsedSourceId);
+                    if(coordinates) {
+                        const { x, y } = coordinates;
+                        const display
+                            = screen.getDisplayNearestPoint({
+                                x: x + 1,
+                                y: y + 1
+                            });
 
-                        return {
-                            bounds: {
-                                x,
-                                y,
-                                width,
-                                height
-                            },
-                            scaleFactor: display.scaleFactor
-                        };
-                    } else {
-                        return undefined;
+                        if (typeof display !== 'undefined') {
+                            // We need to use x and y returned from sourceId2Coordinates because the ones returned from
+                            // Electron don't seem to respect the scale factors of the other displays.
+                            const { width, height } = display.bounds;
+
+                            return {
+                                bounds: {
+                                    x,
+                                    y,
+                                    width,
+                                    height
+                                },
+                                scaleFactor: display.scaleFactor
+                            };
+                        } else {
+                            return undefined;
+                        }
                     }
-                } else {
+                } else if (process.platform === 'darwin') {
                     // On Mac OS the sourceId = 'screen' + displayId.
                     // Try to match displayId with sourceId.
                     let displayId = Number(parsedSourceId);
@@ -93,6 +95,8 @@ class RemoteControlMain {
                         displayId = Number(idArr[0]);
                     }
                     return displays.find(display => display.id === displayId);
+                } else {
+                    return undefined;
                 }
             }
         }
