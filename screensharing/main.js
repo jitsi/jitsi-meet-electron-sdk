@@ -2,6 +2,7 @@
 const { exec } = require('child_process');
 const electron = require('electron');
 const os = require('os');
+const path = require('path');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES, TRACKER_SIZE } = require('./constants');
 const { isMac } = require('./utils');
@@ -95,7 +96,8 @@ class ScreenShareMainHook {
         }
 
         // Display always on top screen sharing tracker window in the center bottom of the screen.
-        let display = electron.screen.getPrimaryDisplay();
+        const display = electron.screen.getPrimaryDisplay();
+
         this._screenShareTracker = new electron.BrowserWindow({
             height: TRACKER_SIZE.height,
             width: TRACKER_SIZE.width,
@@ -112,10 +114,9 @@ class ScreenShareMainHook {
             frame: false,
             show: false,
             webPreferences: {
-                // TODO: these 3 should be removed.
-                contextIsolation: false,
-                enableRemoteModule: true,
-                nodeIntegration: true
+                contextIsolation: true,
+                nodeIntegration: false,
+                preload: path.resolve(__dirname, './preload.js')
             }
         });
 
