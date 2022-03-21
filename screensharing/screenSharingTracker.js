@@ -1,23 +1,16 @@
-const { ipcRenderer } = require('electron');
-const querystring = require('querystring');
-
-const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS } = require('./constants');
-
 const screenShareStop = document.getElementById("screen-share-marker-stop");
 const screenShareMinimize = document.getElementById("screen-share-marker-minimize");
 const sharingIdentity = document.getElementById("sharing-identity");
 
-sharingIdentity.innerHTML = querystring.parse(global.location.search)['?sharingIdentity'];
+sharingIdentity.innerText = new URL(window.location).searchParams.get('sharingIdentity');
+
+const { EVENTS, sendEvent } = window.JitsiScreenSharingTracker;
 
 /**
  * Minimize the window.
  */
 screenShareMinimize.addEventListener("click", function() {
-    ipcRenderer.send(SCREEN_SHARE_EVENTS_CHANNEL, {
-        data: {
-            name: SCREEN_SHARE_EVENTS.HIDE_TRACKER
-        }
-    });
+    sendEvent(EVENTS.HIDE_TRACKER);
 });
 
 /**
@@ -25,10 +18,5 @@ screenShareMinimize.addEventListener("click", function() {
  * {@link ScreenShareRenderHook} which will toggle the screen sharing session using the jitsi-meet api.
  */
 screenShareStop.addEventListener("click", function() {
-    ipcRenderer.send(SCREEN_SHARE_EVENTS_CHANNEL, {
-        data: {
-            name: SCREEN_SHARE_EVENTS.STOP_SCREEN_SHARE
-        }
-    });
+    sendEvent(EVENTS.STOP_SCREEN_SHARE);
 });
-
