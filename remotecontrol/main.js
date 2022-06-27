@@ -19,7 +19,9 @@ class RemoteControlMain {
             const { screen } = require('electron');
 
             screen.on('display-metrics-changed', () => {
-                this._jitsiMeetWindow.webContents.send('jitsi-remotecontrol-displays-changed');
+                if (!this._jitsiMeetWindow.isDestroyed()) {
+                    this._jitsiMeetWindow.webContents.send('jitsi-remotecontrol-displays-changed');
+                }
             });
         });
     }
