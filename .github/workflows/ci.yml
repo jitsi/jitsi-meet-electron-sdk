@@ -14,15 +14,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-20.04
-            arch: x64
-            build-group: linux-x64
-          - os: macos-11
-            arch: x64
-            build-group: darwin-universal
-          - os: macos-11
-            arch: x64
-            build-group: darwin-x64
           - os: windows-2019
             arch: x86
             build-group: win32-x86

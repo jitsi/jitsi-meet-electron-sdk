@@ -10,7 +10,7 @@ Install from npm:
 
     npm install @jitsi/electron-sdk
 
-Note: This package contains native code for the remote control module. Binary prebuilds are downloaded during install for Windows x64 and ia32, Linux x64 and Mac x64 and arm64.
+Note: This package contains native code on Windows for the remote control module. Binary prebuilds are packaged with prebuildify as part of the npm package.
 
 ## Usage
 #### Remote Control
