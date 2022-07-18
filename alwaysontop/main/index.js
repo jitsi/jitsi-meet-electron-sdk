@@ -2,6 +2,7 @@ const electron = require('electron');
 const os = require('os');
 const { BrowserWindow, ipcMain } = electron;
 
+const { windowsEnableScreenProtection } = require('../../helpers/functions');
 const { EVENTS, STATES, AOT_WINDOW_NAME } = require('../constants');
 const {
     getPosition,
@@ -58,9 +59,7 @@ const openAotWindow = (event, options) => {
     // Required to allow the window to be rendered on top of full screen apps
     aotWindow.setAlwaysOnTop(true, 'screen-saver');
 
-    // Once this bug is fixed on Electron side we'll re-enable this for Windows 10 Version 2004 or newer:
-    // https://github.com/electron/electron/issues/29085
-    if (os.platform() !== 'win32') {
+    if (os.platform() !== 'win32' || windowsEnableScreenProtection(os.release())) {
         // Avoid this window from being captured.
         aotWindow.setContentProtection(true);
     }
