@@ -2,7 +2,7 @@
 
 SDK for integrating Jitsi Meet into Electron applications.
 
-Supported Electron versions: >= 11.
+Supported Electron versions: >= 16.
 
 ## Installation
 
