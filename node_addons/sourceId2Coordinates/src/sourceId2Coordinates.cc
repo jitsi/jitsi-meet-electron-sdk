@@ -1,7 +1,4 @@
-#if defined(IS_WINDOWS)
 #include <windows.h>
-#endif
-
 #include "sourceId2Coordinates.h"
 
 /**
@@ -16,7 +13,6 @@
  */
 bool sourceId2Coordinates(int sourceId, Point* res)
 {
-#if defined(IS_WINDOWS)
     DISPLAY_DEVICE device;
     device.cb = sizeof(device);
 
@@ -39,7 +35,4 @@ bool sourceId2Coordinates(int sourceId, Point* res)
     res->y = deviceSettings.dmPosition.y;
 
     return true;
-#else
-    return false;
-#endif
 }
