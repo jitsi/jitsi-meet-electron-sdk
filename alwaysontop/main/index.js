@@ -131,8 +131,8 @@ const showAot = () => {
 const addUndockedWindowHandlers = () => {
     logInfo(`adding undocked window event handlers`);
 
-    undockedWindow.on('minimize', showAot);
-    undockedWindow.on('restore', hideAot);
+    undockedWindow.on('blur', showAot);
+    undockedWindow.on('focus', hideAot);
 };
 
 /**
