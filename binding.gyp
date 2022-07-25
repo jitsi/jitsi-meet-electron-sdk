@@ -12,13 +12,11 @@
 
         'conditions': [
             ["OS=='win'", {
-                'defines': ['IS_WINDOWS']
+                'sources': [
+                    'node_addons/sourceId2Coordinates/src/index.cc',
+                    'node_addons/sourceId2Coordinates/src/sourceId2Coordinates.cc'
+                ]
             }]
-        ],
-
-        'sources': [
-            'node_addons/sourceId2Coordinates/src/index.cc',
-            'node_addons/sourceId2Coordinates/src/sourceId2Coordinates.cc'
         ]
     }],
 }
