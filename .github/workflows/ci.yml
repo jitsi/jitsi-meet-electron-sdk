@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-  release:
-    types:
-      - published
+  push:
+    branches:
+      - master
 
 jobs:
   build:
@@ -41,7 +41,7 @@ jobs:
         path: prebuilds/
   publish:
     name: Publish to npm
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     needs: build
     steps:
@@ -54,6 +54,7 @@ jobs:
       with:
         name: prebuilds
         path: prebuilds
-    - run: npm publish --access public
+    - uses: jitsi/gh-action-autopublish@master
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
