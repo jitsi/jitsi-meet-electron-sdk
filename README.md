@@ -178,9 +178,5 @@ To rebuild the native code, use:
 
 ## Publishing
 
-1. Create release branch: `git checkout -b release-1-2-3`, replacing 1-2-3 with the desired release version
-2. Increment the version: `npm version patch`, replacing `patch` with `minor` or `major` as required
-3. Push to github: `git push`
-4. Create PR: `gh pr create`
-5. Once PR is merged, create and publish Github release: `gh release create v1.2.3`, replacing v1.2.3 with the desired release version
-7. Github action will prebuildify and publish release to npm
+a) On every push to main branch, the jitsi/gh-action-autopublish will create a new patch version and publish to npm
+b) If a major or minor release is required, manually bump the version in the package.json as part of a PR.
