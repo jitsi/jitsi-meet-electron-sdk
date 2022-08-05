@@ -178,5 +178,6 @@ To rebuild the native code, use:
 
 ## Publishing
 
-a) On every push to main branch, the jitsi/gh-action-autopublish will create a new patch version and publish to npm
-b) If a major or minor release is required, manually bump the version in the package.json as part of a PR.
+On every push to main branch, the .github/workflows/ci.yml will create a new version and publish to npm.
+
+If a major or minor release is required, use respective key words in the commit message, see https://github.com/phips28/gh-action-bump-version#workflow
