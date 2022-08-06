@@ -6,16 +6,16 @@ const os = require('os');
 const path = require('path');
 const { logInfo, setLogger } = require('../main/utils');
 
-const { EVENTS, STATES, AOT_WINDOW_NAME, EXTERNAL_EVENTS } = require('../constants');
+const { EVENTS, STATES, AOT_WINDOW_NAME, EXTERNAL_EVENTS, EVENTS_CHANNEL } = require('../constants');
 
 /**
  * Sends an update state event to main process
- * @param {string} value the updated aot window state
+ * @param {string} state the updated aot window state
  */
- const sendStateUpdate = value => {
-    logInfo(`sending ${value} state update to main process`);
+ const sendStateUpdate = state => {
+    logInfo(`sending ${state} state update to main process`);
 
-    ipcRenderer.send(EVENTS.UPDATE_STATE, { value } );
+    ipcRenderer.send(EVENTS_CHANNEL, { name: EVENTS.UPDATE_STATE, state } );
 };
 
 /**
@@ -25,7 +25,11 @@ const { EVENTS, STATES, AOT_WINDOW_NAME, EXTERNAL_EVENTS } = require('../constan
  * @param {Object} initialSize - The size of the window on move start.
  */
 const move = (x, y, initialSize) => {
-    ipcRenderer.send(EVENTS.MOVE, { x, y }, initialSize);
+    ipcRenderer.send(EVENTS_CHANNEL, {
+        name: EVENTS.MOVE,
+        initialSize,
+        position: { x, y },
+    });
 };
 
 class AlwaysOnTop extends EventEmitter {
@@ -41,7 +45,8 @@ class AlwaysOnTop extends EventEmitter {
         this._disposeWindow = this._disposeWindow.bind(this);
         this._dismiss = this._dismiss.bind(this);
         this._onConferenceJoined = this._onConferenceJoined.bind(this);
-        this._onStateChange = this._onStateChange.bind(this);
+        this._onAotEvent = this._onAotEvent.bind(this);
+        this._handleStateChange = this._handleStateChange.bind(this);
         this._switchToMainWindow = this._switchToMainWindow.bind(this);
         this._updateLargeVideoSrc = this._updateLargeVideoSrc.bind(this);
         this._onIntersection = this._onIntersection.bind(this);
@@ -76,7 +81,7 @@ class AlwaysOnTop extends EventEmitter {
 
     _onConferenceJoined() {
         logInfo('on conference joined');
-        ipcRenderer.on(EVENTS.UPDATE_STATE, this._onStateChange);
+        ipcRenderer.on(EVENTS_CHANNEL, this._onAotEvent);
 
         sendStateUpdate(STATES.CONFERENCE_JOINED);
 
@@ -234,7 +239,7 @@ class AlwaysOnTop extends EventEmitter {
         this.emit(EXTERNAL_EVENTS.ALWAYSONTOP_WILL_CLOSE);
 
         sendStateUpdate(STATES.CLOSE);
-        ipcRenderer.removeListener(EVENTS.UPDATE_STATE, this._onStateChange);
+        ipcRenderer.removeListener(EVENTS_CHANNEL, this._onAotEvent);
 
         if (this._aotWindow) {
             delete this._aotWindow.alwaysOnTop;
@@ -244,14 +249,28 @@ class AlwaysOnTop extends EventEmitter {
     }
 
     /**
-     * Handler for state updates
-     * @param {Event} event trigger event
-     * @param {Object} options event params
+     * Handler for aot channel events
+     *
+     * @param {IpcRendererEvent} event electron event
+     * @param {Object} options channel params
      */
-    _onStateChange (event, { value }) {
-        logInfo(`handling ${value} state update from main process`);
+    _onAotEvent (event, { name, ...rest }) {
+        switch (name) {
+            case EVENTS.UPDATE_STATE:
+                this._handleStateChange(rest.state);
+                break;
+        }
+    }
 
-        switch (value) {
+    /**
+     * Handler for state updates
+     *
+     * @param {string} state updated state
+     */
+     _handleStateChange (state) {
+        logInfo(`handling ${state} state update from main process`);
+
+        switch (state) {
             case STATES.HIDE:
                 this._hideWindow();
                 break;

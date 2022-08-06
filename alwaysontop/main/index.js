@@ -3,7 +3,7 @@ const os = require('os');
 const { BrowserWindow, ipcMain } = electron;
 
 const { windowsEnableScreenProtection } = require('../../helpers/functions');
-const { EVENTS, STATES, AOT_WINDOW_NAME } = require('../constants');
+const { EVENTS, STATES, AOT_WINDOW_NAME, EVENTS_CHANNEL } = require('../constants');
 const {
     getPosition,
     getSize,
@@ -36,10 +36,10 @@ let isIntersecting;
  * Sends an update state event to renderer process
  * @param {string} value the updated aot window state
  */
-const sendStateUpdate = value => {
-    logInfo(`sending ${value} state update to renderer process`);
+const sendStateUpdate = state => {
+    logInfo(`sending ${state} state update to renderer process`);
 
-    mainWindow.webContents.send(EVENTS.UPDATE_STATE, { value });
+    mainWindow.webContents.send(EVENTS_CHANNEL, { name: EVENTS.UPDATE_STATE, state });
 };
 
 /**
@@ -163,13 +163,27 @@ const closeWindow = () => {
 
 /**
  * Handler for state updates
- * @param {Event} event trigger event
- * @param {Object} options event params
+ * @param {IpcMainEvent} event electron event
+ * @param {Object} options channel params
  */
-const onStateChange = (event, { value }) => {
-    logInfo(`handling ${value} state update from renderer process`);
+const onAotEvent = (event, { name, ...rest }) => {
+    switch (name) {
+        case EVENTS.UPDATE_STATE:
+            handleStateChange(rest.state);
+            break;
+        case EVENTS.MOVE:
+            handleMove(rest);
+    }
+};
 
-    switch (value) {
+/**
+ * Handler for state updates
+ * @param {string} value - updated state name
+ */
+const handleStateChange = state => {
+    logInfo(`handling ${state} state update from renderer process`);
+
+    switch (state) {
         case STATES.DISMISS:
             closeWindow();
             break;
@@ -204,16 +218,16 @@ const onStateChange = (event, { value }) => {
 
 /**
  * Handler for move event
- * @param {Event} event trigger event
- * @param {Object} options event params
+ * @param {Object} position the new position
  * @param {Object} initialSize the window size before move
  */
-const onMove = (event, { x, y }, initialSize) => {
+const handleMove = (position, initialSize) => {
     if (!windowExists(aotWindow)) {
         return;
     }
 
     const { width, height } = initialSize;
+    const { x, y } = position;
 
     aotWindow.setBounds({
         x,
@@ -237,16 +251,14 @@ const onMove = (event, { x, y }, initialSize) => {
 
     mainWindow = jitsiMeetWindow;
 
-    ipcMain.on(EVENTS.UPDATE_STATE, onStateChange);
-    ipcMain.on(EVENTS.MOVE, onMove);
+    ipcMain.on(EVENTS_CHANNEL, onAotEvent);
 
     mainWindow = jitsiMeetWindow;
     mainWindow.webContents.on('new-window', onNewWindow);
 
     // Clean up ipcMain handlers to avoid leaks.
     mainWindow.on('closed', () => {
-        ipcMain.removeListener(EVENTS.UPDATE_STATE, onStateChange);
-        ipcMain.removeListener(EVENTS.MOVE, onMove);
+        ipcMain.removeListener(EVENTS_CHANNEL, onAotEvent);
     });
 };
 
