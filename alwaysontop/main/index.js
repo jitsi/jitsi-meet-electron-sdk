@@ -18,7 +18,7 @@ const {
 const aotConfig = require('./config');
 
 /**
- * The main window instance
+ * The aot window instance
  */
 let aotWindow;
 
@@ -26,11 +26,6 @@ let aotWindow;
  * The main window instance
  */
 let mainWindow;
-
-/**
- * The undocked window instance
- */
-let undockedWindow;
 
 /**
  * Whether the meeting is currently in view.
@@ -120,19 +115,9 @@ const showAot = () => {
  const hideAot = () => {
     logInfo('hide aot handler');
 
-    if (undockedWindow || isIntersecting) {
+    if (isIntersecting) {
         hideWindow();
     }
-};
-
-/**
- * Attaches event handlers on the undocked window
- */
-const addUndockedWindowHandlers = () => {
-    logInfo(`adding undocked window event handlers`);
-
-    undockedWindow.on('blur', showAot);
-    undockedWindow.on('focus', hideAot);
 };
 
 /**
@@ -195,28 +180,21 @@ const onStateChange = (event, { value }) => {
             closeWindow();
             break;
         case STATES.CONFERENCE_JOINED:
-            if (!undockedWindow) {
-                addMainWindowHandlers();
-            }
-
+            addMainWindowHandlers();
             break;
         case STATES.SHOW_MAIN_WINDOW:
             // this will switch focus to main window, which in turns triggers hide on aot
-            (undockedWindow || mainWindow).show();
+            mainWindow.show();
 
             break;
         case STATES.IS_NOT_INTERSECTING:
-            if (!undockedWindow) {
-                isIntersecting = false;
-                showAot();
-            }
+            isIntersecting = false;
+            showAot();
 
             break;
         case STATES.IS_INTERSECTING:
-            if (!undockedWindow) {
-                isIntersecting = true;
-                hideAot();
-            }
+            isIntersecting = true;
+            hideAot();
 
             break;
         default:
@@ -259,26 +237,19 @@ const onMove = (event, { x, y }, initialSize) => {
 
     mainWindow = jitsiMeetWindow;
 
-    mainWindow.webContents.on('new-window', onNewWindow);
     ipcMain.on(EVENTS.UPDATE_STATE, onStateChange);
     ipcMain.on(EVENTS.MOVE, onMove);
-};
 
-/**
- * Attaches the aot window to another window than the main one
- * @param {BrowserWindow} meetWindow 
- */
-const attachAlwaysOnTopToWindow = meetWindow => {
-    logInfo('setting up aot for undocked window');
+    mainWindow = jitsiMeetWindow;
+    mainWindow.webContents.on('new-window', onNewWindow);
 
-    undockedWindow = meetWindow;
-
-    // just in case STATES.CONFERENCE_JOINED was fired earlier for main window
-    removeMainWindowHandlers();
-    addUndockedWindowHandlers();
+    // Clean up ipcMain handlers to avoid leaks.
+    mainWindow.on('closed', () => {
+        ipcMain.removeListener(EVENTS.UPDATE_STATE, onStateChange);
+        ipcMain.removeListener(EVENTS.MOVE, onMove);
+    });
 };
 
 module.exports = {
-    attachAlwaysOnTopToWindow,
     setupAlwaysOnTopMain
 };

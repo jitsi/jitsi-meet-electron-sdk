@@ -38,7 +38,6 @@ class AlwaysOnTop extends EventEmitter {
         super();
 
         this._api = api;
-        this._onConferenceLeft = this._onConferenceLeft.bind(this);
         this._disposeWindow = this._disposeWindow.bind(this);
         this._dismiss = this._dismiss.bind(this);
         this._onConferenceJoined = this._onConferenceJoined.bind(this);
@@ -48,9 +47,9 @@ class AlwaysOnTop extends EventEmitter {
         this._onIntersection = this._onIntersection.bind(this);
         this._intersectionObserver = new IntersectionObserver(this._onIntersection);
 
-        this._api.on('_willDispose', this._onConferenceLeft);
+        this._api.on('_willDispose', this._disposeWindow);
         this._api.on('videoConferenceJoined', this._onConferenceJoined);
-        this._api.on('videoConferenceLeft', this._onConferenceLeft);
+        this._api.on('videoConferenceLeft', this._disposeWindow);
         this._api.on('readyToClose', this._disposeWindow);
     }
 
@@ -82,22 +81,6 @@ class AlwaysOnTop extends EventEmitter {
         sendStateUpdate(STATES.CONFERENCE_JOINED);
 
         this._intersectionObserver.observe(this._api.getIFrame());
-    }
-
-    _onConferenceLeft() {
-        logInfo('on conference left');
-
-        this._intersectionObserver.unobserve(this._api.getIFrame());
-        this.emit(EXTERNAL_EVENTS.ALWAYSONTOP_WILL_CLOSE);
-
-        sendStateUpdate(STATES.CLOSE);
-
-        ipcRenderer.removeListener(EVENTS.UPDATE_STATE, this._onStateChange);
-
-        if (this._aotWindow) {
-            this._aotWindow.close();
-            this._aotWindow = null;
-        }
     }
 
     /**
@@ -171,7 +154,7 @@ class AlwaysOnTop extends EventEmitter {
 
         this._aotWindow = window.open('', AOT_WINDOW_NAME);
         this._aotWindow.alwaysOnTop = {
-        api: this._api,
+            api: this._api,
             dismiss: this._dismiss,
             /**
              * Custom implementation for window move.
@@ -240,21 +223,21 @@ class AlwaysOnTop extends EventEmitter {
      _disposeWindow() {
         logInfo('disposing window');
 
+        this._api.removeListener('_willDispose', this._disposeWindow);
+        this._api.removeListener('largeVideoChanged', this._updateLargeVideoSrc);
+        this._api.removeListener('videoMuteStatusChanged', this._updateLargeVideoSrc);
+        this._api.removeListener('videoConferenceJoined', this._onConferenceJoined);
+        this._api.removeListener('videoConferenceLeft', this._disposeWindow);
+        this._api.removeListener('readyToClose', this._disposeWindow);
+
         this._intersectionObserver.unobserve(this._api.getIFrame());
         this.emit(EXTERNAL_EVENTS.ALWAYSONTOP_WILL_CLOSE);
 
         sendStateUpdate(STATES.CLOSE);
-
-        this._api.removeListener('_willDispose', this._onConferenceLeft);
-        this._api.removeListener('largeVideoChanged', this._updateLargeVideoSrc);
-        this._api.removeListener('videoMuteStatusChanged', this._updateLargeVideoSrc);
-        this._api.removeListener('videoConferenceJoined', this._onConferenceJoined);
-        this._api.removeListener('videoConferenceLeft', this._onConferenceLeft);
-        this._api.removeListener('readyToClose', this._disposeWindow);
-
         ipcRenderer.removeListener(EVENTS.UPDATE_STATE, this._onStateChange);
 
         if (this._aotWindow) {
+            delete this._aotWindow.alwaysOnTop;
             this._aotWindow.close();
             this._aotWindow = null;
         }

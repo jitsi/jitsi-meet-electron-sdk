@@ -1,5 +1,5 @@
 const setupAlwaysOnTopRender = require('./render');
-const { attachAlwaysOnTopToWindow, setupAlwaysOnTopMain } = require('./main');
+const { setupAlwaysOnTopMain } = require('./main');
 const { popupsConfigRegistry } = require('../popupsconfig');
 
 popupsConfigRegistry.registerPopupConfig('always-on-top', {
@@ -10,7 +10,6 @@ popupsConfigRegistry.registerPopupConfig('always-on-top', {
 });
 
 module.exports = {
-    attachAlwaysOnTopToWindow,
     setupAlwaysOnTopMain,
     setupAlwaysOnTopRender
 };

@@ -60,11 +60,9 @@ function systemIdleErrorResult(id, error) {
  * displays Jitsi Meet
  */
 module.exports = function setupPowerMonitorMain(jitsiMeetWindow) {
-    if (app.isReady()) {
+    app.whenReady().then(() => {
         _attachEvents(jitsiMeetWindow);
-    } else {
-        app.on('ready', () => _attachEvents(jitsiMeetWindow));
-    }
+    });
 
     ipcMain.on(POWER_MONITOR_QUERIES_CHANNEL, (source, { id, data }) => {
         const { powerMonitor } = electron;
