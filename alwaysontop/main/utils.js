@@ -2,7 +2,8 @@ const Store = require('electron-store');
 const electron = require('electron');
 const os = require('os');
 const log = require('@jitsi/logger');
-const { SIZE, ASPECT_RATIO, STORAGE } = require('../constants');
+const { SIZE, ASPECT_RATIO, STORAGE, AOT_WINDOW_NAME } = require('../constants');
+const { BrowserWindow } = electron;
 
 /**
  * Stores the current size of the AOT during the conference
@@ -24,6 +25,16 @@ let logger;
  * The electron-store instance to store last position of the aot window.
  */
 const store = new Store();
+
+
+/**
+ * The aot window instance
+ */
+ const getAotWindow = () => BrowserWindow.getAllWindows().find(win => {
+    if (!win || win.isDestroyed()) return false;
+    const frameName = win.webContents.mainFrame.name || '';
+    return frameName === AOT_WINDOW_NAME;
+});
 
 /**
  * Changes the window resize functionality to respect the passed aspect ratio.
@@ -233,6 +244,7 @@ const windowExists = browserWindow => {
 };
 
 module.exports = {
+    getAotWindow,
     getPosition,
     getSize,
     logError,

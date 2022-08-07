@@ -208,7 +208,7 @@ class AlwaysOnTop extends EventEmitter {
 
         this.emit(EXTERNAL_EVENTS.ALWAYSONTOP_WILL_CLOSE);
 
-        this._aotWindow.srcObject = null;
+        this._aotWindowVideo.srcObject = null;
     }
 
     /**

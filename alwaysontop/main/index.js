@@ -1,6 +1,6 @@
 const electron = require('electron');
 const os = require('os');
-const { BrowserWindow, ipcMain } = electron;
+const { ipcMain } = electron;
 
 const { windowsEnableScreenProtection } = require('../../helpers/functions');
 const { EVENTS, STATES, AOT_WINDOW_NAME, EVENTS_CHANNEL } = require('../constants');
@@ -13,14 +13,10 @@ const {
     savePosition,
     setAspectRatioToResizeableWindow,
     setLogger,
-    windowExists
+    windowExists,
+    getAotWindow
 } = require('./utils');
 const aotConfig = require('./config');
-
-/**
- * The aot window instance
- */
-let aotWindow;
 
 /**
  * The main window instance
@@ -33,6 +29,12 @@ let mainWindow;
 let isIntersecting;
 
 /**
+ * Pre-existing window open handler.
+ * Ideally electron would expose something like BrowserWindow.webContents.getWindowOpenHandler
+ */
+let _existingWindowOpenHandler;
+
+/**
  * Sends an update state event to renderer process
  * @param {string} value the updated aot window state
  */
@@ -43,19 +45,21 @@ const sendStateUpdate = state => {
 };
 
 /**
- * Opens the aot window
+ * Handles window created event
+ *
+ * @param {BrowserWindow} window the newly created window
  */
-const openAotWindow = (event, options) => {
-    event.preventDefault();
+const handleWindowCreated = window => {
+    logInfo(`received window created event`);
 
-    const config = {
-        ...options,
-        ...aotConfig,
-        ...getPosition(),
-        ...getSize()
-    };
+    const aotWindow = getAotWindow();
 
-    aotWindow = event.newGuest = new BrowserWindow(config);
+    if (window !== aotWindow) {
+        return;
+    }
+
+    logInfo(`setting aot window options`);
+
     // Required to allow the window to be rendered on top of full screen apps
     aotWindow.setAlwaysOnTop(true, 'screen-saver');
 
@@ -65,7 +69,7 @@ const openAotWindow = (event, options) => {
     }
 
     aotWindow.once('ready-to-show', () => {
-        aotWindow.showInactive();
+        aotWindow.show();
     });
 
     aotWindow.webContents.on('error', error => {
@@ -75,20 +79,27 @@ const openAotWindow = (event, options) => {
     setAspectRatioToResizeableWindow(aotWindow);
 };
 
-/**
- * Handles new-window events for the main process in order to customize the
- * BrowserWindow options of the always on top window. This handler will be
- * executed in the context of the main process.
- *
- * NOTE: All other parameters are standard for electron webcontent's new-window
- * event listeners.
- * @see {@link https://github.com/electron/electron/blob/master/docs/api/web-contents.md#event-new-window}
- */
-const onNewWindow = (event, url, frameName, disposition, options) => {
+const windowOpenHandler = args => {
+    const { frameName } = args;
+
     if (frameName === AOT_WINDOW_NAME) {
-        logInfo('handling new-window event');
-        openAotWindow(event, options);
+        logInfo('handling new aot window event');
+
+        return {
+            action: 'allow',
+            overrideBrowserWindowOptions: {
+                ...aotConfig,
+                ...getPosition(),
+                ...getSize()
+            }
+        };
     }
+
+    if (_existingWindowOpenHandler) {
+        return _existingWindowOpenHandler(args);
+    }
+
+    return { action: 'deny' };
 };
 
 /**
@@ -98,6 +109,7 @@ const showAot = () => {
     logInfo('show aot handler');
 
     let state;
+    const aotWindow = getAotWindow();
 
     if (windowExists(aotWindow)) {
         state = STATES.SHOW;
@@ -144,6 +156,8 @@ const removeMainWindowHandlers = () => {
  * Hides the aot window
  */
  const hideWindow = () => {
+    const aotWindow = getAotWindow();
+
     if (windowExists(aotWindow)) {
         logInfo('hiding aot window');
         aotWindow.hide();
@@ -155,6 +169,8 @@ const removeMainWindowHandlers = () => {
  * Shows the aot window
  */
 const closeWindow = () => {
+    const aotWindow = getAotWindow();
+
     if (windowExists(aotWindow)) {
         logInfo('closing aot window');
         aotWindow.close();
@@ -167,12 +183,15 @@ const closeWindow = () => {
  * @param {Object} options channel params
  */
 const onAotEvent = (event, { name, ...rest }) => {
+    logInfo(`received aot event ${name}`);
+
     switch (name) {
         case EVENTS.UPDATE_STATE:
             handleStateChange(rest.state);
             break;
         case EVENTS.MOVE:
             handleMove(rest);
+            break;
     }
 };
 
@@ -189,7 +208,7 @@ const handleStateChange = state => {
             break;
         case STATES.CLOSE:
             removeMainWindowHandlers();
-            savePosition(aotWindow);
+            savePosition(getAotWindow());
             resetSize();
             closeWindow();
             break;
@@ -222,6 +241,8 @@ const handleStateChange = state => {
  * @param {Object} initialSize the window size before move
  */
 const handleMove = (position, initialSize) => {
+    const aotWindow = getAotWindow();
+
     if (!windowExists(aotWindow)) {
         return;
     }
@@ -240,21 +261,21 @@ const handleMove = (position, initialSize) => {
 /**
  * Initializes the always on top functionality in the main electron process.
  *
- * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which
+ * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which displays the meeting
  * @param {Logger} loggerTransports - external loggers
- * displays Jitsi Meet
+ * @param {Function} existingWindowOpenHandler - preexisting window open handler, in order to avoid overwriting it.
  */
- const setupAlwaysOnTopMain = (jitsiMeetWindow, loggerTransports) => {
+ const setupAlwaysOnTopMain = (jitsiMeetWindow, loggerTransports, existingWindowOpenHandler) => {
     logInfo('setting up aot for main window');
 
     setLogger(loggerTransports);
 
-    mainWindow = jitsiMeetWindow;
-
     ipcMain.on(EVENTS_CHANNEL, onAotEvent);
 
+    _existingWindowOpenHandler = existingWindowOpenHandler;
     mainWindow = jitsiMeetWindow;
-    mainWindow.webContents.on('new-window', onNewWindow);
+    mainWindow.webContents.setWindowOpenHandler(windowOpenHandler);
+    mainWindow.webContents.on('did-create-window', handleWindowCreated);
 
     // Clean up ipcMain handlers to avoid leaks.
     mainWindow.on('closed', () => {
