@@ -1,7 +1,6 @@
 const { RemoteControl, RemoteControlMain } = require('./remotecontrol');
 const { setupScreenSharingRender, setupScreenSharingMain } = require('./screensharing');
 const {
-    attachAlwaysOnTopToWindow,
     setupAlwaysOnTopRender,
     setupAlwaysOnTopMain
 } = require('./alwaysontop');
@@ -15,7 +14,6 @@ const {
 } = require('./popupsconfig');
 
 module.exports = {
-    attachAlwaysOnTopToWindow,
     getWiFiStats,
     RemoteControl,
     RemoteControlMain,

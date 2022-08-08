@@ -10,6 +10,7 @@ module.exports = {
         ALWAYSONTOP_WILL_CLOSE: 'will-close',
         ALWAYSONTOP_DOUBLE_CLICK: 'double-click'
     },
+    EVENTS_CHANNEL: 'aot-events-channel',
     SIZE: {
         width: 320,
         height: 180
