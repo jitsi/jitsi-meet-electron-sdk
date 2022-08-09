@@ -190,7 +190,7 @@ const onAotEvent = (event, { name, ...rest }) => {
             handleStateChange(rest.state);
             break;
         case EVENTS.MOVE:
-            handleMove(rest);
+            handleMove(rest.position, rest.initialSize);
             break;
     }
 };
