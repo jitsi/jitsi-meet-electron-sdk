@@ -231,7 +231,12 @@ class AlwaysOnTop extends EventEmitter {
         this._api.removeListener('videoConferenceJoined', this._onConferenceJoined);
         this._api.removeListener('readyToClose', this._disposeWindow);
 
-        this._intersectionObserver.unobserve(this._api.getIFrame());
+        const iframe = this._api.getIFrame();
+
+        if (iframe) {
+            this._intersectionObserver.unobserve(this._api.getIFrame());
+        }
+
         this.emit(EXTERNAL_EVENTS.ALWAYSONTOP_WILL_CLOSE);
 
         sendStateUpdate(STATES.CLOSE);
