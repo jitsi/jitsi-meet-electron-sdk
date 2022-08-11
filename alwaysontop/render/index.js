@@ -52,9 +52,7 @@ class AlwaysOnTop extends EventEmitter {
         this._onIntersection = this._onIntersection.bind(this);
         this._intersectionObserver = new IntersectionObserver(this._onIntersection);
 
-        this._api.on('_willDispose', this._disposeWindow);
         this._api.on('videoConferenceJoined', this._onConferenceJoined);
-        this._api.on('videoConferenceLeft', this._disposeWindow);
         this._api.on('readyToClose', this._disposeWindow);
     }
 
@@ -228,11 +226,9 @@ class AlwaysOnTop extends EventEmitter {
      _disposeWindow() {
         logInfo('disposing window');
 
-        this._api.removeListener('_willDispose', this._disposeWindow);
         this._api.removeListener('largeVideoChanged', this._updateLargeVideoSrc);
         this._api.removeListener('videoMuteStatusChanged', this._updateLargeVideoSrc);
         this._api.removeListener('videoConferenceJoined', this._onConferenceJoined);
-        this._api.removeListener('videoConferenceLeft', this._disposeWindow);
         this._api.removeListener('readyToClose', this._disposeWindow);
 
         this._intersectionObserver.unobserve(this._api.getIFrame());
