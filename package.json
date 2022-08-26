@@ -11,7 +11,7 @@
     "node-gyp-build": "node-gyp-build",
     "prebuild-win32-x86": "prebuildify -t 16.0.0 --napi --strip",
     "prebuild-win32-x64": "prebuildify -t 16.0.0 --napi --strip",
-    "prepare": "husky install"
+    "postinstall": "husky install"
   },
   "pre-commit": [
     "lint"
