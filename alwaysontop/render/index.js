@@ -38,10 +38,12 @@ class AlwaysOnTop extends EventEmitter {
      *
      * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
      */
-    constructor(api) {
+    constructor(api, showOnPrejoin) {
         super();
 
         this._api = api;
+        this._showOnPrejoin = showOnPrejoin;
+        this._joined = false;
         this._disposeWindow = this._disposeWindow.bind(this);
         this._dismiss = this._dismiss.bind(this);
         this._onConferenceJoined = this._onConferenceJoined.bind(this);
@@ -54,15 +56,23 @@ class AlwaysOnTop extends EventEmitter {
 
         this._api.on('videoConferenceJoined', this._onConferenceJoined);
         this._api.on('readyToClose', this._disposeWindow);
+
+        if (showOnPrejoin) {
+            this._api.on('prejoinScreenLoaded', this._onConferenceJoined);
+        }
     }
 
     /**
-     * Getter for the large video element in Jitsi Meet.
+     * Getter for the large/prejoin video element in Jitsi Meet.
      *
      * @returns {HTMLElement|undefined} the large video.
      */
     get _jitsiMeetLargeVideo() {
-        return this._api._getLargeVideo();
+        if (this._showOnPrejoin) {
+            return this._api._getPrejoinVideo() || this._api._getLargeVideo();
+        } else {
+            return this._api._getLargeVideo();
+        }
     }
 
     /**
@@ -79,6 +89,12 @@ class AlwaysOnTop extends EventEmitter {
 
     _onConferenceJoined() {
         logInfo('on conference joined');
+        if (this._joined) {
+            logInfo('conference already joined');
+            return;
+        }
+
+        this._joined = true;
         ipcRenderer.on(EVENTS_CHANNEL, this._onAotEvent);
 
         sendStateUpdate(STATES.CONFERENCE_JOINED);
@@ -153,6 +169,7 @@ class AlwaysOnTop extends EventEmitter {
      */
     _openNewWindow() {
         this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
+        this._api.on('prejoinVideoChanged', this._updateLargeVideoSrc);
         this._api.on('videoMuteStatusChanged', this._updateLargeVideoSrc);
 
         this._aotWindow = window.open('', AOT_WINDOW_NAME);
@@ -214,6 +231,7 @@ class AlwaysOnTop extends EventEmitter {
      */
     _showWindow() {
         this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
+        this._api.on('prejoinVideoChanged', this._updateLargeVideoSrc);
         this._api.on('videoMuteStatusChanged', this._updateLargeVideoSrc);
 
         this._updateLargeVideoSrc();
@@ -226,10 +244,16 @@ class AlwaysOnTop extends EventEmitter {
      _disposeWindow() {
         logInfo('disposing window');
 
+        this._joined = false;
         this._api.removeListener('largeVideoChanged', this._updateLargeVideoSrc);
+        this._api.removeListener('prejoinVideoChanged', this._updateLargeVideoSrc);
         this._api.removeListener('videoMuteStatusChanged', this._updateLargeVideoSrc);
         this._api.removeListener('videoConferenceJoined', this._onConferenceJoined);
         this._api.removeListener('readyToClose', this._disposeWindow);
+
+        if (this._showOnPrejoin) {
+            this._api.removeListener('prejoinScreenLoaded', this._onConferenceJoined);
+        }
 
         const iframe = this._api.getIFrame();
 
@@ -293,9 +317,10 @@ class AlwaysOnTop extends EventEmitter {
 *
 * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
 * @param {Logger} loggerTransports - external loggers
+* @param {boolean} showOnPrejoin - whether AOT should show on prejoin screen
 */
-module.exports = (api, loggerTransports) => {
+module.exports = (api, loggerTransports, showOnPrejoin) => {
     setLogger(loggerTransports);
 
-    return new AlwaysOnTop(api, loggerTransports);
+    return new AlwaysOnTop(api, showOnPrejoin && typeof api._getPrejoinVideo === 'function');
 };
