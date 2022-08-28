@@ -10,8 +10,7 @@
     "install": "node install.js",
     "node-gyp-build": "node-gyp-build",
     "prebuild-win32-x86": "prebuildify -t 16.0.0 --napi --strip",
-    "prebuild-win32-x64": "prebuildify -t 16.0.0 --napi --strip",
-    "postinstall": "husky install"
+    "prebuild-win32-x64": "prebuildify -t 16.0.0 --napi --strip"
   },
   "pre-commit": [
     "lint"
