@@ -172,6 +172,10 @@ For examples of installation and usage checkout the [Jitsi Meet Electron](https:
 
 ## Development
 
+Enable husky to avoid accidental pushes to the main branch:
+
+    npx husky install
+
 To rebuild the native code, use:
 
     npx node-gyp rebuild
