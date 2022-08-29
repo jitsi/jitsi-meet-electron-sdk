@@ -327,6 +327,6 @@ module.exports = (api, loggerTransports, { showOnPrejoin = false } = {}) => {
     setLogger(loggerTransports);
 
     return new AlwaysOnTop(api, {
-        showOnPrejoin :showOnPrejoin && typeof api._getPrejoinVideo === 'function'
+        showOnPrejoin: showOnPrejoin && typeof api._getPrejoinVideo === 'function'
     });
 };
