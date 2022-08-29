@@ -37,9 +37,11 @@ class AlwaysOnTop extends EventEmitter {
      * Creates new instance.
      *
      * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
-     * @param {boolean} showOnPrejoin - whether AOT should show on prejoin screen.
+     * @param {Object} options - AOT options.
      */
-    constructor(api, showOnPrejoin) {
+    constructor(api, {
+        showOnPrejoin
+    }) {
         super();
 
         this._api = api;
@@ -169,6 +171,7 @@ class AlwaysOnTop extends EventEmitter {
      * Opens a new window
      */
     _openNewWindow() {
+        logInfo('new window');
         this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
         this._api.on('prejoinVideoChanged', this._updateLargeVideoSrc);
         this._api.on('videoMuteStatusChanged', this._updateLargeVideoSrc);
@@ -317,11 +320,13 @@ class AlwaysOnTop extends EventEmitter {
 * window which displays Jitsi Meet.
 *
 * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
-* @param {Logger} loggerTransports - external loggers
-* @param {boolean} showOnPrejoin - whether AOT should show on prejoin screen
+* @param {Logger} loggerTransports - external loggers.
+* @param {Object} options - AOT options.
 */
-module.exports = (api, loggerTransports, showOnPrejoin) => {
+module.exports = (api, loggerTransports, { showOnPrejoin = false } = {}) => {
     setLogger(loggerTransports);
 
-    return new AlwaysOnTop(api, showOnPrejoin && typeof api._getPrejoinVideo === 'function');
+    return new AlwaysOnTop(api, {
+        showOnPrejoin :showOnPrejoin && typeof api._getPrejoinVideo === 'function'
+    });
 };
