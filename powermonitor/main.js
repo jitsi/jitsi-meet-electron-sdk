@@ -63,14 +63,10 @@ function handlePowerMonitorQuery(event, { id, data }) {
 
     switch(data.type) {
         case METHODS.queryIdleState:
-            if (typeof powerMonitor.getSystemIdleState === 'function') { // electron 5+
-                systemIdleResult(id, powerMonitor.getSystemIdleState(data.idleThreshold));
-            }
+            systemIdleResult(id, powerMonitor.getSystemIdleState(data.idleThreshold));
             break;
         case METHODS.queryIdleTime:
-            if (typeof powerMonitor.getSystemIdleTime === 'function') { // electron 5+
-                systemIdleResult(id, powerMonitor.getSystemIdleTime());
-            }
+            systemIdleResult(id, powerMonitor.getSystemIdleTime());
             break;
         default: {
             const error = 'Unknown event type!';
