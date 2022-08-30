@@ -1,7 +1,8 @@
 const setupAlwaysOnTopRender = require('./render');
-const { setupAlwaysOnTopMain } = require('./main');
+const { cleanupAlwaysOnTopMain, setupAlwaysOnTopMain } = require('./main');
 
 module.exports = {
+    cleanupAlwaysOnTopMain,
     setupAlwaysOnTopMain,
     setupAlwaysOnTopRender
 };

@@ -53,48 +53,57 @@ function systemIdleErrorResult(id, error) {
     });
 }
 
+function cleanup(source, { id, data }) {
+    const { powerMonitor } = electron;
+
+    switch(data.type) {
+        case METHODS.queryIdleState:
+            if (typeof powerMonitor.getSystemIdleState === 'function') { // electron 5+
+                systemIdleResult(id, powerMonitor.getSystemIdleState(data.idleThreshold));
+            } else { // electron 4 or older
+                powerMonitor.querySystemIdleState(
+                    data.idleThreshold,
+                    idleState => {
+                        systemIdleResult(id, idleState);
+                    });
+            }
+            break;
+        case METHODS.queryIdleTime:
+            if (typeof powerMonitor.getSystemIdleTime === 'function') { // electron 5+
+                systemIdleResult(id, powerMonitor.getSystemIdleTime());
+            } else { // electron 4 or older
+                powerMonitor.querySystemIdleTime(
+                    idleTime => {
+                        systemIdleResult(id, idleTime);
+                    });
+            }
+            break;
+        default: {
+            const error = 'Unknown event type!';
+
+            console.error(error);
+            systemIdleErrorResult(id, error);
+        }
+    }
+}
+
 /**
  * Initializes the power monitor functionality in the main electron process.
  *
  * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which
  * displays Jitsi Meet
  */
-module.exports = function setupPowerMonitorMain(jitsiMeetWindow) {
+function setupPowerMonitorMain(jitsiMeetWindow) {
     app.whenReady().then(() => {
         _attachEvents(jitsiMeetWindow);
     });
 
-    ipcMain.on(POWER_MONITOR_QUERIES_CHANNEL, (source, { id, data }) => {
-        const { powerMonitor } = electron;
+    ipcMain.on(POWER_MONITOR_QUERIES_CHANNEL, cleanup);
 
-        switch(data.type) {
-            case METHODS.queryIdleState:
-                if (typeof powerMonitor.getSystemIdleState === 'function') { // electron 5+
-                    systemIdleResult(id, powerMonitor.getSystemIdleState(data.idleThreshold));
-                } else { // electron 4 or older
-                    powerMonitor.querySystemIdleState(
-                        data.idleThreshold,
-                        idleState => {
-                            systemIdleResult(id, idleState);
-                        });
-                }
-                break;
-            case METHODS.queryIdleTime:
-                if (typeof powerMonitor.getSystemIdleTime === 'function') { // electron 5+
-                    systemIdleResult(id, powerMonitor.getSystemIdleTime());
-                } else { // electron 4 or older
-                    powerMonitor.querySystemIdleTime(
-                        idleTime => {
-                            systemIdleResult(id, idleTime);
-                        });
-                }
-                break;
-            default: {
-                const error = 'Unknown event type!';
+    jitsiMeetWindow.on('close', cleanup);
+}
 
-                console.error(error);
-                systemIdleErrorResult(id, error);
-            }
-        }
-    });
+module.exports = {
+    cleanupPowerMonitorMain: cleanup,
+    setupPowerMonitorMain
 };

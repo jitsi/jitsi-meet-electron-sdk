@@ -1,8 +1,11 @@
 const { 
     app,
-    ipcMain
+    ipcMain,
+    screen,
 } = require('electron');
 const process = require('process');
+
+const { DISPLAY_METRICS_CHANGED, GET_DISPLAY_EVENT } = require('./constants');
 
 /**
  * Module to run on main process to get display dimensions for remote control.
@@ -11,19 +14,44 @@ class RemoteControlMain {
     constructor(jitsiMeetWindow) {
         this._jitsiMeetWindow = jitsiMeetWindow;
 
-        ipcMain.on('jitsi-remotecontrol-get-display', (event, sourceId) => {
-            event.returnValue = this._getDisplay(sourceId);
-        });
+        this.cleanup = this.cleanup.bind(this);
+        this._handleDisplayMetricsChanged = this._handleDisplayMetricsChanged.bind(this);
+        this._handleGetDisplayEvent = this._handleGetDisplayEvent.bind(this);
+
+        ipcMain.on(GET_DISPLAY_EVENT, this._handleGetDisplayEvent);
 
         app.whenReady().then(() => {
-            const { screen } = require('electron');
-
-            screen.on('display-metrics-changed', () => {
-                if (!this._jitsiMeetWindow.isDestroyed()) {
-                    this._jitsiMeetWindow.webContents.send('jitsi-remotecontrol-displays-changed');
-                }
-            });
+            screen.on(DISPLAY_METRICS_CHANGED, this._handleDisplayMetricsChanged);
         });
+
+        // Clean up ipcMain handlers to avoid leaks.
+        this._jitsiMeetWindow.on('closed', this.cleanup);
+    }
+
+    /**
+     * Cleanup any handlers
+     */
+     cleanup() {
+        ipcMain.removeListener(GET_DISPLAY_EVENT, this._handleGetDisplayEvent);
+        screen.removeListener(DISPLAY_METRICS_CHANGED, this._handleDisplayMetricsChanged);
+    }
+
+    /**
+     * Handles GET_DISPLAY_EVENT event
+     * @param {IPCMainEvent} event - The electron event
+     * @param {string} sourceId - The source id of the desktop sharing stream.
+     */
+    _handleGetDisplayEvent(event, sourceId) {
+        event.returnValue = this._getDisplay(sourceId);
+    }
+
+    /**
+     * Handles DISPLAY_METRICS_CHANGED event
+     */
+    _handleDisplayMetricsChanged() {
+        if (!this._jitsiMeetWindow.isDestroyed()) {
+            this._jitsiMeetWindow.webContents.send('jitsi-remotecontrol-displays-changed');
+        }
     }
 
     /**

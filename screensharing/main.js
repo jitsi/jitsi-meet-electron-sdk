@@ -26,6 +26,7 @@ class ScreenShareMainHook {
         this._jitsiMeetWindow = jitsiMeetWindow;
         this._identity = identity;
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
+        this.cleanup = this.cleanup.bind(this);
 
         if (osxBundleId && isMac()) {
             this._verifyScreenCapturePermissions(osxBundleId);
@@ -36,10 +37,15 @@ class ScreenShareMainHook {
         electron.ipcMain.handle(SCREEN_SHARE_GET_SOURCES, this._onGetSourcesInvoke);
 
         // Clean up ipcMain handlers to avoid leaks.
-        this._jitsiMeetWindow.on('closed', () => {
-            electron.ipcMain.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
-            electron.ipcMain.removeHandler(SCREEN_SHARE_GET_SOURCES);
-        });
+        this._jitsiMeetWindow.on('closed', this.cleanup);
+    }
+
+    /**
+     * Cleanup any handlers
+     */
+    cleanup() {
+        electron.ipcMain.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+        electron.ipcMain.removeHandler(SCREEN_SHARE_GET_SOURCES);
     }
 
     /**
