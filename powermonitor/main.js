@@ -53,29 +53,23 @@ function systemIdleErrorResult(id, error) {
     });
 }
 
-function cleanup(source, { id, data }) {
+/**
+ *
+ * @param {IPCMainEvent} event - electron.ipcMain event
+ * @param {Object} powerMonitor event data
+ */
+function handlePowerMonitorQuery(event, { id, data }) {
     const { powerMonitor } = electron;
 
     switch(data.type) {
         case METHODS.queryIdleState:
             if (typeof powerMonitor.getSystemIdleState === 'function') { // electron 5+
                 systemIdleResult(id, powerMonitor.getSystemIdleState(data.idleThreshold));
-            } else { // electron 4 or older
-                powerMonitor.querySystemIdleState(
-                    data.idleThreshold,
-                    idleState => {
-                        systemIdleResult(id, idleState);
-                    });
             }
             break;
         case METHODS.queryIdleTime:
             if (typeof powerMonitor.getSystemIdleTime === 'function') { // electron 5+
                 systemIdleResult(id, powerMonitor.getSystemIdleTime());
-            } else { // electron 4 or older
-                powerMonitor.querySystemIdleTime(
-                    idleTime => {
-                        systemIdleResult(id, idleTime);
-                    });
             }
             break;
         default: {
@@ -85,6 +79,13 @@ function cleanup(source, { id, data }) {
             systemIdleErrorResult(id, error);
         }
     }
+}
+
+/**
+ * Cleanup any handlers
+ */
+function cleanup() {
+    ipcMain.removeListener(POWER_MONITOR_QUERIES_CHANNEL, handlePowerMonitorQuery);
 }
 
 /**
@@ -98,7 +99,7 @@ function setupPowerMonitorMain(jitsiMeetWindow) {
         _attachEvents(jitsiMeetWindow);
     });
 
-    ipcMain.on(POWER_MONITOR_QUERIES_CHANNEL, cleanup);
+    ipcMain.on(POWER_MONITOR_QUERIES_CHANNEL, handlePowerMonitorQuery);
 
     jitsiMeetWindow.on('close', cleanup);
 }
