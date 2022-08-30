@@ -258,6 +258,10 @@ const handleMove = (position, initialSize) => {
     });
 };
 
+const cleanup = () => {
+    ipcMain.removeListener(EVENTS_CHANNEL, onAotEvent);
+};
+
 /**
  * Initializes the always on top functionality in the main electron process.
  *
@@ -278,11 +282,10 @@ const handleMove = (position, initialSize) => {
     mainWindow.webContents.on('did-create-window', handleWindowCreated);
 
     // Clean up ipcMain handlers to avoid leaks.
-    mainWindow.on('closed', () => {
-        ipcMain.removeListener(EVENTS_CHANNEL, onAotEvent);
-    });
+    mainWindow.on('closed', cleanup);
 };
 
 module.exports = {
+    cleanupAlwaysOnTopMain: cleanup,
     setupAlwaysOnTopMain
 };

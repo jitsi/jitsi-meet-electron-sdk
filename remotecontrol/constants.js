@@ -1,5 +1,10 @@
 module.exports = {
     /**
+     * electron.screen event
+     */
+    DISPLAY_METRICS_CHANGED: 'display-metrics-changed',
+
+    /**
      * Types of remote-control events.
      */
     EVENTS: {
@@ -13,6 +18,11 @@ module.exports = {
         stop: "stop",
         supported: "supported"
     },
+
+    /**
+     * Event for retrieving display metrics
+     */
+    GET_DISPLAY_EVENT: 'jitsi-remotecontrol-get-display',
 
     /**
      * Key actions mapping between the values in remote control key event and

@@ -1,11 +1,16 @@
 const { RemoteControl, RemoteControlMain } = require('./remotecontrol');
 const { setupScreenSharingRender, setupScreenSharingMain } = require('./screensharing');
 const {
+    cleanupAlwaysOnTopMain,
     setupAlwaysOnTopRender,
     setupAlwaysOnTopMain
 } = require('./alwaysontop');
 const { getWiFiStats, setupWiFiStats } = require('./wifistats');
-const { setupPowerMonitorRender, setupPowerMonitorMain } = require('./powermonitor');
+const {
+    cleanupPowerMonitorMain,
+    setupPowerMonitorRender,
+    setupPowerMonitorMain
+} = require('./powermonitor');
 const {
     popupsConfigRegistry,
     initPopupsConfigurationMain,
@@ -17,6 +22,8 @@ module.exports = {
     getWiFiStats,
     RemoteControl,
     RemoteControlMain,
+    cleanupAlwaysOnTopMain,
+    cleanupPowerMonitorMain,
     setupScreenSharingRender,
     setupScreenSharingMain,
     setupAlwaysOnTopRender,
