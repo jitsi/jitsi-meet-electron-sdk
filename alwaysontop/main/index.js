@@ -76,6 +76,11 @@ const handleWindowCreated = window => {
         logError(error);
     });
 
+    aotWindow.webContents.on('render-process-gone', (event, details) => {
+        logInfo('close aot because renderer crashed', details);
+        aotWindow.close();
+    });
+
     setAspectRatioToResizeableWindow(aotWindow);
 };
 
