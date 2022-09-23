@@ -1,38 +1,50 @@
-const { RemoteControl, RemoteControlMain } = require('./remotecontrol');
-const { setupScreenSharingRender, setupScreenSharingMain } = require('./screensharing');
-const {
-    cleanupAlwaysOnTopMain,
-    setupAlwaysOnTopRender,
-    setupAlwaysOnTopMain
-} = require('./alwaysontop');
-const { getWiFiStats, setupWiFiStats } = require('./wifistats');
-const {
-    cleanupPowerMonitorMain,
-    setupPowerMonitorRender,
-    setupPowerMonitorMain
-} = require('./powermonitor');
-const {
-    popupsConfigRegistry,
-    initPopupsConfigurationMain,
-    initPopupsConfigurationRender,
-    getPopupTarget
-} = require('./popupsconfig');
+const { ipcMain, ipcRenderer} = require('electron');
 
-module.exports = {
-    getWiFiStats,
-    RemoteControl,
-    RemoteControlMain,
-    cleanupAlwaysOnTopMain,
-    cleanupPowerMonitorMain,
-    setupScreenSharingRender,
-    setupScreenSharingMain,
-    setupAlwaysOnTopRender,
-    setupAlwaysOnTopMain,
-    setupPowerMonitorRender,
-    setupPowerMonitorMain,
-    setupWiFiStats,
-    popupsConfigRegistry,
-    initPopupsConfigurationMain,
-    initPopupsConfigurationRender,
-    getPopupTarget
-};
+if (ipcMain) {
+    // we are imported in main process, so export all functions meant for main process
+    const { RemoteControlMain } = require('./remotecontrol');
+    const { setupScreenSharingMain } = require('./screensharing');
+    const {
+        cleanupAlwaysOnTopMain,
+        setupAlwaysOnTopMain
+    } = require('./alwaysontop');
+    const {
+        cleanupPowerMonitorMain,
+        setupPowerMonitorMain
+    } = require('./powermonitor');
+    const {
+        popupsConfigRegistry,
+        initPopupsConfigurationMain,
+        getPopupTarget
+    } = require('./popupsconfig');
+    
+    module.exports = {
+        RemoteControlMain,
+        cleanupAlwaysOnTopMain,
+        cleanupPowerMonitorMain,
+        setupScreenSharingMain,
+        setupAlwaysOnTopMain,
+        setupPowerMonitorMain,
+        popupsConfigRegistry,
+        initPopupsConfigurationMain,
+        getPopupTarget
+    };
+} else if (ipcRenderer) {
+    // we are imported into renderer, only export functions meant for renderer
+    const { RemoteControl } = require('./remotecontrol/render');
+    const { setupScreenSharingRender } = require('./screensharing/render');
+    const { setupAlwaysOnTopRender } = require('./alwaysontop/render');
+    const { getWiFiStats, setupWiFiStats } = require('./wifistats');
+    const { setupPowerMonitorRender } = require('./powermonitor/render');
+    const { initPopupsConfigurationRender } = require('./popupsconfig/render');
+    
+    module.exports = {
+        RemoteControl,
+        setupScreenSharingRender,
+        setupAlwaysOnTopRender,
+        setupPowerMonitorRender,
+        getWiFiStats,
+        setupWiFiStats,
+        initPopupsConfigurationRender
+    };
+}

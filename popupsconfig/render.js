@@ -5,8 +5,8 @@
  * @param {JitsiMeetExternalAPI} api - The iframe api instance.
  */
 // eslint-disable-next-line no-unused-vars
-function initPopupsConfiguration(api) {
+function initPopupsConfigurationRender(api) {
     // The empty function is defined only for backward compatability.
 }
 
-module.exports = initPopupsConfiguration;
+module.exports = initPopupsConfigurationRender;
