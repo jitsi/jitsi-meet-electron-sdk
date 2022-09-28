@@ -63,6 +63,8 @@ class AlwaysOnTop extends EventEmitter {
         if (showOnPrejoin) {
             this._api.on('prejoinScreenLoaded', this._onConferenceJoined);
         }
+        
+        window.parent.addEventListener('beforeunload', this._disposeWindow);
     }
 
     /**
@@ -254,6 +256,7 @@ class AlwaysOnTop extends EventEmitter {
         this._api.removeListener('videoMuteStatusChanged', this._updateLargeVideoSrc);
         this._api.removeListener('videoConferenceJoined', this._onConferenceJoined);
         this._api.removeListener('readyToClose', this._disposeWindow);
+        window.parent.removeEventListener('beforeunload', this._disposeWindow);
 
         if (this._showOnPrejoin) {
             this._api.removeListener('prejoinScreenLoaded', this._onConferenceJoined);
