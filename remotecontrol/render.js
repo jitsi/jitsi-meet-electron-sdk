@@ -185,10 +185,12 @@ class RemoteControl {
             }
             case EVENTS.keydown:
             case EVENTS.keyup: {
-                this._robot.keyToggle(
-                    data.key,
-                    KEY_ACTIONS_FROM_EVENT_TYPE[data.type],
-                    data.modifiers);
+                if (data.key) {
+                    this._robot.keyToggle(
+                        data.key,
+                        KEY_ACTIONS_FROM_EVENT_TYPE[data.type],
+                        data.modifiers);
+                }
                 break;
             }
             case REQUESTS.start: {
