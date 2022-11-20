@@ -10,11 +10,23 @@
     "install": "node install.js",
     "node-gyp-build": "node-gyp-build",
     "prebuild-win32-x86": "prebuildify -t 16.0.0 --napi --strip",
-    "prebuild-win32-x64": "prebuildify -t 16.0.0 --napi --strip"
+    "prebuild-win32-x64": "prebuildify -t 16.0.0 --napi --strip",
+    "release": "release-it"
   },
   "pre-commit": [
     "lint"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "release-it": {
+    "github": {
+      "release": true
+    },
+    "npm": {
+      "skipChecks": true
+    }
+  },
   "repository": "https://github.com/jitsi/jitsi-meet-electron-sdk",
   "keywords": [
     "jingle",
@@ -47,6 +59,7 @@
     "husky": "^8.0.1",
     "mocha": "^10.0.0",
     "prebuildify": "^5.0.0",
-    "precommit-hook": "3.0.0"
+    "precommit-hook": "3.0.0",
+    "release-it": "^15.5.0"
   }
 }

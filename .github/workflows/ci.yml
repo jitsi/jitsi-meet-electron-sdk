@@ -23,8 +23,8 @@ jobs:
     env:
       BUILD_GROUP: ${{ matrix.build-group }}
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
       with:
         node-version: '16'
         architecture: ${{ matrix.arch }}
@@ -35,30 +35,33 @@ jobs:
     - name: Prebuildify
       run: npm run prebuild-$BUILD_GROUP
       shell: bash
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: prebuilds
         path: prebuilds/
   publish:
     name: Publish to npm
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     needs: build
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/download-artifact@v2
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: git author config
+      run: |
+        git config user.name "${GITHUB_ACTOR}"
+        git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+    - uses: actions/download-artifact@v3
       with:
         name: prebuilds
         path: prebuilds
-    - uses: phips28/gh-action-bump-version@608cab1205a5560a93eb66b4a64e4acf2119597b
-      with:
-        tag-prefix: 'v'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v3
       with:
         node-version: '16'
         registry-url: 'https://registry.npmjs.org'
-    - run: npm publish --access public
+    - run: npm ci
+    - run: npm run release --dry-run
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
