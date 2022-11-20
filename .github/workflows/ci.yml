@@ -61,7 +61,7 @@ jobs:
         node-version: '16'
         registry-url: 'https://registry.npmjs.org'
     - run: npm ci
-    - run: npm run release --dry-run
+    - run: npm run release --dry-run --no-git.requireUpstream
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
