@@ -23,8 +23,8 @@ jobs:
     env:
       BUILD_GROUP: ${{ matrix.build-group }}
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
       with:
         node-version: '16'
         architecture: ${{ matrix.arch }}
@@ -35,7 +35,7 @@ jobs:
     - name: Prebuildify
       run: npm run prebuild-$BUILD_GROUP
       shell: bash
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: prebuilds
         path: prebuilds/
@@ -44,9 +44,11 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     needs: build
+    concurrency:
+      group: ${{ github.ref }}
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/download-artifact@v2
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
       with:
         name: prebuilds
         path: prebuilds
@@ -55,7 +57,7 @@ jobs:
         tag-prefix: 'v'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - uses: actions/setup-node@v2
+    - uses: actions/setup-node@v3
       with:
         node-version: '16'
         registry-url: 'https://registry.npmjs.org'
