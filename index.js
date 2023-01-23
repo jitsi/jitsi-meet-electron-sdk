@@ -5,7 +5,6 @@ const {
     setupAlwaysOnTopRender,
     setupAlwaysOnTopMain
 } = require('./alwaysontop');
-const { getWiFiStats, setupWiFiStats } = require('./wifistats');
 const {
     cleanupPowerMonitorMain,
     setupPowerMonitorRender,
@@ -19,7 +18,6 @@ const {
 } = require('./popupsconfig');
 
 module.exports = {
-    getWiFiStats,
     RemoteControl,
     RemoteControlMain,
     cleanupAlwaysOnTopMain,
@@ -30,7 +28,6 @@ module.exports = {
     setupAlwaysOnTopMain,
     setupPowerMonitorRender,
     setupPowerMonitorMain,
-    setupWiFiStats,
     popupsConfigRegistry,
     initPopupsConfigurationMain,
     initPopupsConfigurationRender,
