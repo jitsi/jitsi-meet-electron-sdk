@@ -120,22 +120,9 @@ alwaysOnTop.on('will-close', handleAlwaysOnTopClose);
 
 * _will-close_ - emitted right before the always on top window is going to close
 
-#### WiFi Stats
-Provides a function to query for wifi stats on the host computer. Returns information like interface name, addresses, signal quality, noise (not available on all OS).
-
-**WiFi Stats:**
-
-In the **render** electron process of the window where Jitsi Meet is displayed:
-```Javascript
-const {
-    setupWiFiStats
-} = require("@jitsi/electron-sdk");
-
-const api = new JitsiMeetExternalAPI(...);
-setupWiFiStats(api.getIFrame());
-```
 
 #### Power Monitor
+
 Provides a way to query electron for system idle and receive power monitor events.
 
 **enable power monitor:**
