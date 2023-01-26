@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const electron = require('electron');
 const os = require('os');
 const { ipcMain } = electron;
@@ -19,6 +20,11 @@ const {
 const aotConfig = require('./config');
 
 /**
+ * Token for matching window open requests.
+ */
+let aotMagic;
+
+/**
  * The main window instance
  */
 let mainWindow;
@@ -38,10 +44,10 @@ let _existingWindowOpenHandler;
  * Sends an update state event to renderer process
  * @param {string} value the updated aot window state
  */
-const sendStateUpdate = state => {
+const sendStateUpdate = (state, data = {}) => {
     logInfo(`sending ${state} state update to renderer process`);
 
-    mainWindow.webContents.send(EVENTS_CHANNEL, { name: EVENTS.UPDATE_STATE, state });
+    mainWindow.webContents.send(EVENTS_CHANNEL, { name: EVENTS.UPDATE_STATE, state, data });
 };
 
 /**
@@ -87,8 +93,16 @@ const handleWindowCreated = window => {
 const windowOpenHandler = args => {
     const { frameName } = args;
 
-    if (frameName === AOT_WINDOW_NAME) {
+    if (frameName.startsWith(AOT_WINDOW_NAME)) {
         logInfo('handling new aot window event');
+
+        const magic = frameName.split('-')[1];
+
+        if (magic !== aotMagic) {
+            logInfo('bad AoT window magic');
+
+            return { action: 'deny' };
+        }
 
         return {
             action: 'allow',
@@ -114,6 +128,8 @@ const showAot = () => {
     logInfo('show aot handler');
 
     let state;
+    let data = {};
+
     const aotWindow = getAotWindow();
 
     if (windowExists(aotWindow)) {
@@ -121,9 +137,11 @@ const showAot = () => {
         aotWindow.showInactive();
     } else {
         state = STATES.OPEN;
+        aotMagic = crypto.randomUUID().replaceAll('-', '');
+        data.aotMagic = aotMagic;
     }
 
-    sendStateUpdate(state);
+    sendStateUpdate(state, data);
 };
 
 /**

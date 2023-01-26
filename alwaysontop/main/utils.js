@@ -33,7 +33,7 @@ const store = new Store();
  const getAotWindow = () => BrowserWindow.getAllWindows().find(win => {
     if (!win || win.isDestroyed() || win.webContents.isCrashed()) return false;
     const frameName = win.webContents.mainFrame.name || '';
-    return frameName === AOT_WINDOW_NAME;
+    return frameName.startsWith(AOT_WINDOW_NAME);
 });
 
 /**
