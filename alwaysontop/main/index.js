@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const electron = require('electron');
 const os = require('os');
-const { ipcMain } = electron;
+const { BrowserWindow, ipcMain } = electron;
 
 const { windowsEnableScreenProtection } = require('../../helpers/functions');
 const { EVENTS, STATES, AOT_WINDOW_NAME, EVENTS_CHANNEL } = require('../constants');
@@ -14,8 +14,7 @@ const {
     savePosition,
     setAspectRatioToResizeableWindow,
     setLogger,
-    windowExists,
-    getAotWindow
+    windowExists
 } = require('./utils');
 const aotConfig = require('./config');
 
@@ -39,6 +38,15 @@ let isIntersecting;
  * Ideally electron would expose something like BrowserWindow.webContents.getWindowOpenHandler
  */
 let _existingWindowOpenHandler;
+
+/**
+ * The aot window instance
+ */
+const getAotWindow = () => BrowserWindow.getAllWindows().find(win => {
+    if (!win || win.isDestroyed() || win.webContents.isCrashed()) return false;
+    const frameName = win.webContents.mainFrame.name || '';
+    return frameName === `${AOT_WINDOW_NAME}-${aotMagic}`;
+});
 
 /**
  * Sends an update state event to renderer process
