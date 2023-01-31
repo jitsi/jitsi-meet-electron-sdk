@@ -172,13 +172,13 @@ class AlwaysOnTop extends EventEmitter {
     /**
      * Opens a new window
      */
-    _openNewWindow() {
+    _openNewWindow(magic) {
         logInfo('new window');
         this._api.on('largeVideoChanged', this._updateLargeVideoSrc);
         this._api.on('prejoinVideoChanged', this._updateLargeVideoSrc);
         this._api.on('videoMuteStatusChanged', this._updateLargeVideoSrc);
 
-        this._aotWindow = window.open('', AOT_WINDOW_NAME);
+        this._aotWindow = window.open('', `${AOT_WINDOW_NAME}-${magic}`);
         this._aotWindow.alwaysOnTop = {
             api: this._api,
             dismiss: this._dismiss,
@@ -291,7 +291,7 @@ class AlwaysOnTop extends EventEmitter {
     _onAotEvent (event, { name, ...rest }) {
         switch (name) {
             case EVENTS.UPDATE_STATE:
-                this._handleStateChange(rest.state);
+                this._handleStateChange(rest.state, rest.data);
                 break;
         }
     }
@@ -300,8 +300,9 @@ class AlwaysOnTop extends EventEmitter {
      * Handler for state updates
      *
      * @param {string} state updated state
+     * @param {Object} data ancillary data to the event
      */
-     _handleStateChange (state) {
+     _handleStateChange (state, data) {
         logInfo(`handling ${state} state update from main process`);
 
         switch (state) {
@@ -309,7 +310,7 @@ class AlwaysOnTop extends EventEmitter {
                 this._hideWindow();
                 break;
             case STATES.OPEN:
-                this._openNewWindow();
+                this._openNewWindow(data.aotMagic);
                 break;
             case STATES.SHOW:
                 this._showWindow();
