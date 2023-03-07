@@ -145,7 +145,6 @@ const showAot = () => {
         aotWindow.showInactive();
     } else {
         state = STATES.OPEN;
-        aotMagic = crypto.randomUUID().replaceAll('-', '');
         data.aotMagic = aotMagic;
     }
 
@@ -174,7 +173,7 @@ const addMainWindowHandlers = () => {
 };
 
 /**
- * Dettaches event handlers from the main window
+ * Detaches event handlers from the main window
  */
 const removeMainWindowHandlers = () => {
     logInfo(`removing main window event handlers`);
@@ -302,6 +301,8 @@ const cleanup = () => {
  */
  const setupAlwaysOnTopMain = (jitsiMeetWindow, loggerTransports, existingWindowOpenHandler) => {
     logInfo('setting up aot for main window');
+
+    aotMagic = crypto.randomUUID().replaceAll('-', '');
 
     setLogger(loggerTransports);
 
