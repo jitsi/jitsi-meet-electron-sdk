@@ -4,7 +4,7 @@ const { EventEmitter } = require('events');
 const { ipcRenderer } = require('electron');
 const os = require('os');
 const path = require('path');
-const { logInfo, setLogger } = require('../main/utils');
+const { logInfo, setLogger } = require('./utils');
 
 const { EVENTS, STATES, AOT_WINDOW_NAME, EXTERNAL_EVENTS, EVENTS_CHANNEL } = require('../constants');
 
