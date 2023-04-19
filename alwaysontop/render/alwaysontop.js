@@ -3,7 +3,6 @@ const {
     move,
     ondblclick,
     onload,
-    shouldImplementDrag,
     dismiss
 } = window.alwaysOnTop;
 
@@ -28,23 +27,23 @@ api._getAlwaysOnTopResources().forEach(src => loadFile(src));
  * @returns {void}
  */
 function setupDraggable() {
-    if (shouldImplementDrag) {
-        window.addEventListener('mousedown', mouseDownEvent => {
-            initialSize = {
-                width: window.innerWidth,
-                height: window.innerHeight
-            };
-            pageX = mouseDownEvent.pageX;
-            pageY = mouseDownEvent.pageY;
-            window.addEventListener('mousemove', drag);
-        });
+    /**
+     * If we use the standard drag (-webkit-app-region: drag) all mouse
+     * events are blocked. To fix this we'll implement drag ourselves.
+     */
+    window.addEventListener('mousedown', mouseDownEvent => {
+        initialSize = {
+            width: window.innerWidth,
+            height: window.innerHeight
+        };
+        pageX = mouseDownEvent.pageX;
+        pageY = mouseDownEvent.pageY;
+        window.addEventListener('mousemove', drag);
+    });
 
-        window.addEventListener('mouseup', () => {
-            window.removeEventListener('mousemove', drag);
-        });
-    } else {
-        document.body.style['-webkit-app-region'] = 'drag';
-    }
+    window.addEventListener('mouseup', () => {
+        window.removeEventListener('mousemove', drag);
+    });
 }
 
 /**
