@@ -2,7 +2,6 @@
 
 const { EventEmitter } = require('events');
 const { ipcRenderer } = require('electron');
-const os = require('os');
 const path = require('path');
 const { logInfo, setLogger } = require('./utils');
 
@@ -192,13 +191,7 @@ class AlwaysOnTop extends EventEmitter {
              */
             move,
             ondblclick: this._switchToMainWindow,
-            onload: this._updateLargeVideoSrc,
-            /**
-             * On Windows and Linux if we use the standard drag
-             * (-webkit-app-region: drag) all mouse events are blocked. To fix
-             * this we'll implement drag ourselves.
-             */
-            shouldImplementDrag: os.type() !== 'Darwin'
+            onload: this._updateLargeVideoSrc
         };
 
         const cssPath = path.join(__dirname, './alwaysontop.css');
