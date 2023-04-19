@@ -2,6 +2,8 @@ const { ipcRenderer } = require('electron');
 const os = require('os');
 const postis = require("postis");
 const constants = require("./constants");
+const robot = require("@jitsi/robotjs");
+
 const {
     EVENTS,
     KEY_ACTIONS_FROM_EVENT_TYPE,
@@ -23,7 +25,6 @@ class RemoteControl {
      * @param {HTMLElement} iframe the Jitsi Meet iframe.
      */
     constructor(iframe) {
-        this._robot = require("@jitsi/robotjs");
         this._iframe = iframe;
         this._iframe.addEventListener('load', () => this._onIFrameLoad());
         /**
@@ -153,9 +154,9 @@ class RemoteControl {
                 const destX = data.x * width * scaleFactor + x;
                 const destY = data.y * height * scaleFactor + y;
                 if(this._mouseButtonStatus === "down") {
-                    this._robot.dragMouse(destX, destY);
+                    robot.dragMouse(destX, destY);
                 } else {
-                    this._robot.moveMouse(destX, destY);
+                    robot.moveMouse(destX, destY);
                 }
                 break;
             }
@@ -163,14 +164,14 @@ class RemoteControl {
             case EVENTS.mouseup: {
                 this._mouseButtonStatus
                     = MOUSE_ACTIONS_FROM_EVENT_TYPE[data.type];
-                this._robot.mouseToggle(
+                robot.mouseToggle(
                     this._mouseButtonStatus,
                     (data.button
                             ? MOUSE_BUTTONS[data.button] : undefined));
                 break;
             }
             case EVENTS.mousedblclick: {
-                this._robot.mouseClick(
+                robot.mouseClick(
                     (data.button
                         ? MOUSE_BUTTONS[data.button] : undefined),
                     true);
@@ -179,14 +180,14 @@ class RemoteControl {
             case EVENTS.mousescroll:{
                 const { x, y } = data;
                 if(x !== 0 || y !== 0) {
-                    this._robot.scrollMouse(x, y);
+                    robot.scrollMouse(x, y);
                 }
                 break;
             }
             case EVENTS.keydown:
             case EVENTS.keyup: {
                 if (data.key) {
-                    this._robot.keyToggle(
+                    robot.keyToggle(
                         data.key,
                         KEY_ACTIONS_FROM_EVENT_TYPE[data.type],
                         data.modifiers);
