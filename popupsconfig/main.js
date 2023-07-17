@@ -1,5 +1,3 @@
-const electron = require('electron');
-const { BrowserWindow } = electron;
 const popupsConfigRegistry = require('./PopupsConfigRegistry');
 const { testMatchPatterns } = require('./functions');
 const { popupConfigs } = require('./constants');
@@ -14,47 +12,21 @@ function initPopupsConfiguration(jitsiMeetWindow) {
     popupsConfigRegistry.registerPopupConfigs(popupConfigs);
 
     // Configuration for the google auth popup.
-    jitsiMeetWindow.webContents.on('new-window', (
-            event,
-            url,
-            frameName,
-            disposition,
-            options) => {
+    jitsiMeetWindow.webContents.setWindowOpenHandler(({url, frameName}) => {
         const configGoogle
             = popupsConfigRegistry.getConfigByName('google-auth') || {};
         if (testMatchPatterns(url, frameName, configGoogle.matchPatterns)) {
-            event.preventDefault();
-            event.newGuest = new BrowserWindow(Object.assign(options, {
-                titleBarStyle: undefined,
-                webPreferences: {
-                    contextIsolation: true,
-                    enableBlinkFeatures: undefined,
-                    enableRemoteModule: false,
-                    nodeIntegration: false,
-                    preload: false,
-                    webSecurity: true
-                }
-            }));
+            return { action: 'allow' };
         }
 
         const configDropbox
             = popupsConfigRegistry.getConfigByName('dropbox-auth') || {};
 
         if (testMatchPatterns(url, frameName, configDropbox.matchPatterns)) {
-            event.preventDefault();
-            event.newGuest = new BrowserWindow(Object.assign(options, {
-                    titleBarStyle: undefined,
-                    webPreferences: {
-                        contextIsolation: true,
-                        enableBlinkFeatures: undefined,
-                        enableRemoteModule: false,
-                        nodeIntegration: false,
-                        preload: false,
-                        webSecurity: true,
-                        sandbox: true
-                    }
-                }));
+            return { action: 'allow' };
         }
+
+        return { action: 'deny' };
     });
 }
 
