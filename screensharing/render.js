@@ -2,6 +2,7 @@
 const { ipcRenderer } = require('electron');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES } = require('./constants');
+const { logInfo, logWarning, setLogger } = require('./utils');
 
 /**
  * Renderer process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -61,6 +62,7 @@ class ScreenShareRenderHook {
                         this._api.executeCommand('_requestDesktopSourcesResult', { error: { data: error  }  });
                     });
             });
+            logInfo("Using external_api screen share method");
         } else {
             this._iframe.contentWindow.JitsiMeetElectron = {
                 /**
@@ -84,6 +86,7 @@ class ScreenShareRenderHook {
                         .catch((error) => errorCallback(error));
                 }
             };
+            logInfo("Using legacy screen share method");
         }
         ipcRenderer.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
         this._api.on('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
@@ -108,7 +111,7 @@ class ScreenShareRenderHook {
                 }
                 break;
             default:
-                console.warn(`Unhandled ${SCREEN_SHARE_EVENTS_CHANNEL}: ${data}`);
+                logWarning(`Unhandled ${SCREEN_SHARE_EVENTS_CHANNEL}: ${data}`);
 
         }
     }
@@ -184,6 +187,8 @@ class ScreenShareRenderHook {
  *
  * @param {JitsiIFrameApi} api - The Jitsi Meet iframe api object.
  */
-module.exports = function setupScreenSharingRender(api) {
+module.exports = function setupScreenSharingRender(api, loggerTransports = null) {
+    setLogger(loggerTransports);
+
     return new ScreenShareRenderHook(api);
 };
