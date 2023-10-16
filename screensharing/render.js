@@ -2,6 +2,7 @@
 const { ipcRenderer } = require('electron');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES } = require('./constants');
+const { logInfo, logWarning, setLogger } = require('./utils');
 
 /**
  * Renderer process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -34,29 +35,59 @@ class ScreenShareRenderHook {
      * Make sure that even after reload/redirect the screensharing will be available
      */
     _onIframeApiLoad() {
-        this._iframe.contentWindow.JitsiMeetElectron = {
-            /**
-             * Get sources available for screensharing. The callback is invoked
-             * with an array of DesktopCapturerSources.
-             *
-             * @param {Function} callback - The success callback.
-             * @param {Function} errorCallback - The callback for errors.
-             * @param {Object} options - Configuration for getting sources.
-             * @param {Array} options.types - Specify the desktop source types
-             * to get, with valid sources being "window" and "screen".
-             * @param {Object} options.thumbnailSize - Specify how big the
-             * preview images for the sources should be. The valid keys are
-             * height and width, e.g. { height: number, width: number}. By
-             * default electron will return images with height and width of
-             * 150px.
-             */
-            obtainDesktopStreams(callback, errorCallback, options = {}) {
-                ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
-                    .then((sources) => callback(sources))
-                    .catch((error) => errorCallback(error));
-            }
-        };
-
+        if (this._api.getSupportedEvents && this._api.getSupportedEvents().includes('_requestDesktopSources')) {
+            this._api.on('_requestDesktopSources', (data) => {
+                ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, data.options)
+                    .then((sources) => {
+                        const desktopSources = sources.map(item => {
+                            return {
+                                ...item,
+                                thumbnail: {
+                                    ...item.thumbnail,
+                                    dataUrl: item.thumbnail.toDataURL()
+                                }
+                            };
+                        });
+    
+                        this._api.executeCommand('_requestDesktopSourcesResult', {
+                            success: {
+                                data: {
+                                    sources: desktopSources,
+                                    types: data.options.desktopSharingSources
+                                }
+                            }
+                        });
+                    })
+                    .catch((error) => {
+                        this._api.executeCommand('_requestDesktopSourcesResult', { error: { data: error  }  });
+                    });
+            });
+            logInfo("Using external_api screen share method");
+        } else {
+            this._iframe.contentWindow.JitsiMeetElectron = {
+                /**
+                 * Get sources available for screensharing. The callback is invoked
+                 * with an array of DesktopCapturerSources.
+                 *
+                 * @param {Function} callback - The success callback.
+                 * @param {Function} errorCallback - The callback for errors.
+                 * @param {Object} options - Configuration for getting sources.
+                 * @param {Array} options.types - Specify the desktop source types
+                 * to get, with valid sources being "window" and "screen".
+                 * @param {Object} options.thumbnailSize - Specify how big the
+                 * preview images for the sources should be. The valid keys are
+                 * height and width, e.g. { height: number, width: number}. By
+                 * default electron will return images with height and width of
+                 * 150px.
+                 */
+                obtainDesktopStreams(callback, errorCallback, options = {}) {
+                    ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
+                        .then((sources) => callback(sources))
+                        .catch((error) => errorCallback(error));
+                }
+            };
+            logInfo("Using legacy screen share method");
+        }
         ipcRenderer.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
         this._api.on('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
         this._api.on('videoConferenceLeft', this._sendCloseTrackerEvent);
@@ -80,7 +111,7 @@ class ScreenShareRenderHook {
                 }
                 break;
             default:
-                console.warn(`Unhandled ${SCREEN_SHARE_EVENTS_CHANNEL}: ${data}`);
+                logWarning(`Unhandled ${SCREEN_SHARE_EVENTS_CHANNEL}: ${data}`);
 
         }
     }
@@ -156,6 +187,8 @@ class ScreenShareRenderHook {
  *
  * @param {JitsiIFrameApi} api - The Jitsi Meet iframe api object.
  */
-module.exports = function setupScreenSharingRender(api) {
+module.exports = function setupScreenSharingRender(api, loggerTransports = null) {
+    setLogger(loggerTransports);
+
     return new ScreenShareRenderHook(api);
 };
