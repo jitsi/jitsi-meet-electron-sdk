@@ -31,54 +31,19 @@ class ScreenShareRenderHook {
         this._iframe.addEventListener('load', this._onIframeApiLoad);
     }
 
-    // this is a rewrite of the sendRequest method on the transport
-    // used this to add an abort controller in case the backend doesn't
-    // respond to the request
-    // will be removed when is sure that the backend will respond to the request
-    _isElectronScreensharing() {
-        const transport = this._api._transport;
-
-        if (!transport._backend) {
-            return Promise.reject(new Error('No transport backend defined!'));
-        }
-        transport._requestID++;
-
-        const id = transport._requestID;
-        const controller = new AbortController();
-        // If the request is not being responded in 10 sec the promise will be rejected.
-        setTimeout(() => controller.abort('Request timeout'), 10000);
-
-        return new Promise((resolve, reject) => {
-            const abortListener = ({target}) => {
-                controller.signal.removeEventListener('abort', abortListener);
-                reject(target.reason);
-              };
-
-            controller.signal.addEventListener('abort', abortListener);
-            transport._responseHandlers.set(id, ({ error, result }) => {
-                if (typeof result !== 'undefined') {
-                    resolve(result);
-
-                // eslint-disable-next-line no-negated-condition
-                } else if (typeof error !== 'undefined') {
-                    reject(error);
-                } else { // no response
-                    reject(new Error('Unexpected response format!'));
-                }
-            });
-
-            try {
-                transport._backend.send({
-                    type: 'request',
-                    data: {
-                        name: '_is_electron_screensharing'
-                    },
-                    id
-                });
-            } catch (error) {
-                transport._responseHandlers.delete(id);
-                reject(error);
-            }
+    // if there is no response from the backend a timeout will resolve the promise
+    // TODO: delete this after 2 releases
+    _isNewElectronScreensharingSupported() {
+        return new Promise((resolve) => {
+            this._api._isNewElectronScreensharingSupported()
+                .then(response => {
+                    if (response.error){
+                        resolve(false);
+                    }
+                    resolve(response);
+                })
+                .catch(() => resolve(false));
+            setTimeout(() => resolve(false), 2000);
         });
     }
 
@@ -86,6 +51,7 @@ class ScreenShareRenderHook {
      * Make sure that even after reload/redirect the screensharing will be available
      */
     async _onIframeApiLoad() {
+        // TODO: delete this after 2 releases
         this._iframe.contentWindow.JitsiMeetElectron = {
             /**
              * Get sources available for screensharing. The callback is invoked
@@ -113,14 +79,9 @@ class ScreenShareRenderHook {
         this._api.on('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
         this._api.on('videoConferenceLeft', this._sendCloseTrackerEvent);
 
-        let isShareScreenExternalAPISupported;
-        try {
-            isShareScreenExternalAPISupported = await this._isElectronScreensharing();
-        } catch (e) {
-            isShareScreenExternalAPISupported = false;
-        }
+        const isNewElectronScreensharingSupported = await this._isNewElectronScreensharingSupported();
 
-        if (isShareScreenExternalAPISupported) {
+        if (isNewElectronScreensharingSupported) {
             this._iframe.contentWindow.JitsiMeetElectron = undefined;
             this._api.on('_requestDesktopSources', async (request, callback) => {
                 const { options } = request;
@@ -130,9 +91,9 @@ class ScreenShareRenderHook {
                     .then((sources) => callback({sources}))
                     .catch((error) => callback({ error }));
             });
-            logInfo("Using external api screen share method");
+            logInfo("Using external api screen sharing method");
         } else {
-            logInfo("Using legacy screen share method");
+            logInfo("Using legacy screen sharing method");
         }
     }
 
