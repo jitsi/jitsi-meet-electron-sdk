@@ -31,66 +31,79 @@ class ScreenShareRenderHook {
         this._iframe.addEventListener('load', this._onIframeApiLoad);
     }
 
+    // if there is no response from the backend a timeout will resolve the promise
+    // TODO: delete this after 2 releases
+    _isNewElectronScreensharingSupported() {
+        return new Promise((resolve) => {
+            if (!this._api._isNewElectronScreensharingSupported) {
+                resolve(false);
+            }
+
+            const timeout = setTimeout(() => resolve(false), 2000);
+            this._api._isNewElectronScreensharingSupported()
+                .then(response => {
+                    if (response.error){
+                        resolve(false);
+                    }
+                    resolve(response);
+                })
+                .catch(() => resolve(false))
+                .finally(() => clearTimeout(timeout));
+        });
+    }
+
     /**
      * Make sure that even after reload/redirect the screensharing will be available
      */
-    _onIframeApiLoad() {
-        if (this._api.getSupportedEvents && this._api.getSupportedEvents().includes('_requestDesktopSources')) {
-            this._api.on('_requestDesktopSources', (data) => {
-                ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, data.options)
-                    .then((sources) => {
-                        const desktopSources = sources.map(item => {
-                            return {
-                                ...item,
-                                thumbnail: {
-                                    ...item.thumbnail,
-                                    dataUrl: item.thumbnail.toDataURL()
-                                }
-                            };
-                        });
-    
-                        this._api.executeCommand('_requestDesktopSourcesResult', {
-                            success: {
-                                data: {
-                                    sources: desktopSources,
-                                    types: data.options.desktopSharingSources
-                                }
-                            }
-                        });
-                    })
-                    .catch((error) => {
-                        this._api.executeCommand('_requestDesktopSourcesResult', { error: { data: error  }  });
-                    });
-            });
-            logInfo("Using external_api screen share method");
-        } else {
-            this._iframe.contentWindow.JitsiMeetElectron = {
-                /**
-                 * Get sources available for screensharing. The callback is invoked
-                 * with an array of DesktopCapturerSources.
-                 *
-                 * @param {Function} callback - The success callback.
-                 * @param {Function} errorCallback - The callback for errors.
-                 * @param {Object} options - Configuration for getting sources.
-                 * @param {Array} options.types - Specify the desktop source types
-                 * to get, with valid sources being "window" and "screen".
-                 * @param {Object} options.thumbnailSize - Specify how big the
-                 * preview images for the sources should be. The valid keys are
-                 * height and width, e.g. { height: number, width: number}. By
-                 * default electron will return images with height and width of
-                 * 150px.
-                 */
-                obtainDesktopStreams(callback, errorCallback, options = {}) {
-                    ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
-                        .then((sources) => callback(sources))
-                        .catch((error) => errorCallback(error));
-                }
-            };
-            logInfo("Using legacy screen share method");
-        }
+    async _onIframeApiLoad() {
+        // TODO: delete this after 2 releases
+        this._iframe.contentWindow.JitsiMeetElectron = {
+            /**
+             * Get sources available for screensharing. The callback is invoked
+             * with an array of DesktopCapturerSources.
+             *
+             * @param {Function} callback - The success callback.
+             * @param {Function} errorCallback - The callback for errors.
+             * @param {Object} options - Configuration for getting sources.
+             * @param {Array} options.types - Specify the desktop source types
+             * to get, with valid sources being "window" and "screen".
+             * @param {Object} options.thumbnailSize - Specify how big the
+             * preview images for the sources should be. The valid keys are
+             * height and width, e.g. { height: number, width: number}. By
+             * default electron will return images with height and width of
+             * 150px.
+             */
+            obtainDesktopStreams(callback, errorCallback, options = {}) {
+                ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
+                    .then((sources) => callback(sources))
+                    .catch((error) => errorCallback(error));
+            }
+        };
+
         ipcRenderer.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
         this._api.on('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
         this._api.on('videoConferenceLeft', this._sendCloseTrackerEvent);
+
+        const isNewElectronScreensharingSupported = await this._isNewElectronScreensharingSupported();
+
+        if (isNewElectronScreensharingSupported) {
+            this._iframe.contentWindow.JitsiMeetElectron = undefined;
+            this._api.on('_requestDesktopSources', async (request, callback) => {
+                const { options } = request;
+
+                ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
+                    .then(sources => {
+                        sources.forEach(item => {
+                            item.thumbnail.dataUrl = item.thumbnail.toDataURL(); 
+                        });
+                        callback({ sources });
+                    })
+                    .catch((error) => callback({ error }));
+            });
+            logInfo("Using external api screen sharing method");
+        } else {
+            logInfo("Using legacy screen sharing method");
+        }
     }
 
     /**
