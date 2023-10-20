@@ -35,6 +35,11 @@ class ScreenShareRenderHook {
     // TODO: delete this after 2 releases
     _isNewElectronScreensharingSupported() {
         return new Promise((resolve) => {
+            if (!this._api._isNewElectronScreensharingSupported) {
+                resolve(false);
+            }
+
+            const timeout = setTimeout(() => resolve(false), 2000);
             this._api._isNewElectronScreensharingSupported()
                 .then(response => {
                     if (response.error){
@@ -42,8 +47,8 @@ class ScreenShareRenderHook {
                     }
                     resolve(response);
                 })
-                .catch(() => resolve(false));
-            setTimeout(() => resolve(false), 2000);
+                .catch(() => resolve(false))
+                .finally(() => clearTimeout(timeout));
         });
     }
 
@@ -87,8 +92,12 @@ class ScreenShareRenderHook {
                 const { options } = request;
 
                 ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
-                    .then((sources)=> sources.map(item => {item.thumbnail.dataUrl = item.thumbnail.toDataURL(); return item;}))
-                    .then((sources) => callback({sources}))
+                    .then(sources => {
+                        sources.forEach(item => {
+                            item.thumbnail.dataUrl = item.thumbnail.toDataURL(); 
+                        });
+                        callback({ sources });
+                    })
                     .catch((error) => callback({ error }));
             });
             logInfo("Using external api screen sharing method");
