@@ -57,28 +57,32 @@ class ScreenShareRenderHook {
      */
     async _onIframeApiLoad() {
         // TODO: delete this after 2 releases
-        this._iframe.contentWindow.JitsiMeetElectron = {
-            /**
-             * Get sources available for screensharing. The callback is invoked
-             * with an array of DesktopCapturerSources.
-             *
-             * @param {Function} callback - The success callback.
-             * @param {Function} errorCallback - The callback for errors.
-             * @param {Object} options - Configuration for getting sources.
-             * @param {Array} options.types - Specify the desktop source types
-             * to get, with valid sources being "window" and "screen".
-             * @param {Object} options.thumbnailSize - Specify how big the
-             * preview images for the sources should be. The valid keys are
-             * height and width, e.g. { height: number, width: number}. By
-             * default electron will return images with height and width of
-             * 150px.
-             */
-            obtainDesktopStreams(callback, errorCallback, options = {}) {
-                ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
-                    .then((sources) => callback(sources))
-                    .catch((error) => errorCallback(error));
-            }
-        };
+        try {
+            this._iframe.contentWindow.JitsiMeetElectron = {
+                /**
+                 * Get sources available for screensharing. The callback is invoked
+                 * with an array of DesktopCapturerSources.
+                 *
+                 * @param {Function} callback - The success callback.
+                 * @param {Function} errorCallback - The callback for errors.
+                 * @param {Object} options - Configuration for getting sources.
+                 * @param {Array} options.types - Specify the desktop source types
+                 * to get, with valid sources being "window" and "screen".
+                 * @param {Object} options.thumbnailSize - Specify how big the
+                 * preview images for the sources should be. The valid keys are
+                 * height and width, e.g. { height: number, width: number}. By
+                 * default electron will return images with height and width of
+                 * 150px.
+                 */
+                obtainDesktopStreams(callback, errorCallback, options = {}) {
+                    ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
+                        .then((sources) => callback(sources))
+                        .catch((error) => errorCallback(error));
+                }
+            };
+        } catch(_) {
+            logWarning('Failed to setup deprecated screen-sharing hook');
+        }
 
         ipcRenderer.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
         this._api.on('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
@@ -87,7 +91,12 @@ class ScreenShareRenderHook {
         const isNewElectronScreensharingSupported = await this._isNewElectronScreensharingSupported();
 
         if (isNewElectronScreensharingSupported) {
-            this._iframe.contentWindow.JitsiMeetElectron = undefined;
+            try {
+                this._iframe.contentWindow.JitsiMeetElectron = undefined;
+            } catch(_) {
+                // Ignore.
+            }
+
             this._api.on('_requestDesktopSources', async (request, callback) => {
                 const { options } = request;
 
