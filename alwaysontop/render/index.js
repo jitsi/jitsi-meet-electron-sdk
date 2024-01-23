@@ -303,7 +303,13 @@ class AlwaysOnTop extends EventEmitter {
                 this._hideWindow();
                 break;
             case STATES.OPEN:
-                this._openNewWindow(data.aotMagic);
+                try {
+                    this._openNewWindow(data.aotMagic);
+                } catch(e) {
+                    this._api.removeListener('largeVideoChanged', this._updateLargeVideoSrc);
+                    this._api.removeListener('prejoinVideoChanged', this._updateLargeVideoSrc);
+                    this._api.removeListener('videoMuteStatusChanged', this._updateLargeVideoSrc);
+                }
                 break;
             case STATES.SHOW:
                 this._showWindow();
