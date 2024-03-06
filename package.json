@@ -9,8 +9,8 @@
     "validate": "npm ls",
     "install": "node install.js",
     "node-gyp-build": "node-gyp-build",
-    "prebuild-win32-x86": "prebuildify -t 16.0.0 --napi --strip",
-    "prebuild-win32-x64": "prebuildify -t 16.0.0 --napi --strip"
+    "prebuild-win32-x86": "prebuildify -t 20.0.0 --strip",
+    "prebuild-win32-x64": "prebuildify -t 20.0.0 --strip"
   },
   "pre-commit": [
     "lint"
@@ -38,7 +38,7 @@
     "@jitsi/robotjs": "^0.6.13",
     "electron-store": "^8.0.1",
     "node-addon-api": "^7.0.0",
-    "node-gyp-build": "4.3.0",
+    "node-gyp-build": "4.8.0",
     "postis": "^2.2.0"
   },
   "devDependencies": {
@@ -46,7 +46,7 @@
     "eslint-plugin-jsdoc": "*",
     "husky": "^9.0.10",
     "mocha": "^10.0.0",
-    "prebuildify": "^5.0.0",
+    "prebuildify": "^6.0.0",
     "precommit-hook": "3.0.0"
   }
 }
