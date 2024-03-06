@@ -35,7 +35,7 @@ jobs:
     - name: Prebuildify
       run: npm run prebuild-$BUILD_GROUP
       shell: bash
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: prebuilds
         path: prebuilds/
