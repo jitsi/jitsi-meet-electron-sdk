@@ -52,7 +52,7 @@ jobs:
       with:
         name: prebuilds
         path: prebuilds
-    - uses: phips28/gh-action-bump-version@d84ee862bf54f45e75b2918b2ce1007d3fed25f1
+    - uses: phips28/gh-action-bump-version@56588a3c4a1d62a068f308dfbc17f4ee55c69d41
       with:
         tag-prefix: 'v'
         version-type:  'patch'
