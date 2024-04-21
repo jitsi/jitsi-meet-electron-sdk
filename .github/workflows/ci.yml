@@ -26,7 +26,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '20.12.1' # pin until https://github.com/prebuild/node-gyp-build/issues/68 is fixed and release
         architecture: ${{ matrix.arch }}
     - run: npm ci
     - run: npm run lint
