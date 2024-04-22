@@ -30,8 +30,7 @@ jobs:
         architecture: ${{ matrix.arch }}
     - run: npm ci
     - run: npm run lint
-    - run: TESTING=true npx mocha
-      shell: bash
+    - run: npm test
     - name: Prebuildify
       run: npm run prebuild-$BUILD_GROUP
       shell: bash
