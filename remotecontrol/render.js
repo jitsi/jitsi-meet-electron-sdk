@@ -188,7 +188,7 @@ class RemoteControl {
             case EVENTS.keyup: {
                 if (data.key) {
                     robot.keyToggle(
-                        data.key,
+                        data.key === 'caps_lock' ? 'capslock' : data.key,
                         KEY_ACTIONS_FROM_EVENT_TYPE[data.type],
                         data.modifiers);
                 }
