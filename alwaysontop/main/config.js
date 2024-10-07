@@ -1,6 +1,7 @@
 const { SIZE } = require("../constants");
 
 module.exports = {
+    type: 'panel',
     backgroundColor: 'transparent',
     minWidth: SIZE.width,
     minHeight: SIZE.height,
