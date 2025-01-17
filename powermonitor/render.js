@@ -78,6 +78,8 @@ function dispose() {
 module.exports = function setupPowerMonitorRender(api) {
     const iframe = api.getIFrame();
 
+    api.on('_willDispose', dispose);
+
     iframe.addEventListener('load', () => {
         iframe.contentWindow.addEventListener(
             'unload',
