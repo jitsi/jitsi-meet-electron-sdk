@@ -58,11 +58,12 @@ class AlwaysOnTop extends EventEmitter {
 
         this._api.on('videoConferenceJoined', this._onConferenceJoined);
         this._api.on('readyToClose', this._disposeWindow);
+        this._api.on('_willDispose', this._disposeWindow);
 
         if (showOnPrejoin) {
             this._api.on('prejoinScreenLoaded', this._onConferenceJoined);
         }
-        
+
         window.parent.addEventListener('beforeunload', this._disposeWindow);
     }
 
@@ -136,7 +137,7 @@ class AlwaysOnTop extends EventEmitter {
             if (!this._aotWindow) {
                 return;
             }
-    
+
             if (!this._jitsiMeetLargeVideo) {
                 this._aotWindowVideo.style.display = 'none';
                 this._aotWindowVideo.srcObject = null;
@@ -240,7 +241,7 @@ class AlwaysOnTop extends EventEmitter {
 
     /**
      * Disposes the aot window
-     * 
+     *
      */
      _disposeWindow() {
         logInfo('disposing window');
