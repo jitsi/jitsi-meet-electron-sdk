@@ -41,7 +41,7 @@ jobs:
   publish:
     name: Publish to npm
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: build
     concurrency:
       group: ${{ github.ref }}
