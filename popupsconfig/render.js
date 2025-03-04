@@ -1,4 +1,3 @@
-
 /**
  * Initializes the popup configuration module.
  *
@@ -9,4 +8,4 @@ function initPopupsConfiguration(api) {
     // The empty function is defined only for backward compatability.
 }
 
-module.exports = initPopupsConfiguration;
+export default initPopupsConfiguration;

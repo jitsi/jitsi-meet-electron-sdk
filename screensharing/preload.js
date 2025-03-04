@@ -1,6 +1,5 @@
-const { contextBridge, ipcRenderer } = require('electron');
-
-const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS } = require('./constants');
+import { contextBridge, ipcRenderer } from 'electron';
+import { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS } from './constants';
 
 contextBridge.exposeInMainWorld('JitsiScreenSharingTracker', {
     EVENTS: SCREEN_SHARE_EVENTS,

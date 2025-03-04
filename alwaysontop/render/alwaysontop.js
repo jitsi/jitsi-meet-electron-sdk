@@ -1,10 +1,4 @@
-const {
-    api,
-    move,
-    ondblclick,
-    onload,
-    dismiss
-} = window.alwaysOnTop;
+import { api, move, ondblclick, onload, dismiss } from './alwaysontop.js';
 
 let initialSize;
 
@@ -17,9 +11,8 @@ window.addEventListener('dblclick', ondblclick);
 
 onload();
 setupDraggable();
-// load all resources from meet
+// Load all resources from meet
 api._getAlwaysOnTopResources().forEach(src => loadFile(src));
-
 
 /**
  * Enables draggable functionality for the always on top window.
@@ -69,17 +62,17 @@ function drag(mouseMoveEvent) {
 /**
  * Loads a file from a specific source.
  *
- * @param src the source from the which the script is to be (down)loaded
+ * @param {string} src - The source from which the script is to be (down)loaded.
  */
 function loadFile(src) {
-    if(src.endsWith('.js')) {
+    if (src.endsWith('.js')) {
         const script = document.createElement('script');
 
         script.async = true;
         script.src = src;
 
         document.head.appendChild(script);
-    } else if(src.endsWith('.css')) {
+    } else if (src.endsWith('.css')) {
         const link = document.createElement('link');
         link.setAttribute("rel", "stylesheet");
         link.setAttribute("type", "text/css");

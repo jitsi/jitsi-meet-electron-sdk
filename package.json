@@ -3,15 +3,19 @@
   "version": "7.0.3",
   "description": "Utilities for jitsi-meet-electron project",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "lint": "eslint .",
-    "test": "mocha",
-    "validate": "npm ls",
-    "install": "node install.js",
-    "node-gyp-build": "node-gyp-build",
-    "prebuild-win32-x86": "prebuildify -t 20.0.0 --strip",
-    "prebuild-win32-x64": "prebuildify -t 20.0.0 --strip"
-  },
+  "lint": "eslint .",
+  "test": "mocha",
+  "validate": "npm ls",
+  "install": "node install.js",
+  "node-gyp-build": "node-gyp-build",
+  "prebuild-win32-x86": "prebuildify -t 20.0.0 --strip",
+  "prebuild-win32-x64": "prebuildify -t 20.0.0 --strip",
+  "build": "npm run build:main",
+  "build:main": "webpack --config webpack/webpack.main.config.mjs"
+
+},
   "pre-commit": [
     "lint"
   ],
@@ -42,11 +46,16 @@
     "postis": "^2.2.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.9",
+    "@babel/preset-env": "^7.26.9",
+    "babel-loader": "^10.0.0",
     "eslint": ">=3",
     "eslint-plugin-jsdoc": "*",
     "husky": "^9.0.10",
     "mocha": "^10.0.0",
     "prebuildify": "^6.0.0",
-    "precommit-hook": "3.0.0"
+    "precommit-hook": "3.0.0",
+    "webpack": "^5.98.0",
+    "webpack-cli": "^6.0.1"
   }
 }

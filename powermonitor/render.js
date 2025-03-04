@@ -1,12 +1,6 @@
-const electron = require('electron');
-const postis = require('postis');
-const { ipcRenderer } = electron;
-
-const {
-    POWER_MONITOR_EVENTS_CHANNEL,
-    POWER_MONITOR_MESSAGE_NAME,
-    POWER_MONITOR_QUERIES_CHANNEL
-} = require('./constants');
+import { ipcRenderer } from 'electron';
+import postis from 'postis';
+import { POWER_MONITOR_EVENTS_CHANNEL, POWER_MONITOR_MESSAGE_NAME, POWER_MONITOR_QUERIES_CHANNEL } from './constants.js';
 
 /**
  * The channel we use to communicate with Jitsi Meet window.
@@ -63,7 +57,7 @@ function dispose() {
     ipcRenderer.removeListener(
         POWER_MONITOR_EVENTS_CHANNEL, eventsChannelListener);
 
-    if(_channel) {
+    if (_channel) {
         _channel.destroy();
         _channel = null;
     }
@@ -75,30 +69,29 @@ function dispose() {
  *
  * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
  */
-module.exports = function setupPowerMonitorRender(api) {
+export default function setupPowerMonitorRender(api) {
     const iframe = api.getIFrame();
 
     api.on('_willDispose', dispose);
 
     iframe.addEventListener('load', () => {
-        iframe.contentWindow.addEventListener(
-            'unload',
-            dispose
-        );
+        iframe.contentWindow.addEventListener('unload', dispose);
         _channel = postis({
             window: iframe.contentWindow,
             windowForEventListening: window,
             scope: 'jitsi-power-monitor'
         });
+
         _channel.ready(() => {
             ipcRenderer.on(POWER_MONITOR_QUERIES_CHANNEL, queriesChannelListener);
             ipcRenderer.on(POWER_MONITOR_EVENTS_CHANNEL, eventsChannelListener);
+
             _channel.listen('message', message => {
                 const { name } = message.data;
-                if(name === POWER_MONITOR_MESSAGE_NAME) {
+                if (name === POWER_MONITOR_MESSAGE_NAME) {
                     ipcRenderer.send(POWER_MONITOR_QUERIES_CHANNEL, message);
                 }
             });
         });
     });
-};
+}

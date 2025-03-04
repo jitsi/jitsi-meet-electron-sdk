@@ -1,11 +1,8 @@
-const crypto = require('crypto');
-const electron = require('electron');
-const os = require('os');
-const { BrowserWindow, ipcMain } = electron;
-
-const { windowsEnableScreenProtection } = require('../../helpers/functions');
-const { EVENTS, STATES, AOT_WINDOW_NAME, EVENTS_CHANNEL } = require('../constants');
-const {
+import * as crypto from 'crypto';
+import { app, BrowserWindow, ipcMain } from 'electron';
+import { windowsEnableScreenProtection } from '../../helpers/functions.js';
+import { EVENTS, STATES, AOT_WINDOW_NAME, EVENTS_CHANNEL } from '../constants.js';
+import {
     getPosition,
     getSize,
     logError,
@@ -15,8 +12,9 @@ const {
     setAspectRatioToResizeableWindow,
     setLogger,
     windowExists
-} = require('./utils');
-const aotConfig = require('./config');
+} from './utils.js';
+import aotConfig from './config.js';
+import os from 'os';
 
 /**
  * Token for matching window open requests.
@@ -154,7 +152,7 @@ const showAot = () => {
 /**
  * Handle hide aot event.
  */
- const hideAot = () => {
+const hideAot = () => {
     logInfo('hide aot handler');
 
     if (isIntersecting) {
@@ -185,7 +183,7 @@ const removeMainWindowHandlers = () => {
 /**
  * Hides the aot window
  */
- const hideWindow = () => {
+const hideWindow = () => {
     const aotWindow = getAotWindow();
 
     if (windowExists(aotWindow)) {
@@ -299,7 +297,7 @@ const cleanup = () => {
  * @param {Logger} loggerTransports - external loggers
  * @param {Function} existingWindowOpenHandler - preexisting window open handler, in order to avoid overwriting it.
  */
- const setupAlwaysOnTopMain = (jitsiMeetWindow, loggerTransports, existingWindowOpenHandler) => {
+const setupAlwaysOnTopMain = (jitsiMeetWindow, loggerTransports, existingWindowOpenHandler) => {
     logInfo('setting up aot for main window');
 
     aotMagic = crypto.randomUUID().replaceAll('-', '');

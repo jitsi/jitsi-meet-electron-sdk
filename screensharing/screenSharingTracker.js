@@ -9,7 +9,7 @@ const { EVENTS, sendEvent } = window.JitsiScreenSharingTracker;
 /**
  * Minimize the window.
  */
-screenShareMinimize.addEventListener("click", function() {
+screenShareMinimize.addEventListener("click", () => {
     sendEvent(EVENTS.HIDE_TRACKER);
 });
 
@@ -17,6 +17,6 @@ screenShareMinimize.addEventListener("click", function() {
  * When the user clicks the stop button, send a message that will eventually be processed by
  * {@link ScreenShareRenderHook} which will toggle the screen sharing session using the jitsi-meet api.
  */
-screenShareStop.addEventListener("click", function() {
+screenShareStop.addEventListener("click", () => {
     sendEvent(EVENTS.STOP_SCREEN_SHARE);
 });

@@ -1,9 +1,8 @@
-/* global process */
-const log = require('@jitsi/logger');
+import log from '@jitsi/logger';
 
 let logger;
 
-const setLogger = loggerTransports => {
+const setLogger = (loggerTransports) => {
     logger = log.getLogger('ScreenSharing', loggerTransports || []);
 };
 
@@ -12,7 +11,7 @@ const setLogger = loggerTransports => {
  *
  * @param {string} info - The info text
  */
-const logInfo = info => {
+const logInfo = (info) => {
     if (!logger) {
         return;
     }
@@ -25,7 +24,7 @@ const logInfo = info => {
  *
  * @param {Object} err - the error object
  */
-const logError = err => {
+const logError = (err) => {
     if (!logger) {
         return;
     }
@@ -38,7 +37,7 @@ const logError = err => {
  *
  * @param {Object} warn - the warn object
  */
-const logWarning = warn => {
+const logWarning = (warn) => {
   if (!logger) {
       return;
   }
@@ -50,11 +49,4 @@ const isMac = () => process.platform === 'darwin';
 
 const isWayland = () => process.platform === 'linux' && process.env.XDG_SESSION_TYPE === 'wayland';
 
-module.exports = {
-  isMac,
-  isWayland,
-  logError,
-  logInfo,
-  logWarning,
-  setLogger
-};
+export { isMac, isWayland, logError, logInfo, logWarning, setLogger };

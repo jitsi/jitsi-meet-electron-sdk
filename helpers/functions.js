@@ -37,6 +37,4 @@ const HIDE_SCREEN_CAPTURE_WINDOWS_RELEASE = '10.0.19041';
  */
 const windowsEnableScreenProtection = currentVer => isVersionNewerOrEqual(HIDE_SCREEN_CAPTURE_WINDOWS_RELEASE, currentVer);
 
-module.exports = {
-    windowsEnableScreenProtection
-};
+export { windowsEnableScreenProtection };

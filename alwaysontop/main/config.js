@@ -1,6 +1,6 @@
-const { SIZE } = require("../constants");
+import { SIZE } from '../constants.js';
 
-module.exports = {
+export default {
     backgroundColor: 'transparent',
     minWidth: SIZE.width,
     minHeight: SIZE.height,

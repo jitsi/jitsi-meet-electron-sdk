@@ -1,18 +1,12 @@
 /* global __dirname */
-const { exec } = require('child_process');
-const {
-    BrowserWindow,
-    desktopCapturer,
-    ipcMain,
-    screen,
-    systemPreferences
-} = require('electron');
-const os = require('os');
-const path = require('path');
+import { exec } from 'child_process';
+import { BrowserWindow, desktopCapturer, ipcMain, screen, systemPreferences } from 'electron';
+import os from 'os';
+import path from 'path';
 
-const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES, TRACKER_SIZE } = require('./constants');
-const { isMac, isWayland } = require('./utils');
-const { windowsEnableScreenProtection } = require('../helpers/functions');
+import { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES, TRACKER_SIZE } from './constants.js';
+import { isMac, isWayland } from './utils.js';
+import { windowsEnableScreenProtection } from '../helpers/functions.js';
 
 /**
  * Main process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -230,6 +224,6 @@ class ScreenShareMainHook {
  * screen sharing tracker window text i.e. {identity} is sharing your screen.
  * @param {string} bundleId- OSX Application BundleId
  */
-module.exports = function setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId) {
+export default function setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId) {
     return new ScreenShareMainHook(jitsiMeetWindow, identity, osxBundleId);
 };

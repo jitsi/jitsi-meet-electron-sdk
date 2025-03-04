@@ -1,6 +1,6 @@
-const popupsConfigRegistry = require('./PopupsConfigRegistry');
-const { testMatchPatterns } = require('./functions');
-const { popupConfigs } = require('./constants');
+import popupsConfigRegistry from './PopupsConfigRegistry.js';
+import { testMatchPatterns } from './functions.js';
+import { popupConfigs } from './constants.js';
 
 /**
  * Initializes the popup configuration module.
@@ -30,4 +30,4 @@ function initPopupsConfiguration(jitsiMeetWindow) {
     });
 }
 
-module.exports = initPopupsConfiguration;
+export default initPopupsConfiguration;

@@ -1,9 +1,9 @@
-const popupsConfigRegistry = require('./PopupsConfigRegistry');
-const initPopupsConfigurationMain = require('./main');
-const initPopupsConfigurationRender = require('./render');
-const { getPopupTarget } = require('./functions');
+import popupsConfigRegistry from './PopupsConfigRegistry.js';
+import initPopupsConfigurationMain from './main.js';
+import initPopupsConfigurationRender from './render.js';
+import { getPopupTarget } from './functions.js';
 
-module.exports = {
+export {
     popupsConfigRegistry,
     initPopupsConfigurationMain,
     initPopupsConfigurationRender,
