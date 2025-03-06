@@ -1,4 +1,5 @@
 import log from '@jitsi/logger';
+import process from 'node:process';
 
 let logger;
 

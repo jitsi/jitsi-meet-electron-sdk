@@ -5,17 +5,16 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-  "lint": "eslint .",
-  "test": "mocha",
-  "validate": "npm ls",
-  "install": "node install.js",
-  "node-gyp-build": "node-gyp-build",
-  "prebuild-win32-x86": "prebuildify -t 20.0.0 --strip",
-  "prebuild-win32-x64": "prebuildify -t 20.0.0 --strip",
-  "build": "npm run build:main",
-  "build:main": "webpack --config webpack/webpack.main.config.mjs"
-
-},
+    "lint": "eslint .",
+    "test": "mocha",
+    "validate": "npm ls",
+    "install": "node install.js",
+    "node-gyp-build": "node-gyp-build",
+    "prebuild-win32-x86": "prebuildify -t 20.0.0 --strip",
+    "prebuild-win32-x64": "prebuildify -t 20.0.0 --strip",
+    "build": "npm run build:main",
+    "build:main": "webpack --config webpack/webpack.main.config.mjs"
+  },
   "pre-commit": [
     "lint"
   ],
@@ -48,10 +47,13 @@
   "devDependencies": {
     "@babel/core": "^7.26.9",
     "@babel/preset-env": "^7.26.9",
+    "@eslint/js": "^9.21.0",
     "babel-loader": "^10.0.0",
-    "eslint": ">=3",
+    "eslint": "^9.21.0",
     "eslint-plugin-jsdoc": "*",
+    "globals": "^16.0.0",
     "husky": "^9.0.10",
+    "jest": "^29.7.0",
     "mocha": "^10.0.0",
     "prebuildify": "^6.0.0",
     "precommit-hook": "3.0.0",

@@ -1,4 +1,3 @@
-// eslint-disable-next-line no-undef
 import { sourceId2Coordinates } from 'node-gyp-build';
 
 /**

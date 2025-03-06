@@ -1,5 +1,5 @@
 import setupAlwaysOnTopRender from './render/index.js';
-const { setupAlwaysOnTopMain, cleanupAlwaysOnTopMain } = require('./main/index.js');
+import { setupAlwaysOnTopMain, cleanupAlwaysOnTopMain } from './main/index.js';
 
 export {
     cleanupAlwaysOnTopMain,

@@ -1,3 +1,4 @@
+// import { error } from 'console';
 import popupsConfigRegistry from './PopupsConfigRegistry.js';  // Adjust path if necessary
 
 /**
@@ -33,7 +34,8 @@ function testMatchPatterns(url, frameName, matchPatterns = {}) {
     if (typeof matchPatterns.url !== 'undefined' && typeof url !== 'undefined') {
         try {
             urlMatched = RegExp(matchPatterns.url).test(url);
-        } catch (error) {
+        } catch (_error) {
+            console.error('Error opening new window:', _error);
             console.error('Invalid URL regex pattern:', matchPatterns.url);
         }
     }
@@ -41,8 +43,8 @@ function testMatchPatterns(url, frameName, matchPatterns = {}) {
     if (typeof matchPatterns.frameName !== 'undefined' && typeof frameName !== 'undefined') {
         try {
             frameNameMatched = RegExp(matchPatterns.frameName).test(frameName);
-        } catch (error) {
-            console.error('Invalid frameName regex pattern:', matchPatterns.frameName);
+        } catch (_error) {
+            console.error('Invalid frameName regex pattern:', matchPatterns.frameName, _error);
         }
     }
 

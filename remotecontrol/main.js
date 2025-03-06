@@ -2,9 +2,10 @@ import { app, ipcMain, screen } from 'electron';
 import process from 'process';
 
 import { DISPLAY_METRICS_CHANGED, GET_DISPLAY_EVENT } from './constants.js';
+import sourceId2Coordinates from '../node_addons/sourceId2Coordinates.js';
 
 /**
- * Module to run on main process to get display dimensions for remote control.
+ * Module to run on the main process to get display dimensions for remote control.
  */
 class RemoteControlMain {
     constructor(jitsiMeetWindow) {
@@ -20,12 +21,12 @@ class RemoteControlMain {
             screen.on(DISPLAY_METRICS_CHANGED, this._handleDisplayMetricsChanged);
         });
 
-        // Clean up ipcMain handlers to avoid leaks.
+        // Clean up ipcMain handlers to avoid memory leaks.
         this._jitsiMeetWindow.on('closed', this.cleanup);
     }
 
     /**
-     * Cleanup any handlers
+     * Cleanup event listeners.
      */
     cleanup() {
         ipcMain.removeListener(GET_DISPLAY_EVENT, this._handleGetDisplayEvent);
@@ -33,16 +34,16 @@ class RemoteControlMain {
     }
 
     /**
-     * Handles GET_DISPLAY_EVENT event
-     * @param {IPCMainEvent} event - The electron event
-     * @param {string} sourceId - The source id of the desktop sharing stream.
+     * Handles GET_DISPLAY_EVENT event.
+     * @param {Electron.IpcMainEvent} event - The Electron event.
+     * @param {string} sourceId - The source ID of the desktop sharing stream.
      */
     _handleGetDisplayEvent(event, sourceId) {
         event.returnValue = this._getDisplay(sourceId);
     }
 
     /**
-     * Handles DISPLAY_METRICS_CHANGED event
+     * Handles DISPLAY_METRICS_CHANGED event.
      */
     _handleDisplayMetricsChanged() {
         if (!this._jitsiMeetWindow.isDestroyed()) {
@@ -51,58 +52,42 @@ class RemoteControlMain {
     }
 
     /**
-     * Returns the display metrics(x, y, width, height, scaleFactor, etc...) of the display that will be used for the
-     * remote control.
+     * Returns the display metrics (bounds, scaleFactor, etc.) of the display
+     * used for remote control.
      *
-     * @param {string} sourceId - The source id of the desktop sharing stream.
-     * @returns {Object} bounds and scaleFactor of display matching sourceId.
+     * @param {string} sourceId - The source ID of the desktop sharing stream.
+     * @returns {Object|undefined} Bounds and scaleFactor of the matching display.
      */
     _getDisplay(sourceId) {
-        const { screen } = require('electron');
         const displays = screen.getAllDisplays();
+        if (displays.length === 0) return undefined;
+        if (displays.length === 1) return displays[0];
 
-        switch (displays.length) {
-            case 0:
-                return undefined;
-            case 1:
-                return displays[0];
-            default: { // > 1 display
-                const parsedSourceId = sourceId.replace('screen:', '');
+        const parsedSourceId = sourceId.replace('screen:', '');
 
-                if (process.platform === 'win32') {
-                    const sourceId2Coordinates = require("../node_addons/sourceId2Coordinates").default;
-                    const coordinates = sourceId2Coordinates(parsedSourceId);
-                    
-                    if (coordinates) {
-                        const { x, y } = coordinates;
-                        const display = screen.getDisplayNearestPoint({ x: x + 1, y: y + 1 });
+        if (process.platform === 'win32') {
+            const coordinates = sourceId2Coordinates(parsedSourceId);
+            if (coordinates) {
+                const { x, y } = coordinates;
+                const display = screen.getDisplayNearestPoint({ x: x + 1, y: y + 1 });
 
-                        if (display) {
-                            const { width, height } = display.bounds;
-
-                            return {
-                                bounds: { x, y, width, height },
-                                scaleFactor: display.scaleFactor
-                            };
-                        }
-                    }
-                } else if (process.platform === 'darwin') {
-                    let displayId = Number(parsedSourceId);
-
-                    if (isNaN(displayId)) {
-                        const idArr = parsedSourceId.split(":");
-
-                        if (idArr.length <= 1) {
-                            return;
-                        }
-
-                        displayId = Number(idArr[0]);
-                    }
-                    return displays.find(display => display.id === displayId);
+                if (display) {
+                    return {
+                        bounds: { x, y, width: display.bounds.width, height: display.bounds.height },
+                        scaleFactor: display.scaleFactor
+                    };
                 }
-                return undefined;
             }
+        } else if (process.platform === 'darwin') {
+            let displayId = Number(parsedSourceId);
+            if (isNaN(displayId)) {
+                const idArr = parsedSourceId.split(':');
+                if (idArr.length <= 1) return undefined;
+                displayId = Number(idArr[0]);
+            }
+            return displays.find(display => display.id === displayId);
         }
+        return undefined;
     }
 }
 

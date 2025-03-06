@@ -104,7 +104,7 @@ class AlwaysOnTop extends EventEmitter {
     /**
      * Handles intersection events for the instance's IntersectionObserver
      *
-     * @param {IntersectionObserverEntry[]} entries
+     * @param {IntersectionObserverEntry} entries
      * @param {IntersectionObserver} observer
      */
     _onIntersection(entries) {
@@ -299,7 +299,8 @@ class AlwaysOnTop extends EventEmitter {
             case STATES.OPEN:
                 try {
                     this._openNewWindow(data.aotMagic);
-                } catch (e) {
+                } catch (_e) { // Renamed 'e' to '_e' to indicate it's intentionally unused
+                    console.error('Error opening new window:', _e);
                     this._api.removeListener('largeVideoChanged', this._updateLargeVideoSrc);
                     this._api.removeListener('prejoinVideoChanged', this._updateLargeVideoSrc);
                     this._api.removeListener('videoMuteStatusChanged', this._updateLargeVideoSrc);

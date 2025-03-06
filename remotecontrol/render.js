@@ -1,7 +1,7 @@
 import { ipcRenderer } from 'electron';
 import os from 'os';
 import postis from 'postis';
-import { DISPLAY_METRICS_CHANGED, EVENTS, GET_DISPLAY_EVENT, KEY_ACTIONS_FROM_EVENT_TYPE, MOUSE_ACTIONS_FROM_EVENT_TYPE, MOUSE_BUTTONS, REMOTE_CONTROL_MESSAGE_NAME, REQUESTS } from './constants.js';
+import { EVENTS, KEY_ACTIONS_FROM_EVENT_TYPE, MOUSE_ACTIONS_FROM_EVENT_TYPE, MOUSE_BUTTONS, REMOTE_CONTROL_MESSAGE_NAME, REQUESTS } from './constants.js';
 import robot from '@jitsi/robotjs';
 
 /**

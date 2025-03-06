@@ -1,4 +1,3 @@
-/* global __dirname */
 import { exec } from 'child_process';
 import { BrowserWindow, desktopCapturer, ipcMain, screen, systemPreferences } from 'electron';
 import os from 'os';
@@ -7,6 +6,11 @@ import path from 'path';
 import { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES, TRACKER_SIZE } from './constants.js';
 import { isMac, isWayland } from './utils.js';
 import { windowsEnableScreenProtection } from '../helpers/functions.js';
+
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 
 /**
  * Main process component that sets up electron specific screen sharing functionality, like screen sharing

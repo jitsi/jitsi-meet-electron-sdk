@@ -16,7 +16,8 @@ const isVersionNewerOrEqual = (oldVer, newVer) => {
             if (a < b) return false;
         }
         return true;
-    } catch (e) {
+    } catch (_e) { 
+        console.error('Error opening new window:', _e);
         return false;
     }
 };
