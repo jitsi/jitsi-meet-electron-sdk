@@ -1,11 +1,15 @@
-import { sourceId2Coordinates } from 'node-gyp-build';
+import { createRequire } from 'module';
+
+/**
+ * @typedef {{ x: number; y: number }} Coordinates
+ */
 
 /**
  * Returns the coordinates of a desktop using the passed desktop sharing source
  * id.
  *
  * @param {string} sourceId - The desktop sharing source id.
- * @returns {Object.<string, number>|undefined} - The x and y coordinates of the
+ * @returns {Coordinates | undefined} - The x and y coordinates of the
  * top left corner of the desktop. Currently works only for Windows. Returns
  * undefined for Mac OS, Linux.
  */
@@ -20,8 +24,14 @@ export default (sourceId) => {
     const id = Number(idArr.length > 1 ? idArr[0] : sourceId);
 
     if (!isNaN(id)) {
-        return sourceId2Coordinates(id);
+        try {
+            const sourceId2Coordinates = createRequire(import.meta.url)('node-gyp-build').sourceId2Coordinates;
+            return sourceId2Coordinates(id);
+        } catch (error) {
+            console.error("Error loading or executing node-gyp-build:", error);
+            return undefined;
+        }
     }
-    
+
     return undefined;
 };
