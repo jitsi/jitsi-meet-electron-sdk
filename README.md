@@ -23,9 +23,7 @@ The remote control utility requires iframe HTML Element that will load Jitsi Mee
 In the **render** electron process of the window where Jitsi Meet is displayed:
 
 ```Javascript
-const {
-    RemoteControl
-} = require("@jitsi/electron-sdk");
+import { RemoteControl } from "@jitsi/electron-sdk";
 
 // iframe - the Jitsi Meet iframe
 const remoteControl = new RemoteControl(iframe);
@@ -41,9 +39,7 @@ NOTE: `dispose` method will be called automatically when the Jitsi Meet iframe u
 In the **main** electron process:
 
 ```Javascript
-const {
-    RemoteControlMain
-} = require("@jitsi/electron-sdk");
+import { RemoteControlMain } from "@jitsi/electron-sdk";
 
 // jitsiMeetWindow - The BrowserWindow instance of the window where Jitsi Meet is loaded.
 const remoteControl = new RemoteControlMain(mainWindow);
@@ -59,9 +55,7 @@ The screen sharing utility requires iframe HTML Element that will load Jitsi Mee
 In the **render** electron process of the window where Jitsi Meet is displayed:
 
 ```Javascript
-const {
-    setupScreenSharingRender
-} = require("@jitsi/electron-sdk");
+import { setupScreenSharingRender } from "@jitsi/electron-sdk";
 
 // api - The Jitsi Meet iframe api object.
 setupScreenSharingRender(api);
@@ -69,9 +63,7 @@ setupScreenSharingRender(api);
 In the **main** electron process:
 
 ```Javascript
-const {
-    setupScreenSharingMain
-} = require("@jitsi/electron-sdk");
+import { setupScreenSharingMain } from "@jitsi/electron-sdk";
 
 // jitsiMeetWindow - The BrowserWindow instance of the window where Jitsi Meet is loaded.
 // appName - Application name which will be displayed inside the content sharing tracking window
@@ -93,9 +85,7 @@ Displays a small window with the current active speaker video when the main Jits
 
 In the **main** electron process:
 ```Javascript
-const {
-    setupAlwaysOnTopMain
-} = require("@jitsi/electron-sdk");
+import { setupAlwaysOnTopMain } from "@jitsi/electron-sdk";
 
 // jitsiMeetWindow - The BrowserWindow instance
 // of the window where Jitsi Meet is loaded.
@@ -104,9 +94,7 @@ setupAlwaysOnTopMain(jitsiMeetWindow);
 
 In the **render** electron process of the window where Jitsi Meet is displayed:
 ```Javascript
-const {
-    setupAlwaysOnTopRender
-} = require("@jitsi/electron-sdk");
+import { setupAlwaysOnTopRender } from "@jitsi/electron-sdk";
 
 const api = new JitsiMeetExternalAPI(...);
 const alwaysOnTop = setupAlwaysOnTopRender(api);
@@ -128,9 +116,7 @@ Provides a way to query electron for system idle and receive power monitor event
 **enable power monitor:**
 In the **main** electron process:
 ```Javascript
-const {
-    setupPowerMonitorMain
-} = require("@jitsi/electron-sdk");
+import { setupPowerMonitorMain } from "@jitsi/electron-sdk";
 
 // jitsiMeetWindow - The BrowserWindow instance
 // of the window where Jitsi Meet is loaded.
@@ -139,9 +125,7 @@ setupPowerMonitorMain(jitsiMeetWindow);
 
 In the **render** electron process of the window where Jitsi Meet is displayed:
 ```Javascript
-const {
-    setupPowerMonitorRender
-} = require("@jitsi/electron-sdk");
+import { setupPowerMonitorRender } from "@jitsi/electron-sdk";
 
 const api = new JitsiMeetExternalAPI(...);
 setupPowerMonitorRender(api);

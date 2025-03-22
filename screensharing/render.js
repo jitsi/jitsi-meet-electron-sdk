@@ -1,8 +1,7 @@
+import { ipcRenderer } from 'electron';
 
-const { ipcRenderer } = require('electron');
-
-const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES } = require('./constants');
-const { logWarning, setLogger } = require('./utils');
+import { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES } from './constants.js';
+import { logWarning, setLogger } from './utils.js';
 
 /**
  * Renderer process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -81,7 +80,6 @@ class ScreenShareRenderHook {
                 break;
             default:
                 logWarning(`Unhandled ${SCREEN_SHARE_EVENTS_CHANNEL}: ${data}`);
-
         }
     }
 
@@ -156,8 +154,8 @@ class ScreenShareRenderHook {
  *
  * @param {JitsiIFrameApi} api - The Jitsi Meet iframe api object.
  */
-module.exports = function setupScreenSharingRender(api, loggerTransports = null) {
+export default function setupScreenSharingRender(api, loggerTransports = null) {
     setLogger(loggerTransports);
 
     return new ScreenShareRenderHook(api);
-};
+}

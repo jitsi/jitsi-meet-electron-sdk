@@ -1,11 +1,5 @@
-const electron = require('electron');
-const { app, ipcMain } = electron;
-const {
-    METHODS,
-    POWER_MONITOR_EVENTS,
-    POWER_MONITOR_EVENTS_CHANNEL,
-    POWER_MONITOR_QUERIES_CHANNEL
-} = require('./constants');
+import { app, ipcMain, powerMonitor } from 'electron';
+import { METHODS, POWER_MONITOR_EVENTS, POWER_MONITOR_EVENTS_CHANNEL, POWER_MONITOR_QUERIES_CHANNEL } from './constants.js';
 
 let browserWindow;
 
@@ -18,7 +12,7 @@ let browserWindow;
 function _attachEvents(jitsiMeetWindow) {
     browserWindow = jitsiMeetWindow;
     Object.values(POWER_MONITOR_EVENTS).forEach(event => {
-        electron.powerMonitor.on(event, () => {
+        powerMonitor.on(event, () => {
             if (browserWindow && !browserWindow.isDestroyed()) {
                 browserWindow.webContents.send(POWER_MONITOR_EVENTS_CHANNEL, { event });
             }
@@ -59,8 +53,6 @@ function systemIdleErrorResult(id, error) {
  * @param {Object} powerMonitor event data
  */
 function handlePowerMonitorQuery(event, { id, data }) {
-    const { powerMonitor } = electron;
-
     switch(data.type) {
         case METHODS.queryIdleState:
             systemIdleResult(id, powerMonitor.getSystemIdleState(data.idleThreshold));
@@ -100,7 +92,7 @@ function setupPowerMonitorMain(jitsiMeetWindow) {
     jitsiMeetWindow.on('close', cleanup);
 }
 
-module.exports = {
-    cleanupPowerMonitorMain: cleanup,
+export {
+    cleanup as cleanupPowerMonitorMain,
     setupPowerMonitorMain
 };

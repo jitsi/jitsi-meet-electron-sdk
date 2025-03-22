@@ -1,23 +1,23 @@
-const { RemoteControl, RemoteControlMain } = require('./remotecontrol');
-const { setupScreenSharingRender, setupScreenSharingMain } = require('./screensharing');
-const {
+import { RemoteControl, RemoteControlMain } from './remotecontrol/index.js';
+import { setupScreenSharingRender, setupScreenSharingMain } from './screensharing/index.js';
+import {
     cleanupAlwaysOnTopMain,
     setupAlwaysOnTopRender,
     setupAlwaysOnTopMain
-} = require('./alwaysontop');
-const {
+} from './alwaysontop/index.js';
+import {
     cleanupPowerMonitorMain,
     setupPowerMonitorRender,
     setupPowerMonitorMain
-} = require('./powermonitor');
-const {
+} from './powermonitor/index.js';
+import {
     popupsConfigRegistry,
     initPopupsConfigurationMain,
     initPopupsConfigurationRender,
     getPopupTarget
-} = require('./popupsconfig');
+} from './popupsconfig/index.js';
 
-module.exports = {
+export {
     RemoteControl,
     RemoteControlMain,
     cleanupAlwaysOnTopMain,

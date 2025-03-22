@@ -16,7 +16,8 @@ const isVersionNewerOrEqual = (oldVer, newVer) => {
             if (a < b) return false;
         }
         return true;
-    } catch (e) {
+    } catch (_e) { 
+        console.error('Error opening new window:', _e);
         return false;
     }
 };
@@ -37,6 +38,4 @@ const HIDE_SCREEN_CAPTURE_WINDOWS_RELEASE = '10.0.19041';
  */
 const windowsEnableScreenProtection = currentVer => isVersionNewerOrEqual(HIDE_SCREEN_CAPTURE_WINDOWS_RELEASE, currentVer);
 
-module.exports = {
-    windowsEnableScreenProtection
-};
+export { windowsEnableScreenProtection };

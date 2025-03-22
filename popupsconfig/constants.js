@@ -1,4 +1,4 @@
-const popupConfigs = {
+export const popupConfigs = {
     'google-auth': {
         matchPatterns: {
             url: '^https:\\/\\/(www\\.)?accounts\\.google\\.com\\/'
@@ -11,8 +11,4 @@ const popupConfigs = {
         },
         target: 'electron'
     }
-};
-
-module.exports = {
-    popupConfigs
 };

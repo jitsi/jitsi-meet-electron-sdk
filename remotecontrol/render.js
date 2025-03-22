@@ -1,17 +1,8 @@
-const { ipcRenderer } = require('electron');
-const os = require('os');
-const postis = require("postis");
-const constants = require("./constants");
-const robot = require("@jitsi/robotjs");
-
-const {
-    EVENTS,
-    KEY_ACTIONS_FROM_EVENT_TYPE,
-    MOUSE_ACTIONS_FROM_EVENT_TYPE,
-    MOUSE_BUTTONS,
-    REMOTE_CONTROL_MESSAGE_NAME,
-    REQUESTS
-} = constants;
+import { ipcRenderer } from 'electron';
+import os from 'os';
+import postis from 'postis';
+import { EVENTS, KEY_ACTIONS_FROM_EVENT_TYPE, MOUSE_ACTIONS_FROM_EVENT_TYPE, MOUSE_BUTTONS, REMOTE_CONTROL_MESSAGE_NAME, REQUESTS } from './constants.js';
+import robot from '@jitsi/robotjs';
 
 /**
  * Parses the remote control events and executes them via robotjs.
@@ -233,4 +224,4 @@ class RemoteControl {
     }
 }
 
-module.exports = RemoteControl;
+export default RemoteControl;

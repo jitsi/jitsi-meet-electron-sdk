@@ -1,11 +1,9 @@
-const crypto = require('crypto');
-const electron = require('electron');
-const os = require('os');
-const { BrowserWindow, ipcMain } = electron;
-
-const { windowsEnableScreenProtection } = require('../../helpers/functions');
-const { EVENTS, STATES, AOT_WINDOW_NAME, EVENTS_CHANNEL } = require('../constants');
-const {
+import crypto from 'crypto';
+import os from 'os';
+import { BrowserWindow, ipcMain } from 'electron';
+import { windowsEnableScreenProtection } from '../../helpers/functions.js';
+import { EVENTS, STATES, AOT_WINDOW_NAME, EVENTS_CHANNEL } from '../constants.js';
+import {
     getPosition,
     getSize,
     logError,
@@ -15,8 +13,9 @@ const {
     setAspectRatioToResizeableWindow,
     setLogger,
     windowExists
-} = require('./utils');
-const aotConfig = require('./config');
+} from './utils.js';
+import aotConfig from './config.js';
+// import { cleanupAlwaysOnTopMain } from '../index.js';
 
 /**
  * Token for matching window open requests.
@@ -31,16 +30,16 @@ let mainWindow;
 /**
  * Whether the meeting is currently in view.
  */
-let isIntersecting;
+let isIntersecting = false;
 
 /**
  * Pre-existing window open handler.
  * Ideally electron would expose something like BrowserWindow.webContents.getWindowOpenHandler
  */
-let _existingWindowOpenHandler;
+let existingWindowOpenHandler;
 
 /**
- * The aot window instance
+ * Returns the always-on-top window instance.
  */
 const getAotWindow = () => BrowserWindow.getAllWindows().find(win => {
     if (!win || win.isDestroyed() || win.webContents.isCrashed()) return false;
@@ -49,66 +48,54 @@ const getAotWindow = () => BrowserWindow.getAllWindows().find(win => {
 });
 
 /**
- * Sends an update state event to renderer process
- * @param {string} value the updated aot window state
+ * Sends an update state event to the renderer process.
  */
 const sendStateUpdate = (state, data = {}) => {
-    logInfo(`sending ${state} state update to renderer process`);
-
+    logInfo(`Sending ${state} state update to renderer process`);
     mainWindow.webContents.send(EVENTS_CHANNEL, { name: EVENTS.UPDATE_STATE, state, data });
 };
 
 /**
- * Handles window created event
- *
- * @param {BrowserWindow} window the newly created window
+ * Handles window created event.
  */
-const handleWindowCreated = window => {
-    logInfo(`received window created event`);
+const handleWindowCreated = (window) => {
+    logInfo(`Received window created event`);
 
     const aotWindow = getAotWindow();
+    if (window !== aotWindow) return;
 
-    if (window !== aotWindow) {
-        return;
-    }
+    logInfo(`Setting AOT window options`);
 
-    logInfo(`setting aot window options`);
-
-    // Required to allow the window to be rendered on top of full screen apps
+    // Required to allow the window to be rendered on top of full-screen apps
     aotWindow.setAlwaysOnTop(true, 'screen-saver');
 
     if (os.platform() !== 'win32' || windowsEnableScreenProtection(os.release())) {
-        // Avoid this window from being captured.
         aotWindow.setContentProtection(true);
     }
 
-    aotWindow.once('ready-to-show', () => {
-        aotWindow.show();
-    });
+    aotWindow.once('ready-to-show', () => aotWindow.show());
 
-    aotWindow.webContents.on('error', error => {
-        logError(error);
-    });
-
-    aotWindow.webContents.on('render-process-gone', (event, details) => {
-        logInfo('close aot because renderer crashed', details);
+    aotWindow.webContents.on('error', logError);
+    aotWindow.webContents.on('render-process-gone', (_, details) => {
+        logInfo('Closing AOT window due to renderer crash', details);
         aotWindow.close();
     });
 
     setAspectRatioToResizeableWindow(aotWindow);
 };
 
-const windowOpenHandler = args => {
+/**
+ * Handles window open events.
+ */
+const windowOpenHandler = (args) => {
     const { frameName } = args;
 
     if (frameName.startsWith(AOT_WINDOW_NAME)) {
-        logInfo('handling new aot window event');
+        logInfo('Handling new AOT window event');
 
         const magic = frameName.split('-')[1];
-
         if (magic !== aotMagic) {
-            logInfo('bad AoT window magic');
-
+            logInfo('Invalid AOT window magic');
             return { action: 'deny' };
         }
 
@@ -122,98 +109,80 @@ const windowOpenHandler = args => {
         };
     }
 
-    if (_existingWindowOpenHandler) {
-        return _existingWindowOpenHandler(args);
-    }
-
-    return { action: 'deny' };
+    return existingWindowOpenHandler ? existingWindowOpenHandler(args) : { action: 'deny' };
 };
 
 /**
- * Handle show aot event.
+ * Handles showing the AOT window.
  */
 const showAot = () => {
-    logInfo('show aot handler');
-
-    let state;
-    let data = {};
+    logInfo('Show AOT handler');
 
     const aotWindow = getAotWindow();
+    const state = windowExists(aotWindow) ? STATES.SHOW : STATES.OPEN;
+    const data = state === STATES.OPEN ? { aotMagic } : {};
 
-    if (windowExists(aotWindow)) {
-        state = STATES.SHOW;
+    if (state === STATES.SHOW) {
         aotWindow.showInactive();
-    } else {
-        state = STATES.OPEN;
-        data.aotMagic = aotMagic;
     }
 
     sendStateUpdate(state, data);
 };
 
 /**
- * Handle hide aot event.
+ * Handles hiding the AOT window.
  */
- const hideAot = () => {
-    logInfo('hide aot handler');
-
-    if (isIntersecting) {
-        hideWindow();
-    }
+const hideAot = () => {
+    logInfo('Hide AOT handler');
+    if (isIntersecting) hideWindow();
 };
 
 /**
- * Attaches event handlers on the main window
+ * Attaches event handlers to the main window.
  */
 const addMainWindowHandlers = () => {
-    logInfo(`adding main window event handlers`);
-
+    logInfo('Adding main window event handlers');
     mainWindow.on('blur', showAot);
     mainWindow.on('focus', hideAot);
 };
 
 /**
- * Detaches event handlers from the main window
+ * Removes event handlers from the main window.
  */
 const removeMainWindowHandlers = () => {
-    logInfo(`removing main window event handlers`);
-
-    mainWindow.removeListener('blur', showAot);
-    mainWindow.removeListener('focus', hideAot);
+    logInfo('Removing main window event handlers');
+    mainWindow.off('blur', showAot);
+    mainWindow.off('focus', hideAot);
 };
 
 /**
- * Hides the aot window
+ * Hides the AOT window.
  */
- const hideWindow = () => {
+const hideWindow = () => {
     const aotWindow = getAotWindow();
-
     if (windowExists(aotWindow)) {
-        logInfo('hiding aot window');
+        logInfo('Hiding AOT window');
         aotWindow.hide();
         sendStateUpdate(STATES.HIDE);
     }
 };
 
 /**
- * Shows the aot window
+ * Closes the AOT window.
  */
 const closeWindow = () => {
     const aotWindow = getAotWindow();
-
     if (windowExists(aotWindow)) {
-        logInfo('closing aot window');
+        logInfo('Closing AOT window');
         aotWindow.close();
     }
 };
 
 /**
- * Handler for state updates
- * @param {IpcMainEvent} event electron event
- * @param {Object} options channel params
+ * Handles AOT-related events.
  */
-const onAotEvent = (event, { name, ...rest }) => {
-    logInfo(`received aot event ${name}`);
+const onAotEvent = (_, { name, ...rest }) => {
+    logInfo(`Received AOT event: ${name}`);
 
     switch (name) {
         case EVENTS.UPDATE_STATE:
@@ -222,15 +191,16 @@ const onAotEvent = (event, { name, ...rest }) => {
         case EVENTS.MOVE:
             handleMove(rest.position, rest.initialSize);
             break;
+        default:
+            break;
     }
 };
 
 /**
- * Handler for state updates
- * @param {string} value - updated state name
+ * Handles state changes.
  */
-const handleStateChange = state => {
-    logInfo(`handling ${state} state update from renderer process`);
+const handleStateChange = (state) => {
+    logInfo(`Handling state update: ${state}`);
 
     switch (state) {
         case STATES.DISMISS:
@@ -246,19 +216,15 @@ const handleStateChange = state => {
             addMainWindowHandlers();
             break;
         case STATES.SHOW_MAIN_WINDOW:
-            // this will switch focus to main window, which in turns triggers hide on aot
             mainWindow.show();
-
             break;
         case STATES.IS_NOT_INTERSECTING:
             isIntersecting = false;
             showAot();
-
             break;
         case STATES.IS_INTERSECTING:
             isIntersecting = true;
             hideAot();
-
             break;
         default:
             break;
@@ -266,58 +232,52 @@ const handleStateChange = state => {
 };
 
 /**
- * Handler for move event
- * @param {Object} position the new position
- * @param {Object} initialSize the window size before move
+ * Handles window move events.
  */
 const handleMove = (position, initialSize) => {
     const aotWindow = getAotWindow();
-
-    if (!windowExists(aotWindow)) {
-        return;
-    }
-
-    const { width, height } = initialSize;
-    const { x, y } = position;
+    if (!windowExists(aotWindow)) return;
 
     aotWindow.setBounds({
-        x,
-        y,
-        width,
-        height
+        x: position.x,
+        y: position.y,
+        width: initialSize.width,
+        height: initialSize.height
     });
 };
 
+/**
+ * Cleans up IPC event listeners.
+ */
 const cleanup = () => {
     ipcMain.removeListener(EVENTS_CHANNEL, onAotEvent);
 };
 
 /**
- * Initializes the always on top functionality in the main electron process.
- *
- * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which displays the meeting
- * @param {Logger} loggerTransports - external loggers
- * @param {Function} existingWindowOpenHandler - preexisting window open handler, in order to avoid overwriting it.
+ * Initializes the always-on-top functionality.
  */
- const setupAlwaysOnTopMain = (jitsiMeetWindow, loggerTransports, existingWindowOpenHandler) => {
-    logInfo('setting up aot for main window');
+const setupAlwaysOnTopMain = (jitsiMeetWindow, loggerTransports, existingHandler) => {
+    logInfo('Setting up AOT for main window');
 
-    aotMagic = crypto.randomUUID().replaceAll('-', '');
-
+    aotMagic = crypto.randomUUID().replace(/-/g, '');
     setLogger(loggerTransports);
 
     ipcMain.on(EVENTS_CHANNEL, onAotEvent);
 
-    _existingWindowOpenHandler = existingWindowOpenHandler;
+    existingWindowOpenHandler = existingHandler;
     mainWindow = jitsiMeetWindow;
     mainWindow.webContents.setWindowOpenHandler(windowOpenHandler);
     mainWindow.webContents.on('did-create-window', handleWindowCreated);
 
-    // Clean up ipcMain handlers to avoid leaks.
     mainWindow.on('closed', cleanup);
 };
 
-module.exports = {
-    cleanupAlwaysOnTopMain: cleanup,
+export {
+    cleanup as cleanupAlwaysOnTopMain,
     setupAlwaysOnTopMain
 };
+
+// export deafault{
+//     cleanupAlwaysOnTopMain:cleanup,
+//     setupAlwaysOnTopMain
+// }

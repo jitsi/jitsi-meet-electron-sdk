@@ -1,20 +1,16 @@
-/* global __dirname */
-
-const { EventEmitter } = require('events');
-const { ipcRenderer } = require('electron');
-const path = require('path');
-const { logInfo, setLogger } = require('./utils');
-
-const { EVENTS, STATES, AOT_WINDOW_NAME, EXTERNAL_EVENTS, EVENTS_CHANNEL } = require('../constants');
+import { EventEmitter } from 'events';
+import { ipcRenderer } from 'electron';
+import path from 'path';
+import { logInfo, setLogger } from './utils.js';
+import { EVENTS, STATES, AOT_WINDOW_NAME, EXTERNAL_EVENTS, EVENTS_CHANNEL } from '../constants.js';
 
 /**
- * Sends an update state event to main process
+ * Sends an update state event to the main process
  * @param {string} state the updated aot window state
  */
- const sendStateUpdate = state => {
+const sendStateUpdate = state => {
     logInfo(`sending ${state} state update to main process`);
-
-    ipcRenderer.send(EVENTS_CHANNEL, { name: EVENTS.UPDATE_STATE, state } );
+    ipcRenderer.send(EVENTS_CHANNEL, { name: EVENTS.UPDATE_STATE, state });
 };
 
 /**
@@ -38,9 +34,7 @@ class AlwaysOnTop extends EventEmitter {
      * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
      * @param {Object} options - AOT options.
      */
-    constructor(api, {
-        showOnPrejoin
-    }) {
+    constructor(api, { showOnPrejoin }) {
         super();
 
         this._api = api;
@@ -110,7 +104,7 @@ class AlwaysOnTop extends EventEmitter {
     /**
      * Handles intersection events for the instance's IntersectionObserver
      *
-     * @param {IntersectionObserverEntry[]} entries
+     * @param {IntersectionObserverEntry} entries
      * @param {IntersectionObserver} observer
      */
     _onIntersection(entries) {
@@ -130,10 +124,10 @@ class AlwaysOnTop extends EventEmitter {
      *
      * @returns {void}
      */
-     _updateLargeVideoSrc() {
-         // adding a small timeout before updating media seems to fix the black screen preview
-         // in the bottom right corner during screen share.
-         setTimeout(() => {
+    _updateLargeVideoSrc() {
+        // adding a small timeout before updating media seems to fix the black screen preview
+        // in the bottom right corner during screen share.
+        setTimeout(() => {
             if (!this._aotWindow) {
                 return;
             }
@@ -149,7 +143,7 @@ class AlwaysOnTop extends EventEmitter {
                 this._aotWindowVideo.style.transform = transform;
                 this._aotWindowVideo.play();
             }
-         }, 100);
+        }, 100);
     }
 
     /**
@@ -192,11 +186,11 @@ class AlwaysOnTop extends EventEmitter {
              */
             move,
             ondblclick: this._switchToMainWindow,
-            onload: this._updateLargeVideoSrc
+            onload: this._updateLargeVideoSrc,
         };
 
-        const cssPath = path.join(__dirname, './alwaysontop.css');
-        const jsPath = path.join(__dirname, './alwaysontop.js');
+        const cssPath = path.join(import.meta.url, './alwaysontop.css');
+        const jsPath = path.join(import.meta.url, './alwaysontop.js');
 
         // Add the markup for the JS to manipulate and load the CSS.
         this._aotWindow.document.body.innerHTML = `
@@ -207,9 +201,8 @@ class AlwaysOnTop extends EventEmitter {
         `;
 
         // JS must be loaded through a script tag, as setting it through
-        // inner HTML maybe not trigger script load.
+        // inner HTML may not trigger script load.
         const scriptTag = this._aotWindow.document.createElement('script');
-
         scriptTag.setAttribute('src', `file://${jsPath}`);
         this._aotWindow.document.head.appendChild(scriptTag);
     }
@@ -243,7 +236,7 @@ class AlwaysOnTop extends EventEmitter {
      * Disposes the aot window
      *
      */
-     _disposeWindow() {
+    _disposeWindow() {
         logInfo('disposing window');
 
         this._joined = false;
@@ -282,7 +275,7 @@ class AlwaysOnTop extends EventEmitter {
      * @param {IpcRendererEvent} event electron event
      * @param {Object} options channel params
      */
-    _onAotEvent (event, { name, ...rest }) {
+    _onAotEvent(event, { name, ...rest }) {
         switch (name) {
             case EVENTS.UPDATE_STATE:
                 this._handleStateChange(rest.state, rest.data);
@@ -296,7 +289,7 @@ class AlwaysOnTop extends EventEmitter {
      * @param {string} state updated state
      * @param {Object} data ancillary data to the event
      */
-     _handleStateChange (state, data) {
+    _handleStateChange(state, data) {
         logInfo(`handling ${state} state update from main process`);
 
         switch (state) {
@@ -306,7 +299,8 @@ class AlwaysOnTop extends EventEmitter {
             case STATES.OPEN:
                 try {
                     this._openNewWindow(data.aotMagic);
-                } catch(e) {
+                } catch (_e) { // Renamed 'e' to '_e' to indicate it's intentionally unused
+                    console.error('Error opening new window:', _e);
                     this._api.removeListener('largeVideoChanged', this._updateLargeVideoSrc);
                     this._api.removeListener('prejoinVideoChanged', this._updateLargeVideoSrc);
                     this._api.removeListener('videoMuteStatusChanged', this._updateLargeVideoSrc);
@@ -329,7 +323,7 @@ class AlwaysOnTop extends EventEmitter {
 * @param {Logger} loggerTransports - external loggers.
 * @param {Object} options - AOT options.
 */
-module.exports = (api, loggerTransports, { showOnPrejoin = false } = {}) => {
+export default (api, loggerTransports, { showOnPrejoin = false } = {}) => {
     setLogger(loggerTransports);
 
     return new AlwaysOnTop(api, {

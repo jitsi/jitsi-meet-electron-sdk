@@ -44,7 +44,7 @@ const POWER_MONITOR_EVENTS_CHANNEL = 'power-monitor-events';
  */
 const POWER_MONITOR_QUERIES_CHANNEL = 'power-monitor-queries';
 
-module.exports = {
+export {
     POWER_MONITOR_EVENTS,
     POWER_MONITOR_EVENTS_CHANNEL,
     POWER_MONITOR_MESSAGE_NAME,

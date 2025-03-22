@@ -1,7 +1,7 @@
-const { cleanupPowerMonitorMain, setupPowerMonitorMain } = require('./main');
-const setupPowerMonitorRender = require('./render');
+import { cleanupPowerMonitorMain, setupPowerMonitorMain } from './main.js';
+import setupPowerMonitorRender from './render.js';
 
-module.exports = {
+export {
     cleanupPowerMonitorMain,
     setupPowerMonitorRender,
     setupPowerMonitorMain

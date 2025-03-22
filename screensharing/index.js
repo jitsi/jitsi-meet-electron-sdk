@@ -1,7 +1,7 @@
-const setupScreenSharingMain = require('./main');
-const setupScreenSharingRender = require('./render');
+import setupScreenSharingMain from './main.js';
+import setupScreenSharingRender from './render.js';
 
-module.exports = {
+export {
     setupScreenSharingMain,
     setupScreenSharingRender
 };

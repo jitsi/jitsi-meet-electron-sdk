@@ -1,17 +1,17 @@
-const log = require('@jitsi/logger');
+import log from '@jitsi/logger';
 
 let logger;
 
-const setLogger = loggerTransports => {
+export const setLogger = loggerTransports => {
     logger = log.getLogger('AOT', loggerTransports || []);
 };
 
 /**
- * Wrapper over the loger's info
+ * Wrapper over the logger's info
  *
  * @param {string} info - The info text
  */
-const logInfo = info => {
+export const logInfo = info => {
     if (!logger) {
         return;
     }
@@ -20,20 +20,14 @@ const logInfo = info => {
 };
 
 /**
- * Wrapper over the loger's error
+ * Wrapper over the logger's error
  *
  * @param {Object} err - the error object
  */
-const logError = err => {
+export const logError = err => {
     if (!logger) {
         return;
     }
 
     logger.error({ err }, '[RENDERER ERROR]');
-};
-
-module.exports = {
-    logError,
-    logInfo,
-    setLogger
 };
