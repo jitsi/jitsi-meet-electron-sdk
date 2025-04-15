@@ -9,8 +9,7 @@
     "validate": "npm ls",
     "install": "node install.js",
     "node-gyp-build": "node-gyp-build",
-    "prebuild-win32-x86": "prebuildify -t 20.0.0 --strip",
-    "prebuild-win32-x64": "prebuildify -t 20.0.0 --strip"
+    "prebuild": "prebuildify -t 20.0.0 --strip"
   },
   "pre-commit": [
     "lint"
