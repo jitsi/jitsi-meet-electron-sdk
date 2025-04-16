@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@jitsi/logger": "^2.0.2",
-    "@jitsi/robotjs": "^0.6.13",
+    "@jitsi/robotjs": "^0.6.15",
     "electron-store": "^8.0.1",
     "node-addon-api": "^8.0.0",
     "node-gyp-build": "4.8.4",
