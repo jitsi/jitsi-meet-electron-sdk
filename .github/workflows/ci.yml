@@ -57,7 +57,7 @@ jobs:
         path: prebuilds
         pattern: prebuilds-*
         merge-multiple: true
-    - uses: phips28/gh-action-bump-version@ba04cec2b3fb07806ab4448c8825f6ff98fac594
+    - uses: phips28/gh-action-bump-version@71473b25295fe3907df2ff87cce295a0dce1b20b
       with:
         tag-prefix: 'v'
         version-type:  'patch'
