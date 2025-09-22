@@ -117,6 +117,11 @@ class ScreenShareMainHook {
                 this._jitsiMeetWindow.webContents.send(SCREEN_SHARE_EVENTS_CHANNEL, { data });
                 break;
             case SCREEN_SHARE_EVENTS.DO_GDM: {
+                if (!this._gdmData) {
+                    console.warn('[screensharing] Event with empty _gdmData, skip');
+
+                    break;
+                }
                 const { callback } = this._gdmData;
 
                 this._gdmData = null;
