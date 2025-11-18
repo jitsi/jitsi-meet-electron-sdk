@@ -32,7 +32,8 @@ class ScreenShareMainHook {
         this._jitsiMeetWindow = jitsiMeetWindow;
         this._identity = identity;
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
-        this._gdmData = null;
+        this._gdmRequestId = 0;
+        this._pendingGdmRequests = new Map();
 
         this.cleanup = this.cleanup.bind(this);
 
@@ -46,11 +47,11 @@ class ScreenShareMainHook {
             // is no need to use the Jitsi picker.
             if (isWayland()) {
                 const options = {
-                    types: [ 'screen', 'window' ]
+                    types: ['screen', 'window']
                 };
 
                 desktopCapturer.getSources(options).then(sources => {
-                    const source =  sources[0];
+                    const source = sources[0];
 
                     if (source) {
                         callback({ video: source });
@@ -59,20 +60,24 @@ class ScreenShareMainHook {
                     }
                 });
             } else {
-                this._gdmData = {
+                // Generate unique ID for this request to handle multiple simultaneous requests
+                const requestId = ++this._gdmRequestId;
+
+                this._pendingGdmRequests.set(requestId, {
                     request,
                     callback
-                };
+                });
 
                 const ev = {
                     data: {
-                        name: SCREEN_SHARE_EVENTS.OPEN_PICKER
+                        name: SCREEN_SHARE_EVENTS.OPEN_PICKER,
+                        requestId
                     }
                 };
 
                 this._jitsiMeetWindow.webContents.send(SCREEN_SHARE_EVENTS_CHANNEL, ev);
             }
-          }, { useSystemPicker: false /* TODO: enable this when not experimental. It's macOS >= 15 only for now. */ }
+        }, { useSystemPicker: false /* TODO: enable this when not experimental. It's macOS >= 15 only for now. */ }
         );
 
         // Listen for events coming in from the main render window and the screen share tracker window.
@@ -87,6 +92,13 @@ class ScreenShareMainHook {
      * Cleanup any handlers
      */
     cleanup() {
+        // Reject all pending getDisplayMedia requests
+        this._pendingGdmRequests.forEach((gdmData, requestId) => {
+            console.warn(`[screensharing] Cleaning up pending request ${requestId}`);
+            gdmData.callback(null);
+        });
+        this._pendingGdmRequests.clear();
+
         ipcMain.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
         ipcMain.removeHandler(SCREEN_SHARE_GET_SOURCES);
     }
@@ -117,13 +129,18 @@ class ScreenShareMainHook {
                 this._jitsiMeetWindow.webContents.send(SCREEN_SHARE_EVENTS_CHANNEL, { data });
                 break;
             case SCREEN_SHARE_EVENTS.DO_GDM: {
-                const { callback } = this._gdmData;
+                const { requestId } = data;
 
-                this._gdmData = null;
+                if (!requestId || !this._pendingGdmRequests.has(requestId)) {
+                    console.warn(`[screensharing] DO_GDM received for unknown/expired requestId: ${requestId}`);
+                    break;
+                }
+
+                const { callback } = this._pendingGdmRequests.get(requestId);
+                this._pendingGdmRequests.delete(requestId);
 
                 if (!data.source) {
                     callback(null);
-
                     break;
                 }
 

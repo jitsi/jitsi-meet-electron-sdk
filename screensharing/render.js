@@ -69,16 +69,31 @@ class ScreenShareRenderHook {
                     this._api.executeCommand('toggleShareScreen');
                 }
                 break;
-            case SCREEN_SHARE_EVENTS.OPEN_PICKER:
+            case SCREEN_SHARE_EVENTS.OPEN_PICKER: {
+                // Store requestId to match response with request
+                const { requestId } = data;
+
                 this._api._openDesktopPicker().then(r => {
                     ipcRenderer.send(SCREEN_SHARE_EVENTS_CHANNEL, {
                         data: {
                             name: SCREEN_SHARE_EVENTS.DO_GDM,
+                            requestId,
                             ...r
+                        }
+                    });
+                }).catch(error => {
+                    // If picker fails, still send DO_GDM with requestId to complete the flow
+                    logWarning(`Desktop picker error: ${error}`);
+                    ipcRenderer.send(SCREEN_SHARE_EVENTS_CHANNEL, {
+                        data: {
+                            name: SCREEN_SHARE_EVENTS.DO_GDM,
+                            requestId,
+                            source: null
                         }
                     });
                 });
                 break;
+            }
             default:
                 logWarning(`Unhandled ${SCREEN_SHARE_EVENTS_CHANNEL}: ${data}`);
 
