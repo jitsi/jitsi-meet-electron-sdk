@@ -16,7 +16,8 @@ Note: This package contains native code on Windows for the remote control module
 #### Remote Control
 
 **Requirements**:
-The remote control utility requires iframe HTML Element that will load Jitsi Meet.
+1. Jitsi Meet should be initialized through our [iframe API](https://github.com/jitsi/jitsi-meet/blob/master/doc/api.md)
+2. The remote control utility requires the Jitsi Meet iframe API object.
 
 **Enable the remote control:**
 
@@ -24,11 +25,11 @@ In the **render** electron process of the window where Jitsi Meet is displayed:
 
 ```Javascript
 const {
-    RemoteControl
+    setupRemoteControlRender
 } = require("@jitsi/electron-sdk");
 
-// iframe - the Jitsi Meet iframe
-const remoteControl = new RemoteControl(iframe);
+// api - The Jitsi Meet iframe api object.
+const remoteControl = setupRemoteControlRender(api);
 ```
 
 To disable the remote control:
@@ -36,7 +37,7 @@ To disable the remote control:
 remoteControl.dispose();
 ```
 
-NOTE: `dispose` method will be called automatically when the Jitsi Meet iframe unload.
+NOTE: `dispose` method will be called automatically when the Jitsi Meet API  `readyToClose` event or when the `dispose` method of the Jitsi Meet iframe API object.
 
 In the **main** electron process:
 
@@ -76,7 +77,7 @@ const {
 // jitsiMeetWindow - The BrowserWindow instance of the window where Jitsi Meet is loaded.
 // appName - Application name which will be displayed inside the content sharing tracking window
 // i.e. [appName] is sharing your screen.
-// osxBundleId - Mac Application bundleId for which screen capturer permissions will be reset if user denied them.  
+// osxBundleId - Mac Application bundleId for which screen capturer permissions will be reset if user denied them.
 setupScreenSharingMain(mainWindow, appName, osxBundleId);
 ```
 
