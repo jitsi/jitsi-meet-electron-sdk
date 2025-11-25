@@ -1,4 +1,4 @@
-const { 
+const {
     app,
     ipcMain,
     screen,
@@ -31,7 +31,7 @@ class RemoteControlMain {
     /**
      * Cleanup any handlers
      */
-     cleanup() {
+    cleanup() {
         ipcMain.removeListener(GET_DISPLAY_EVENT, this._handleGetDisplayEvent);
         screen.removeListener(DISPLAY_METRICS_CHANGED, this._handleDisplayMetricsChanged);
     }
@@ -133,4 +133,12 @@ class RemoteControlMain {
     }
 }
 
-module.exports = RemoteControlMain;
+/**
+ * Initializes the remote control functionality in the main electron process.
+ *
+ * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which displays the meeting.
+ * @returns {RemoteControlMain} - the remote control object.
+ */
+module.exports = function setupRemoteControlMain(jitsiMeetWindow) {
+    return new RemoteControlMain(jitsiMeetWindow);
+};

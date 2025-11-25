@@ -22,10 +22,11 @@ class RemoteControl {
     /**
      * Constructs new instance and initializes the remote control functionality.
      *
-     * @param {HTMLElement} iframe the Jitsi Meet iframe.
+     * @param {JitsiIFrameApi} api - The Jitsi Meet iframe api object.
      */
-    constructor(iframe) {
-        this._iframe = iframe;
+    constructor(api) {
+        this._api = api;
+        this._iframe = this._api.getIFrame();
         this._iframe.addEventListener('load', () => this._onIFrameLoad());
         /**
          * The status ("up"/"down") of the mouse button.
@@ -114,10 +115,12 @@ class RemoteControl {
      * Handles iframe load events.
      */
     _onIFrameLoad() {
-        this._iframe.contentWindow.addEventListener(
-            'unload',
-            () => this.dispose()
-        );
+        this._api.on('_willDispose', () => {
+            this.dispose();
+        });
+        this._api.on('readyToClose', () => {
+            this.dispose();
+        });
         this._channel = postis({
             window: this._iframe.contentWindow,
             windowForEventListening: window,
@@ -233,4 +236,14 @@ class RemoteControl {
     }
 }
 
-module.exports = RemoteControl;
+/**
+ * Initializes the remote control functionality in the render process of the
+ * window which displays Jitsi Meet.
+ *
+ * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
+ * @returns {RemoteControl} - the remote control object.
+ */
+module.exports = function setupRemoteControlRender(api) {
+    return new RemoteControl(api);
+};
+

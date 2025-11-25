@@ -1,7 +1,7 @@
-const RemoteControlMain = require('./main');
-const RemoteControl = require('./render');
+const setupRemoteControlMain = require('./main');
+const setupRemoteControlRender = require('./render');
 
 module.exports = {
-    RemoteControlMain,
-    RemoteControl
+    setupRemoteControlMain,
+    setupRemoteControlRender
 };
