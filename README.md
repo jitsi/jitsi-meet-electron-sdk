@@ -81,46 +81,38 @@ const {
 setupScreenSharingMain(mainWindow, appName, osxBundleId);
 ```
 
+#### Picture in Picture
 
-#### Always On Top
-Displays a small window with the current active speaker video when the main Jitsi Meet window is not focused.
+Enables the browser's native picture-in-picture functionality for the active speaker video. This allows users to keep the active speaker video visible in a floating window while using other applications.
 
 **Requirements**:
-1. Jitsi Meet should be initialized through our [iframe API](https://github.com/jitsi/jitsi-meet/blob/master/doc/api.md)
-2. The `BrowserWindow` instance where Jitsi Meet is displayed should use the [Chrome's window.open implementation](https://github.com/electron/electron/blob/master/docs/api/window-open.md#using-chromes-windowopen-implementation) (set `nativeWindowOpen` option of `BrowserWindow`'s constructor to `true`).
-3. If you have a custom handler for opening windows you have to filter the always on top window. You can do this by its `frameName` argument which will be set to `AlwaysOnTop`.
+1. Jitsi Meet should be initialized through the [iframe API](https://github.com/jitsi/jitsi-meet/blob/master/doc/api.md)
+2. The feature requires Electron's main process to execute the PiP request with userGesture privileges to bypass browser security restrictions
 
-**Enable the aways on top:**
+**Enable picture in picture:**
 
 In the **main** electron process:
+
 ```Javascript
 const {
-    setupAlwaysOnTopMain
+    setupPictureInPictureMain
 } = require("@jitsi/electron-sdk");
 
-// jitsiMeetWindow - The BrowserWindow instance
-// of the window where Jitsi Meet is loaded.
-setupAlwaysOnTopMain(jitsiMeetWindow);
+// jitsiMeetWindow - The BrowserWindow instance where Jitsi Meet is loaded.
+// loggerTransports - Optional array of logger transports for configuring the logger.
+const pipMain = setupPictureInPictureMain(jitsiMeetWindow, loggerTransports);
 ```
 
 In the **render** electron process of the window where Jitsi Meet is displayed:
+
 ```Javascript
 const {
-    setupAlwaysOnTopRender
+    setupPictureInPictureRender
 } = require("@jitsi/electron-sdk");
 
 const api = new JitsiMeetExternalAPI(...);
-const alwaysOnTop = setupAlwaysOnTopRender(api);
-
-alwaysOnTop.on('will-close', handleAlwaysOnTopClose);
+const pipRender = setupPictureInPictureRender(api);
 ```
-
-`setupAlwaysOnTopRender` return an instance of EventEmitter with the following events:
-
-* _dismissed_ - emitted when the always on top window is explicitly dismissed via its close button
-
-* _will-close_ - emitted right before the always on top window is going to close
-
 
 #### Power Monitor
 
@@ -146,12 +138,6 @@ const {
 
 const api = new JitsiMeetExternalAPI(...);
 setupPowerMonitorRender(api);
-```
-
-### NOTE:
-You'll need to add 'disable-site-isolation-trials' switch because of [https://github.com/electron/electron/issues/18214](https://github.com/electron/electron/issues/18214):
-```
-app.commandLine.appendSwitch('disable-site-isolation-trials')
 ```
 
 ## Example
