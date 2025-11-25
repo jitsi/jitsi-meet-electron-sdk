@@ -79,12 +79,9 @@ module.exports = function setupPowerMonitorRender(api) {
     const iframe = api.getIFrame();
 
     api.on('_willDispose', dispose);
+    api.on('readyToClose', dispose);
 
     iframe.addEventListener('load', () => {
-        iframe.contentWindow.addEventListener(
-            'unload',
-            dispose
-        );
         _channel = postis({
             window: iframe.contentWindow,
             windowForEventListening: window,
