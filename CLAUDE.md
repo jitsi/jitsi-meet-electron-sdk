@@ -38,7 +38,7 @@ The SDK is organized into feature-based modules that expose both **main process*
 index.js (main export)
 ├── remotecontrol/       # Remote desktop control via robotjs
 ├── screensharing/       # Screen sharing with desktop picker and tracker
-├── alwaysontop/         # Floating active speaker window
+├── pip/                 # Picture-in-picture for active speaker video
 ├── powermonitor/        # System idle and power events
 ├── popupsconfig/        # Popup window configuration registry
 ├── node_addons/         # Native C++ addons (Windows only)
@@ -69,11 +69,12 @@ Custom screen/window picker and sharing tracker:
 - Special handling for Wayland (uses native picker) and macOS (permission checks)
 - `screenSharingTracker.js`: Small always-visible window showing "X is sharing your screen"
 
-#### Always On Top (`alwaysontop/`)
-Floating window showing active speaker when main window loses focus:
-- Uses Chrome's window.open implementation (requires `nativeWindowOpen: true`)
-- Window identified by `frameName: 'AlwaysOnTop'`
-- EventEmitter API with `dismissed` and `will-close` events
+#### Picture in Picture (`pip/`)
+Browser native picture-in-picture functionality for active speaker video:
+- `setupPictureInPictureMain`: Runs in main process, handles IPC requests and executes PiP with userGesture privileges
+- `setupPictureInPictureRender`: Runs in renderer, listens for `_pipRequested` events from Jitsi Meet iframe API
+- Uses IPC channel `jitsi-pip-channel` for communication between processes
+- Bypasses transient activation requirements by executing PiP from main process
 
 #### Power Monitor (`powermonitor/`)
 Queries system idle state and power events:

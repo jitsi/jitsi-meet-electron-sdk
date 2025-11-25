@@ -1,11 +1,6 @@
 const { setupRemoteControlMain, setupRemoteControlRender } = require('./remotecontrol');
 const { setupScreenSharingRender, setupScreenSharingMain } = require('./screensharing');
 const {
-    cleanupAlwaysOnTopMain,
-    setupAlwaysOnTopRender,
-    setupAlwaysOnTopMain
-} = require('./alwaysontop');
-const {
     cleanupPowerMonitorMain,
     setupPowerMonitorRender,
     setupPowerMonitorMain
@@ -16,14 +11,15 @@ const {
     initPopupsConfigurationRender,
     getPopupTarget
 } = require('./popupsconfig');
+const {
+    setupPictureInPictureRender,
+    setupPictureInPictureMain
+} = require('./pip');
 
 module.exports = {
-    cleanupAlwaysOnTopMain,
     cleanupPowerMonitorMain,
     setupScreenSharingRender,
     setupScreenSharingMain,
-    setupAlwaysOnTopRender,
-    setupAlwaysOnTopMain,
     setupPowerMonitorRender,
     setupPowerMonitorMain,
     setupRemoteControlMain,
@@ -31,5 +27,7 @@ module.exports = {
     popupsConfigRegistry,
     initPopupsConfigurationMain,
     initPopupsConfigurationRender,
-    getPopupTarget
+    getPopupTarget,
+    setupPictureInPictureRender,
+    setupPictureInPictureMain
 };
