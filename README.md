@@ -43,11 +43,11 @@ In the **main** electron process:
 
 ```Javascript
 const {
-    RemoteControlMain
+    setupRemoteControlMain
 } = require("@jitsi/electron-sdk");
 
 // jitsiMeetWindow - The BrowserWindow instance of the window where Jitsi Meet is loaded.
-const remoteControl = new RemoteControlMain(mainWindow);
+setupRemoteControlMain(mainWindow);
 ```
 
 #### Screen Sharing
