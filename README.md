@@ -114,6 +114,48 @@ const api = new JitsiMeetExternalAPI(...);
 const pipRender = setupPictureInPictureRender(api);
 ```
 
+#### Popups Configuration
+
+Configures handling of popup windows for OAuth authentication flows (Google, Dropbox). This module sets up a `setWindowOpenHandler` on the Jitsi Meet window to allow OAuth popups while delegating other window.open requests to a custom handler provided by the host application.
+
+**Enable popup configuration:**
+
+In the **main** electron process:
+
+```Javascript
+const {
+    initPopupsConfigurationMain
+} = require("@jitsi/electron-sdk");
+
+// jitsiMeetWindow - The BrowserWindow instance where Jitsi Meet is loaded.
+// OAuth popups (Google, Dropbox) will be allowed, all other window.open requests will be denied.
+initPopupsConfigurationMain(jitsiMeetWindow);
+```
+
+**With a custom window open handler:**
+
+If your application needs to handle other window.open requests (e.g., opening external links in the default browser), pass your handler as the second parameter:
+
+```Javascript
+const { shell } = require('electron');
+const {
+    initPopupsConfigurationMain
+} = require("@jitsi/electron-sdk");
+
+// Define how to handle non-OAuth window.open requests
+const windowOpenHandler = ({ url }) => {
+    // Open external links in the default browser
+    shell.openExternal(url);
+    return { action: 'deny' };
+};
+
+// jitsiMeetWindow - The BrowserWindow instance where Jitsi Meet is loaded.
+// windowOpenHandler - Called for window.open requests that are not OAuth popups.
+initPopupsConfigurationMain(jitsiMeetWindow, windowOpenHandler);
+```
+
+The SDK handles OAuth popups (Google, Dropbox) internally, allowing them to open in Electron windows with secure settings. All other window.open requests are passed to your handler, which typically opens them in the system's default browser.
+
 #### Power Monitor
 
 Provides a way to query electron for system idle and receive power monitor events.
