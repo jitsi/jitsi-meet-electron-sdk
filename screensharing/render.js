@@ -18,38 +18,39 @@ class ScreenShareRenderHook {
      */
     constructor(api) {
         this._api = api;
-        this._iframe = this._api.getIFrame();
 
         this._onScreenSharingStatusChanged = this._onScreenSharingStatusChanged.bind(this);
         this._sendCloseTrackerEvent = this._sendCloseTrackerEvent.bind(this);
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
-        this._onIframeApiLoad = this._onIframeApiLoad.bind(this);
-        this._cleanTrackerContext = this._cleanTrackerContext.bind(this);
+        this._onRequestDesktopSources = this._onRequestDesktopSources.bind(this);
         this._onApiDispose = this._onApiDispose.bind(this);
 
+        ipcRenderer.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+
+        this._api.on('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
+        this._api.on('videoConferenceLeft', this._sendCloseTrackerEvent);
+        this._api.on('_requestDesktopSources', this._onRequestDesktopSources);
         this._api.on('_willDispose', this._onApiDispose);
-        this._iframe.addEventListener('load', this._onIframeApiLoad);
     }
 
     /**
-     * Make sure that even after reload/redirect the screensharing will be available
+     * Handle requests for desktop sources.
+     * @param {Object} request - Request object from Electron.
+     * @param {Function} callback - Callback to be invoked with the sources or error.
+     *
+     * @returns {void}
      */
-    async _onIframeApiLoad() {
-        ipcRenderer.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
-        this._api.on('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
-        this._api.on('videoConferenceLeft', this._sendCloseTrackerEvent);
-        this._api.on('_requestDesktopSources', async (request, callback) => {
-            const { options } = request;
+    _onRequestDesktopSources(request, callback) {
+        const { options } = request;
 
-            ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
-                .then(sources => {
-                    sources.forEach(item => {
-                        item.thumbnail.dataUrl = item.thumbnail.toDataURL();
-                    });
-                    callback({ sources });
-                })
-                .catch((error) => callback({ error }));
-        });
+        ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
+            .then(sources => {
+                sources.forEach(item => {
+                    item.thumbnail.dataUrl = item.thumbnail.toDataURL();
+                });
+                callback({ sources });
+            })
+            .catch((error) => callback({ error }));
     }
 
     /**
@@ -137,31 +138,18 @@ class ScreenShareRenderHook {
     }
 
     /**
-     * Clear all event handlers related to the tracker in order to avoid any potential leaks and closes it in the event
-     * that it's currently being displayed.
-     *
-     * @returns {void}
-     */
-    _cleanTrackerContext() {
-        ipcRenderer.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
-        this._api.removeListener('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
-        this._api.removeListener('videoConferenceLeft', this._sendCloseTrackerEvent);
-        this._sendCloseTrackerEvent();
-    }
-
-    /**
      * Clear all event handlers in order to avoid any potential leaks.
-     *
-     * NOTE: It is very important to remove the load listener only when we are sure that the iframe won't be used
-     * anymore. Otherwise if we use the videoConferenceLeft event for example, when the iframe is internally reloaded
-     * because of an error and then loads again we won't initialize the screen sharing functionality.
      *
      * @returns {void}
      */
     _onApiDispose() {
-        this._cleanTrackerContext();
+        ipcRenderer.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+        this._sendCloseTrackerEvent();
+
+        this._api.removeListener('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
+        this._api.removeListener('videoConferenceLeft', this._sendCloseTrackerEvent);
+        this._api.removeListener('_requestDesktopSources', this._onRequestDesktopSources);
         this._api.removeListener('_willDispose', this._onApiDispose);
-        this._iframe.removeEventListener('load', this._onIframeApiLoad);
     }
 }
 
