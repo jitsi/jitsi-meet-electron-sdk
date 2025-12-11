@@ -67,4 +67,7 @@ jobs:
       with:
         node-version: '20'
         registry-url: 'https://registry.npmjs.org'
+    # Ensure latest npm version for provenance support
+    - name: "Update npm"
+      run: npm install -g npm@latest
     - run: npm publish --provenance --access public
