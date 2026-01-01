@@ -39,7 +39,7 @@ jobs:
     - name: Prebuildify
       run: npm run prebuild
       shell: bash
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: prebuilds-${{ matrix.build-group }}
         path: prebuilds/
