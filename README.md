@@ -10,6 +10,18 @@ Install from npm:
 
 Note: This package contains native code on Windows for the remote control module. Binary prebuilds are packaged with prebuildify as part of the npm package.
 
+## Module System Support
+
+**v8.0+** supports both CommonJS and ES Modules:
+
+```javascript
+// CommonJS (fully supported, no changes needed)
+const { setupRemoteControlMain } = require("@jitsi/electron-sdk");
+
+// ES Modules (new in v8.0)
+import { setupRemoteControlMain } from "@jitsi/electron-sdk";
+```
+
 ## Usage
 #### Remote Control
 
