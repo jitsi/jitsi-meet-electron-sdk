@@ -1,6 +1,9 @@
 const { ipcRenderer } = require('electron');
+const log = require('@jitsi/logger');
 
 const { PIP_CHANNEL } = require('./constants');
+
+let logger;
 
 /**
  * Renderer process hook that sets up Electron-specific picture-in-picture functionality.
@@ -23,6 +26,7 @@ class PictureInPictureRenderHook {
 
         // Clean up on API disposal.
         this._api.on('_willDispose', this._onApiDispose);
+        logger.debug('PiP render hook initialized!');
     }
 
     /**
@@ -32,8 +36,11 @@ class PictureInPictureRenderHook {
      * @returns {void}
      */
     _handlePipRequested() {
+        logger.debug('Received _pipRequested event from External API');
         const iframe = this._api.getIFrame();
         const frameName = iframe ? iframe.name : undefined;
+
+        logger.debug('Forwarding PiP request to main process, frameName:', frameName);
 
         // Forward to main process via IPC.
         ipcRenderer.send(PIP_CHANNEL, frameName);
@@ -45,6 +52,7 @@ class PictureInPictureRenderHook {
      * @returns {void}
      */
     _onApiDispose() {
+        logger.debug('API disposing, cleaning up PiP render hook listeners');
         this._api.removeListener('_pipRequested', this._handlePipRequested);
         this._api.removeListener('_willDispose', this._onApiDispose);
     }
@@ -54,8 +62,11 @@ class PictureInPictureRenderHook {
  * Initializes the picture-in-picture electron specific functionality in the renderer process.
  *
  * @param {JitsiIFrameApi} api - The Jitsi Meet iframe api object.
+ * @param {Array} loggerTransports - Optional array of logger transports for configuring the logger.
  * @returns {PictureInPictureRenderHook} The PiP render hook instance.
  */
-module.exports = function setupPictureInPictureRender(api) {
+module.exports = function setupPictureInPictureRender(api, loggerTransports) {
+    logger = log.getLogger('PIP', loggerTransports || []);
+
     return new PictureInPictureRenderHook(api);
 };

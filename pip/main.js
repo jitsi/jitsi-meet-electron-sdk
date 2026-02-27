@@ -22,6 +22,7 @@ class PictureInPictureMainHook {
 
         // Listen for PiP requests from the renderer process.
         ipcMain.on(PIP_CHANNEL, this._handlePipRequest);
+        logger.info('PiP main process hook initialized');
 
         // Automatically cleanup when the window is closed.
         this._jitsiMeetWindow.on('closed', this.cleanup);
@@ -36,6 +37,8 @@ class PictureInPictureMainHook {
      * @returns {void}
      */
     _handlePipRequest(event, frameName) {
+        logger.debug(`Received PiP request from renderer, frameName: ${frameName}`);
+
         if (!this._jitsiMeetWindow || !frameName) {
             logger.error('[PiP Main] Cannot handle PiP request: window not available');
 
@@ -59,7 +62,11 @@ class PictureInPictureMainHook {
                 window.JitsiMeetJS.app.electron.requestPictureInPicture();
             }`;
 
+        logger.debug('Executing requestPictureInPicture script in iframe with userGesture: true');
         jitsiFrame.executeJavaScript(pipScript, true)
+            .then(() => {
+                logger.debug('PiP script executed successfully in iframe');
+            })
             .catch(error => {
                 logger.error('[PiP Main] Failed to execute PiP script:', error);
             });
@@ -72,6 +79,7 @@ class PictureInPictureMainHook {
      * @returns {void}
      */
     cleanup() {
+        logger.debug('Cleaning up PiP main process hook');
         ipcMain.removeListener(PIP_CHANNEL, this._handlePipRequest);
 
         // Remove the window close listener if the window still exists.

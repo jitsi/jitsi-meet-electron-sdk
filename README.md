@@ -109,7 +109,10 @@ const {
 } = require("@jitsi/electron-sdk");
 
 const api = new JitsiMeetExternalAPI(...);
-const pipRender = setupPictureInPictureRender(api);
+
+// api - The JitsiMeetExternalAPI instance.
+// loggerTransports - Optional array of logger transports for configuring the logger.
+const pipRender = setupPictureInPictureRender(api, loggerTransports);
 ```
 
 #### Popups Configuration
