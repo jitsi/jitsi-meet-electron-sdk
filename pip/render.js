@@ -26,7 +26,7 @@ class PictureInPictureRenderHook {
 
         // Clean up on API disposal.
         this._api.on('_willDispose', this._onApiDispose);
-        logger.debug('PiP render hook initialized!');
+        logger.info('PiP render hook initialized!');
     }
 
     /**
@@ -36,11 +36,11 @@ class PictureInPictureRenderHook {
      * @returns {void}
      */
     _handlePipRequested() {
-        logger.debug('Received _pipRequested event from External API');
+        logger.info('Received _pipRequested event from External API');
         const iframe = this._api.getIFrame();
         const frameName = iframe ? iframe.name : undefined;
 
-        logger.debug('Forwarding PiP request to main process, frameName:', frameName);
+        logger.info('Forwarding PiP request to main process, frameName:', frameName);
 
         // Forward to main process via IPC.
         ipcRenderer.send(PIP_CHANNEL, frameName);
@@ -52,7 +52,7 @@ class PictureInPictureRenderHook {
      * @returns {void}
      */
     _onApiDispose() {
-        logger.debug('API disposing, cleaning up PiP render hook listeners');
+        logger.info('API disposing, cleaning up PiP render hook listeners');
         this._api.removeListener('_pipRequested', this._handlePipRequested);
         this._api.removeListener('_willDispose', this._onApiDispose);
     }
