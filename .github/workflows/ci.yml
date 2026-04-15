@@ -28,8 +28,8 @@ jobs:
             arch: arm64
             build-group: win32-arm64
     steps:
-    - uses: actions/checkout@v6
-    - uses: actions/setup-node@v6
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+    - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6
       with:
         node-version: '20'
         architecture: ${{ matrix.arch }}
@@ -39,7 +39,7 @@ jobs:
     - name: Prebuildify
       run: npm run prebuild
       shell: bash
-    - uses: actions/upload-artifact@v6
+    - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
       with:
         name: prebuilds-${{ matrix.build-group }}
         path: prebuilds/
@@ -51,8 +51,8 @@ jobs:
     concurrency:
       group: ${{ github.ref }}
     steps:
-    - uses: actions/checkout@v6
-    - uses: actions/download-artifact@v7
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+    - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
       with:
         path: prebuilds
         pattern: prebuilds-*
@@ -63,7 +63,7 @@ jobs:
         version-type:  'patch'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - uses: actions/setup-node@v6
+    - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6
       with:
         node-version: '24'
         registry-url: 'https://registry.npmjs.org'
