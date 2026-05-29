@@ -22,9 +22,7 @@ Note: This package contains native code on Windows for the remote control module
 In the **render** electron process of the window where Jitsi Meet is displayed:
 
 ```Javascript
-const {
-    setupRemoteControlRender
-} = require("@jitsi/electron-sdk");
+const setupRemoteControlRender = require('@jitsi/electron-sdk/remotecontrol/render');
 
 // api - The Jitsi Meet iframe api object.
 const remoteControl = setupRemoteControlRender(api);
@@ -40,9 +38,7 @@ NOTE: `dispose` method will be called automatically when the Jitsi Meet API  `re
 In the **main** electron process:
 
 ```Javascript
-const {
-    setupRemoteControlMain
-} = require("@jitsi/electron-sdk");
+const setupRemoteControlMain = require('@jitsi/electron-sdk/remotecontrol/main');
 
 // jitsiMeetWindow - The BrowserWindow instance of the window where Jitsi Meet is loaded.
 setupRemoteControlMain(mainWindow);
@@ -58,9 +54,7 @@ The screen sharing utility requires iframe HTML Element that will load Jitsi Mee
 In the **render** electron process of the window where Jitsi Meet is displayed:
 
 ```Javascript
-const {
-    setupScreenSharingRender
-} = require("@jitsi/electron-sdk");
+const setupScreenSharingRender = require('@jitsi/electron-sdk/screensharing/render');
 
 // api - The Jitsi Meet iframe api object.
 setupScreenSharingRender(api);
@@ -68,9 +62,7 @@ setupScreenSharingRender(api);
 In the **main** electron process:
 
 ```Javascript
-const {
-    setupScreenSharingMain
-} = require("@jitsi/electron-sdk");
+const setupScreenSharingMain = require('@jitsi/electron-sdk/screensharing/main');
 
 // jitsiMeetWindow - The BrowserWindow instance of the window where Jitsi Meet is loaded.
 // appName - Application name which will be displayed inside the content sharing tracking window
@@ -92,9 +84,7 @@ Enables the browser's native picture-in-picture functionality for the active spe
 In the **main** electron process:
 
 ```Javascript
-const {
-    setupPictureInPictureMain
-} = require("@jitsi/electron-sdk");
+const setupPictureInPictureMain = require('@jitsi/electron-sdk/pip/main');
 
 // jitsiMeetWindow - The BrowserWindow instance where Jitsi Meet is loaded.
 // loggerTransports - Optional array of logger transports for configuring the logger.
@@ -104,9 +94,7 @@ const pipMain = setupPictureInPictureMain(jitsiMeetWindow, loggerTransports);
 In the **render** electron process of the window where Jitsi Meet is displayed:
 
 ```Javascript
-const {
-    setupPictureInPictureRender
-} = require("@jitsi/electron-sdk");
+const setupPictureInPictureRender = require('@jitsi/electron-sdk/pip/render');
 
 const api = new JitsiMeetExternalAPI(...);
 
@@ -124,9 +112,7 @@ Configures handling of popup windows for OAuth authentication flows (Google, Dro
 In the **main** electron process:
 
 ```Javascript
-const {
-    initPopupsConfigurationMain
-} = require("@jitsi/electron-sdk");
+const initPopupsConfigurationMain = require('@jitsi/electron-sdk/popupsconfig/main');
 
 // jitsiMeetWindow - The BrowserWindow instance where Jitsi Meet is loaded.
 // OAuth popups (Google, Dropbox) will be allowed, all other window.open requests will be denied.
@@ -139,9 +125,7 @@ If your application needs to handle other window.open requests (e.g., opening ex
 
 ```Javascript
 const { shell } = require('electron');
-const {
-    initPopupsConfigurationMain
-} = require("@jitsi/electron-sdk");
+const initPopupsConfigurationMain = require('@jitsi/electron-sdk/popupsconfig/main');
 
 // Define how to handle non-OAuth window.open requests
 const windowOpenHandler = ({ url }) => {
@@ -164,9 +148,7 @@ Provides a way to query electron for system idle and receive power monitor event
 **enable power monitor:**
 In the **main** electron process:
 ```Javascript
-const {
-    setupPowerMonitorMain
-} = require("@jitsi/electron-sdk");
+const { setupPowerMonitorMain } = require('@jitsi/electron-sdk/powermonitor/main');
 
 // jitsiMeetWindow - The BrowserWindow instance
 // of the window where Jitsi Meet is loaded.
@@ -175,9 +157,7 @@ setupPowerMonitorMain(jitsiMeetWindow);
 
 In the **render** electron process of the window where Jitsi Meet is displayed:
 ```Javascript
-const {
-    setupPowerMonitorRender
-} = require("@jitsi/electron-sdk");
+const setupPowerMonitorRender = require('@jitsi/electron-sdk/powermonitor/render');
 
 const api = new JitsiMeetExternalAPI(...);
 setupPowerMonitorRender(api);
