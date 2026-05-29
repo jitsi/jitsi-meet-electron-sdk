@@ -10,6 +10,22 @@ const {
 const os = require('os');
 const path = require('path');
 
+/**
+ * Absolute path to the preload script used by the screen-sharing tracker window.
+ * When the consumer bundles the main process with esbuild (or similar), __dirname
+ * is replaced with the source directory at bundle time, so this constant captures
+ * the correct on-disk location.  Pass it – or your own copy – as
+ * options.preloadPath to setupScreenSharingMain when the default location is not
+ * accessible at runtime (e.g. inside an ASAR archive without asarUnpack).
+ */
+const SCREEN_SHARE_PRELOAD_PATH = path.resolve(__dirname, './preload.js');
+
+/**
+ * Absolute path to the HTML file loaded into the screen-sharing tracker window.
+ * See SCREEN_SHARE_PRELOAD_PATH for bundling guidance.
+ */
+const SCREEN_SHARE_TRACKER_HTML_PATH = path.resolve(__dirname, './screenSharingTracker.html');
+
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES, TRACKER_SIZE } = require('./constants');
 const { isMac, isWayland } = require('./utils');
 const { windowsEnableScreenProtection } = require('../helpers/functions');
@@ -27,10 +43,18 @@ class ScreenShareMainHook {
      * @param {BrowserWindow} jitsiMeetWindow - BrowserWindow where jitsi-meet api is loaded.
      * @param {string} identity - Name of the application doing screen sharing, will be displayed in the
      * screen sharing tracker window text i.e. {identity} is sharing your screen.
+     * @param {string} osxBundleId - macOS bundle ID used to reset screen capture permissions.
+     * @param {Object} options - Optional overrides for bundled deployments.
+     * @param {string} [options.preloadPath] - Absolute path to the tracker preload script.
+     *   Defaults to SCREEN_SHARE_PRELOAD_PATH exported from this module.
+     * @param {string} [options.trackerHtmlPath] - Absolute path to the tracker HTML file.
+     *   Defaults to SCREEN_SHARE_TRACKER_HTML_PATH exported from this module.
      */
-    constructor(jitsiMeetWindow, identity, osxBundleId) {
+    constructor(jitsiMeetWindow, identity, osxBundleId, options = {}) {
         this._jitsiMeetWindow = jitsiMeetWindow;
         this._identity = identity;
+        this._preloadPath = options.preloadPath || SCREEN_SHARE_PRELOAD_PATH;
+        this._trackerHtmlPath = options.trackerHtmlPath || SCREEN_SHARE_TRACKER_HTML_PATH;
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
         this._gdmRequestId = 0;
         this._pendingGdmRequests = new Map();
@@ -196,7 +220,7 @@ class ScreenShareMainHook {
             webPreferences: {
                 contextIsolation: true,
                 nodeIntegration: false,
-                preload: path.resolve(__dirname, './preload.js'),
+                preload: this._preloadPath,
                 sandbox: false
             }
         });
@@ -222,7 +246,7 @@ class ScreenShareMainHook {
         });
 
         this._screenShareTracker
-            .loadURL(`file://${__dirname}/screenSharingTracker.html?sharingIdentity=${this._identity}`);
+            .loadURL(`file://${this._trackerHtmlPath}?sharingIdentity=${this._identity}`);
     }
 
     /**
@@ -245,8 +269,19 @@ class ScreenShareMainHook {
  * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which displays Jitsi Meet
  * @param {string} identity - Name of the application doing screen sharing, will be displayed in the
  * screen sharing tracker window text i.e. {identity} is sharing your screen.
- * @param {string} bundleId- OSX Application BundleId
+ * @param {string} osxBundleId - OSX Application BundleId
+ * @param {Object} [options] - Optional configuration for bundled deployments.
+ * @param {string} [options.preloadPath] - Override for the tracker preload script path.
+ *   Use SCREEN_SHARE_PRELOAD_PATH as a reference to the default location.
+ * @param {string} [options.trackerHtmlPath] - Override for the tracker HTML path.
+ *   Use SCREEN_SHARE_TRACKER_HTML_PATH as a reference to the default location.
+ * @returns {ScreenShareMainHook}
  */
-module.exports = function setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId) {
-    return new ScreenShareMainHook(jitsiMeetWindow, identity, osxBundleId);
-};
+function setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId, options = {}) {
+    return new ScreenShareMainHook(jitsiMeetWindow, identity, osxBundleId, options);
+}
+
+setupScreenSharingMain.SCREEN_SHARE_PRELOAD_PATH = SCREEN_SHARE_PRELOAD_PATH;
+setupScreenSharingMain.SCREEN_SHARE_TRACKER_HTML_PATH = SCREEN_SHARE_TRACKER_HTML_PATH;
+
+module.exports = setupScreenSharingMain;

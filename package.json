@@ -3,6 +3,21 @@
   "version": "9.1.3",
   "description": "Utilities for jitsi-meet-electron project",
   "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./remotecontrol/main": "./remotecontrol/main.js",
+    "./remotecontrol/render": "./remotecontrol/render.js",
+    "./screensharing/main": "./screensharing/main.js",
+    "./screensharing/render": "./screensharing/render.js",
+    "./screensharing/preload": "./screensharing/preload.js",
+    "./pip/main": "./pip/main.js",
+    "./pip/render": "./pip/render.js",
+    "./powermonitor/main": "./powermonitor/main.js",
+    "./powermonitor/render": "./powermonitor/render.js",
+    "./popupsconfig/main": "./popupsconfig/main.js",
+    "./popupsconfig/render": "./popupsconfig/render.js",
+    "./*": "./*"
+  },
   "scripts": {
     "lint": "eslint .",
     "test": "mocha",

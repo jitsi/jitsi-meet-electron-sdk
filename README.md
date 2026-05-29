@@ -197,6 +197,99 @@ To rebuild the native code, use:
 
     npx node-gyp rebuild
 
+## Bundler / esbuild usage
+
+By default `require('@jitsi/electron-sdk')` loads every feature module on
+demand (lazy getters), but the modules themselves still contain static
+`require('electron')` and native-addon calls that bundlers like esbuild cannot
+analyse at build time.
+
+### Use process-specific sub-path imports
+
+Import only the sub-path you need.  This avoids pulling in the opposite
+process's dependencies:
+
+```javascript
+// Main process only
+const setupScreenSharingMain = require('@jitsi/electron-sdk/screensharing/main');
+const setupRemoteControlMain  = require('@jitsi/electron-sdk/remotecontrol/main');
+const { setupPowerMonitorMain, cleanupPowerMonitorMain } = require('@jitsi/electron-sdk/powermonitor/main');
+const initPopupsConfigurationMain = require('@jitsi/electron-sdk/popupsconfig/main');
+const setupPictureInPictureMain   = require('@jitsi/electron-sdk/pip/main');
+
+// Renderer process only
+const setupScreenSharingRender = require('@jitsi/electron-sdk/screensharing/render');
+const setupRemoteControlRender  = require('@jitsi/electron-sdk/remotecontrol/render');
+const setupPowerMonitorRender   = require('@jitsi/electron-sdk/powermonitor/render');
+const initPopupsConfigurationRender = require('@jitsi/electron-sdk/popupsconfig/render');
+const setupPictureInPictureRender   = require('@jitsi/electron-sdk/pip/render');
+```
+
+### Mark Electron and native addons as external
+
+Add the following to your esbuild configuration so these modules are not
+bundled but instead resolved at runtime by Electron:
+
+```javascript
+// esbuild.config.mjs (or equivalent)
+import { build } from 'esbuild';
+
+await build({
+    // …your other options…
+    external: [
+        'electron',
+        '@jitsi/robotjs',
+        'node-gyp-build',
+    ],
+});
+```
+
+### Screen-sharing asset paths
+
+`screensharing/main.js` ships two HTML/JS assets (`preload.js` and
+`screenSharingTracker.html`) that must be readable from disk at runtime.
+When you bundle the main process, esbuild inlines the JS but cannot relocate
+those assets automatically.
+
+Two exported constants tell you where the assets live inside the installed
+package:
+
+```javascript
+const {
+    SCREEN_SHARE_PRELOAD_PATH,
+    SCREEN_SHARE_TRACKER_HTML_PATH,
+} = require('@jitsi/electron-sdk/screensharing/main');
+// or from the feature index:
+// require('@jitsi/electron-sdk/screensharing')
+```
+
+**Option A – copy assets next to your bundle** (recommended for Electron Forge /
+electron-builder):
+
+Configure your bundler / packager to copy the two files into the app bundle,
+then pass their new paths via the `options` argument:
+
+```javascript
+const path = require('path');
+
+setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId, {
+    preloadPath:    path.join(__dirname, 'assets', 'screensharing', 'preload.js'),
+    trackerHtmlPath: path.join(__dirname, 'assets', 'screensharing', 'screenSharingTracker.html'),
+});
+```
+
+**Option B – use the package path directly** (works when `node_modules` is
+available at runtime, e.g. during development or without ASAR packing):
+
+```javascript
+// Pass the exported constants – they already point at the installed files.
+setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId, {
+    preloadPath:    SCREEN_SHARE_PRELOAD_PATH,
+    trackerHtmlPath: SCREEN_SHARE_TRACKER_HTML_PATH,
+});
+```
+
+
 ## Publishing
 
 On every push to main branch, the .github/workflows/ci.yml will create a new version and publish to npm.
