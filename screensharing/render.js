@@ -2,7 +2,6 @@
 const { ipcRenderer } = require('electron');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES } = require('./constants');
-const { logWarning, setLogger } = require('./utils');
 
 /**
  * Renderer process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -84,7 +83,7 @@ class ScreenShareRenderHook {
                     });
                 }).catch(error => {
                     // If picker fails, still send DO_GDM with requestId to complete the flow
-                    logWarning(`Desktop picker error: ${error}`);
+                    console.error(`Desktop picker error: ${error}`);
                     ipcRenderer.send(SCREEN_SHARE_EVENTS_CHANNEL, {
                         data: {
                             name: SCREEN_SHARE_EVENTS.DO_GDM,
@@ -96,7 +95,7 @@ class ScreenShareRenderHook {
                 break;
             }
             default:
-                logWarning(`Unhandled ${SCREEN_SHARE_EVENTS_CHANNEL}: ${data}`);
+                console.error(`Unhandled ${SCREEN_SHARE_EVENTS_CHANNEL}: ${data}`);
 
         }
     }
@@ -159,8 +158,6 @@ class ScreenShareRenderHook {
  *
  * @param {JitsiIFrameApi} api - The Jitsi Meet iframe api object.
  */
-module.exports = function setupScreenSharingRender(api, loggerTransports = null) {
-    setLogger(loggerTransports);
-
+module.exports = function setupScreenSharingRender(api) {
     return new ScreenShareRenderHook(api);
 };
