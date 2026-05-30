@@ -168,10 +168,6 @@ class ScreenShareMainHook {
      * screen sharing tracker window text i.e. {identity} is sharing your screen.
      * @param {string} osxBundleId - macOS bundle ID used to reset screen capture permissions.
      * @param {Object} options - Optional overrides.
-     * @param {string} [options.preloadPath] - Absolute path to a custom tracker preload script.
-     *   When omitted, a preload script is generated and written to the OS temp directory.
-     * @param {string} [options.trackerHtmlPath] - Absolute path to a custom tracker HTML file.
-     *   When omitted, the tracker HTML is generated inline and loaded via a data: URI.
      */
     constructor(jitsiMeetWindow, identity, osxBundleId, options = {}) {
         this._jitsiMeetWindow = jitsiMeetWindow;
@@ -323,7 +319,7 @@ class ScreenShareMainHook {
 
         // Display always on top screen sharing tracker window in the center bottom of the screen.
         const display = screen.getPrimaryDisplay();
-        const preloadPath = this._options.preloadPath || getInlinedPreloadPath();
+        const preloadPath = getInlinedPreloadPath();
 
         this._screenShareTracker = new BrowserWindow({
             height: TRACKER_SIZE.height,
@@ -368,15 +364,10 @@ class ScreenShareMainHook {
             }
         });
 
-        if (this._options.trackerHtmlPath) {
-            this._screenShareTracker
-                .loadURL(`file://${this._options.trackerHtmlPath}?sharingIdentity=${this._identity}`);
-        } else {
-            const html = buildTrackerHtml(this._identity);
+        const html = buildTrackerHtml(this._identity);
 
-            this._screenShareTracker
-                .loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
-        }
+        this._screenShareTracker
+            .loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
     }
 
     /**
@@ -401,10 +392,6 @@ class ScreenShareMainHook {
  * screen sharing tracker window text i.e. {identity} is sharing your screen.
  * @param {string} osxBundleId - OSX Application BundleId
  * @param {Object} [options] - Optional configuration overrides.
- * @param {string} [options.preloadPath] - Absolute path to a custom tracker preload script.
- *   When omitted, a preload script is generated and written to the OS temp directory.
- * @param {string} [options.trackerHtmlPath] - Absolute path to a custom tracker HTML file.
- *   When omitted, the tracker HTML is generated inline and loaded via a data: URI.
  * @returns {ScreenShareMainHook}
  */
 function setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId, options = {}) {
