@@ -16,14 +16,6 @@ Object.defineProperties(module.exports, {
         enumerable: true,
         get() { return require('./screensharing/main'); }
     },
-    SCREEN_SHARE_PRELOAD_PATH: {
-        enumerable: true,
-        get() { return require('./screensharing/main').SCREEN_SHARE_PRELOAD_PATH; }
-    },
-    SCREEN_SHARE_TRACKER_HTML_PATH: {
-        enumerable: true,
-        get() { return require('./screensharing/main').SCREEN_SHARE_TRACKER_HTML_PATH; }
-    },
     setupScreenSharingRender: {
         enumerable: true,
         get() { return require('./screensharing/render'); }

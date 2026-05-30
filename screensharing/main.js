@@ -1,4 +1,3 @@
-/* global __dirname */
 const { exec } = require('child_process');
 const {
     BrowserWindow,
@@ -7,28 +6,152 @@ const {
     screen,
     systemPreferences
 } = require('electron');
+const fs = require('fs');
 const os = require('os');
 const path = require('path');
-
-/**
- * Absolute path to the preload script used by the screen-sharing tracker window.
- * When the consumer bundles the main process with esbuild (or similar), __dirname
- * is replaced with the source directory at bundle time, so this constant captures
- * the correct on-disk location.  Pass it – or your own copy – as
- * options.preloadPath to setupScreenSharingMain when the default location is not
- * accessible at runtime (e.g. inside an ASAR archive without asarUnpack).
- */
-const SCREEN_SHARE_PRELOAD_PATH = path.resolve(__dirname, './preload.js');
-
-/**
- * Absolute path to the HTML file loaded into the screen-sharing tracker window.
- * See SCREEN_SHARE_PRELOAD_PATH for bundling guidance.
- */
-const SCREEN_SHARE_TRACKER_HTML_PATH = path.resolve(__dirname, './screenSharingTracker.html');
 
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES, TRACKER_SIZE } = require('./constants');
 const { isMac, isWayland } = require('./utils');
 const { windowsEnableScreenProtection } = require('../helpers/functions');
+
+/**
+ * Builds the source code for the tracker window's preload script.
+ * Constants are baked in so the generated file has no `require()` calls
+ * other than the always-available `require('electron')`.
+ *
+ * @returns {string} JavaScript source ready to be written to disk.
+ */
+function buildPreloadContent() {
+    return [
+        "const { contextBridge, ipcRenderer } = require('electron');",
+        `const EVENTS = ${JSON.stringify(SCREEN_SHARE_EVENTS)};`,
+        `const CHANNEL = ${JSON.stringify(SCREEN_SHARE_EVENTS_CHANNEL)};`,
+        "contextBridge.exposeInMainWorld('JitsiScreenSharingTracker', {",
+        '    EVENTS,',
+        '    sendEvent: function(ev) {',
+        '        if (Object.values(EVENTS).includes(ev)) {',
+        '            ipcRenderer.send(CHANNEL, { data: { name: ev } });',
+        '        }',
+        '    }',
+        '});'
+    ].join('\n');
+}
+
+/**
+ * Builds the HTML content for the screen-sharing tracker window.
+ * The tracker JS is inlined so no separate file is needed.  The identity
+ * string is embedded safely via JSON so HTML-special characters cannot
+ * break out of the script context.
+ *
+ * @param {string} identity - Application name shown in the tracker bar.
+ * @returns {string} Full HTML document ready to be loaded via a data: URI.
+ */
+function buildTrackerHtml(identity) {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Screen Sharing Tracker</title>
+  <style>
+    html {
+      background-color: #303135e6;
+    }
+
+    body {
+      align-items: center;
+      color: #e4e4e4;
+      display: flex;
+      justify-content: space-between;
+      margin: 0;
+      padding: 6px 16px;
+      -webkit-user-select: none;
+      -webkit-app-region: drag;
+    }
+
+    button {
+      background-color: #b8b8b8;
+      border: 0;
+      border-radius: 4px;
+      color: #282a2f;
+      height: 28px;
+      margin-right: 16px;
+      -webkit-app-region: no-drag;
+    }
+
+    #text-container {
+      font-family:Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      display: flex;
+    }
+
+    #double-line {
+      font-size: 15px;
+      font-weight:bolder;
+    }
+
+    #screen-share-marker-minimize {
+      color: #ababab;
+      font-family:Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      -webkit-app-region: no-drag;
+    }
+
+    #sharing-identity {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 170px;
+    }
+  </style>
+</head>
+<body>
+  <span id="double-line">‖</span>
+  <div id="text-container">
+    <span id="sharing-identity"></span><span id="static-text">&nbsp;is sharing your screen.</span>
+  </div>
+  <div>
+    <button id="screen-share-marker-stop">Stop sharing</button>
+    <a id="screen-share-marker-minimize">Hide</a>
+  </div>
+  <script>
+    document.getElementById('sharing-identity').textContent = ${JSON.stringify(identity || '')};
+    var tracker = window.JitsiScreenSharingTracker;
+    document.getElementById('screen-share-marker-minimize').addEventListener('click', function() {
+      tracker.sendEvent(tracker.EVENTS.HIDE_TRACKER);
+    });
+    document.getElementById('screen-share-marker-stop').addEventListener('click', function() {
+      tracker.sendEvent(tracker.EVENTS.STOP_SCREEN_SHARE);
+    });
+  </script>
+</body>
+</html>`;
+}
+
+/**
+ * Path of the preload script written to the OS temp directory.
+ * Populated on first call to {@link getInlinedPreloadPath}.
+ * @type {string|null}
+ */
+let _inlinedPreloadPath = null;
+
+/**
+ * Returns the path of the inlined preload script, writing it to the OS temp
+ * directory on the first call and caching the result.
+ *
+ * @returns {string} Absolute path to the preload script.
+ */
+function getInlinedPreloadPath() {
+    if (!_inlinedPreloadPath) {
+        const tmpPath = path.join(os.tmpdir(), 'jitsi-screensharing-preload.js');
+
+        fs.writeFileSync(tmpPath, buildPreloadContent(), 'utf8');
+        _inlinedPreloadPath = tmpPath;
+    }
+
+    return _inlinedPreloadPath;
+}
+
 
 /**
  * Main process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -44,17 +167,16 @@ class ScreenShareMainHook {
      * @param {string} identity - Name of the application doing screen sharing, will be displayed in the
      * screen sharing tracker window text i.e. {identity} is sharing your screen.
      * @param {string} osxBundleId - macOS bundle ID used to reset screen capture permissions.
-     * @param {Object} options - Optional overrides for bundled deployments.
-     * @param {string} [options.preloadPath] - Absolute path to the tracker preload script.
-     *   Defaults to SCREEN_SHARE_PRELOAD_PATH exported from this module.
-     * @param {string} [options.trackerHtmlPath] - Absolute path to the tracker HTML file.
-     *   Defaults to SCREEN_SHARE_TRACKER_HTML_PATH exported from this module.
+     * @param {Object} options - Optional overrides.
+     * @param {string} [options.preloadPath] - Absolute path to a custom tracker preload script.
+     *   When omitted, a preload script is generated and written to the OS temp directory.
+     * @param {string} [options.trackerHtmlPath] - Absolute path to a custom tracker HTML file.
+     *   When omitted, the tracker HTML is generated inline and loaded via a data: URI.
      */
     constructor(jitsiMeetWindow, identity, osxBundleId, options = {}) {
         this._jitsiMeetWindow = jitsiMeetWindow;
         this._identity = identity;
-        this._preloadPath = options.preloadPath || SCREEN_SHARE_PRELOAD_PATH;
-        this._trackerHtmlPath = options.trackerHtmlPath || SCREEN_SHARE_TRACKER_HTML_PATH;
+        this._options = options;
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
         this._gdmRequestId = 0;
         this._pendingGdmRequests = new Map();
@@ -201,6 +323,7 @@ class ScreenShareMainHook {
 
         // Display always on top screen sharing tracker window in the center bottom of the screen.
         const display = screen.getPrimaryDisplay();
+        const preloadPath = this._options.preloadPath || getInlinedPreloadPath();
 
         this._screenShareTracker = new BrowserWindow({
             height: TRACKER_SIZE.height,
@@ -220,7 +343,7 @@ class ScreenShareMainHook {
             webPreferences: {
                 contextIsolation: true,
                 nodeIntegration: false,
-                preload: this._preloadPath,
+                preload: preloadPath,
                 sandbox: false
             }
         });
@@ -245,8 +368,15 @@ class ScreenShareMainHook {
             }
         });
 
-        this._screenShareTracker
-            .loadURL(`file://${this._trackerHtmlPath}?sharingIdentity=${this._identity}`);
+        if (this._options.trackerHtmlPath) {
+            this._screenShareTracker
+                .loadURL(`file://${this._options.trackerHtmlPath}?sharingIdentity=${this._identity}`);
+        } else {
+            const html = buildTrackerHtml(this._identity);
+
+            this._screenShareTracker
+                .loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+        }
     }
 
     /**
@@ -270,18 +400,15 @@ class ScreenShareMainHook {
  * @param {string} identity - Name of the application doing screen sharing, will be displayed in the
  * screen sharing tracker window text i.e. {identity} is sharing your screen.
  * @param {string} osxBundleId - OSX Application BundleId
- * @param {Object} [options] - Optional configuration for bundled deployments.
- * @param {string} [options.preloadPath] - Override for the tracker preload script path.
- *   Use SCREEN_SHARE_PRELOAD_PATH as a reference to the default location.
- * @param {string} [options.trackerHtmlPath] - Override for the tracker HTML path.
- *   Use SCREEN_SHARE_TRACKER_HTML_PATH as a reference to the default location.
+ * @param {Object} [options] - Optional configuration overrides.
+ * @param {string} [options.preloadPath] - Absolute path to a custom tracker preload script.
+ *   When omitted, a preload script is generated and written to the OS temp directory.
+ * @param {string} [options.trackerHtmlPath] - Absolute path to a custom tracker HTML file.
+ *   When omitted, the tracker HTML is generated inline and loaded via a data: URI.
  * @returns {ScreenShareMainHook}
  */
 function setupScreenSharingMain(jitsiMeetWindow, identity, osxBundleId, options = {}) {
     return new ScreenShareMainHook(jitsiMeetWindow, identity, osxBundleId, options);
 }
-
-setupScreenSharingMain.SCREEN_SHARE_PRELOAD_PATH = SCREEN_SHARE_PRELOAD_PATH;
-setupScreenSharingMain.SCREEN_SHARE_TRACKER_HTML_PATH = SCREEN_SHARE_TRACKER_HTML_PATH;
 
 module.exports = setupScreenSharingMain;

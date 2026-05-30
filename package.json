@@ -9,7 +9,6 @@
     "./remotecontrol/render": "./remotecontrol/render.js",
     "./screensharing/main": "./screensharing/main.js",
     "./screensharing/render": "./screensharing/render.js",
-    "./screensharing/preload": "./screensharing/preload.js",
     "./pip/main": "./pip/main.js",
     "./pip/render": "./pip/render.js",
     "./powermonitor/main": "./powermonitor/main.js",
