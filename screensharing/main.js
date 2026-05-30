@@ -1,4 +1,4 @@
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const {
     BrowserWindow,
     desktopCapturer,
@@ -388,7 +388,7 @@ class ScreenShareMainHook {
     _verifyScreenCapturePermissions(bundleId) {
         const hasPermission = systemPreferences.getMediaAccessStatus('screen') === 'granted';
         if (!hasPermission) {
-            exec('tccutil reset ScreenCapture ' + bundleId);
+            execFile('tccutil', [ 'reset', 'ScreenCapture', bundleId ]);
         }
     }
 }
