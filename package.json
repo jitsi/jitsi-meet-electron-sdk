@@ -6,10 +6,7 @@
   "scripts": {
     "lint": "eslint .",
     "test": "mocha",
-    "validate": "npm ls",
-    "install": "node install.js",
-    "node-gyp-build": "node-gyp-build",
-    "prebuild": "prebuildify -t 20.0.0 --strip"
+    "validate": "npm ls"
   },
   "pre-commit": [
     "lint"
@@ -29,17 +26,9 @@
   "author": "",
   "readmeFilename": "README.md",
   "license": "Apache-2.0",
-  "gypfile": true,
-  "binary": {
-    "napi_versions": [
-      3
-    ]
-  },
   "dependencies": {
     "@jitsi/logger": "^2.0.2",
     "@jitsi/robotjs": "^0.6.15",
-    "node-addon-api": "^8.0.0",
-    "node-gyp-build": "4.8.4",
     "postis": "^2.2.0"
   },
   "devDependencies": {
@@ -47,7 +36,6 @@
     "eslint-plugin-jsdoc": "*",
     "husky": "^9.0.10",
     "mocha": "^11.7.3",
-    "prebuildify": "^6.0.0",
     "precommit-hook": "3.0.0"
   }
 }

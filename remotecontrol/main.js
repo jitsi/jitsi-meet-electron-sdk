@@ -1,11 +1,34 @@
 const {
     app,
+    desktopCapturer,
     ipcMain,
     screen,
 } = require('electron');
 const process = require('process');
 
-const { DISPLAY_METRICS_CHANGED, GET_DISPLAY_EVENT } = require('./constants');
+const {
+    DISPLAY_METRICS_CHANGED,
+    DISPLAYS_CHANGED_EVENT,
+    GET_DISPLAY_EVENT
+} = require('./constants');
+const {
+    getMacDisplayBySourceId,
+    getWindowsDisplayBySourceId
+} = require('./displayUtils');
+
+const remoteControlMainInstances = new Map();
+
+function getRemoteControlMain(webContentsId) {
+    return remoteControlMainInstances.get(webContentsId);
+}
+
+function handleGetDisplayEvent(event, sourceId) {
+    const remoteControlMain = getRemoteControlMain(event.sender.id);
+
+    return remoteControlMain
+        ? remoteControlMain._getDisplay(sourceId)
+        : undefined;
+}
 
 /**
  * Module to run on main process to get display dimensions for remote control.
@@ -16,9 +39,12 @@ class RemoteControlMain {
 
         this.cleanup = this.cleanup.bind(this);
         this._handleDisplayMetricsChanged = this._handleDisplayMetricsChanged.bind(this);
-        this._handleGetDisplayEvent = this._handleGetDisplayEvent.bind(this);
 
-        ipcMain.on(GET_DISPLAY_EVENT, this._handleGetDisplayEvent);
+        if (!remoteControlMainInstances.size) {
+            ipcMain.handle(GET_DISPLAY_EVENT, handleGetDisplayEvent);
+        }
+
+        remoteControlMainInstances.set(this._jitsiMeetWindow.webContents.id, this);
 
         app.whenReady().then(() => {
             screen.on(DISPLAY_METRICS_CHANGED, this._handleDisplayMetricsChanged);
@@ -32,17 +58,11 @@ class RemoteControlMain {
      * Cleanup any handlers
      */
     cleanup() {
-        ipcMain.removeListener(GET_DISPLAY_EVENT, this._handleGetDisplayEvent);
+        remoteControlMainInstances.delete(this._jitsiMeetWindow.webContents.id);
+        if (!remoteControlMainInstances.size) {
+            ipcMain.removeHandler(GET_DISPLAY_EVENT);
+        }
         screen.removeListener(DISPLAY_METRICS_CHANGED, this._handleDisplayMetricsChanged);
-    }
-
-    /**
-     * Handles GET_DISPLAY_EVENT event
-     * @param {IPCMainEvent} event - The electron event
-     * @param {string} sourceId - The source id of the desktop sharing stream.
-     */
-    _handleGetDisplayEvent(event, sourceId) {
-        event.returnValue = this._getDisplay(sourceId);
     }
 
     /**
@@ -50,7 +70,7 @@ class RemoteControlMain {
      */
     _handleDisplayMetricsChanged() {
         if (!this._jitsiMeetWindow.isDestroyed()) {
-            this._jitsiMeetWindow.webContents.send('jitsi-remotecontrol-displays-changed');
+            this._jitsiMeetWindow.webContents.send(DISPLAYS_CHANGED_EVENT);
         }
     }
 
@@ -59,11 +79,9 @@ class RemoteControlMain {
      * remote control.
      *
      * @param {string} sourceId - The source id of the desktop sharing stream.
-     * @returns {Object} bounds and scaleFactor of display matching sourceId.
+     * @returns {Promise<Object|undefined>} bounds and scaleFactor of display matching sourceId.
      */
-     _getDisplay(sourceId) {
-        const { screen } = require('electron');
-
+    async _getDisplay(sourceId) {
         const displays = screen.getAllDisplays();
 
         switch(displays.length) {
@@ -75,56 +93,18 @@ class RemoteControlMain {
                 return displays[0];
             // eslint-disable-next-line no-case-declarations
             default: { // > 1 display
-                // Remove the type part from the sourceId
-                const parsedSourceId = sourceId.replace('screen:', '');
-
-                // Currently native code sourceId2Coordinates is only necessary for windows.
                 if (process.platform === 'win32') {
-                    const sourceId2Coordinates = require("../node_addons/sourceId2Coordinates");
-                    const coordinates = sourceId2Coordinates(parsedSourceId);
-                    if(coordinates) {
-                        const { x, y } = coordinates;
-                        const display
-                            = screen.getDisplayNearestPoint({
-                                x: x + 1,
-                                y: y + 1
-                            });
+                    const sources = await desktopCapturer.getSources({
+                        thumbnailSize: {
+                            height: 0,
+                            width: 0
+                        },
+                        types: [ 'screen' ]
+                    });
 
-                        if (typeof display !== 'undefined') {
-                            // We need to use x and y returned from sourceId2Coordinates because the ones returned from
-                            // Electron don't seem to respect the scale factors of the other displays.
-                            const { width, height } = display.bounds;
-
-                            return {
-                                bounds: {
-                                    x,
-                                    y,
-                                    width,
-                                    height
-                                },
-                                scaleFactor: display.scaleFactor
-                            };
-                        } else {
-                            return undefined;
-                        }
-                    }
+                    return getWindowsDisplayBySourceId(sourceId, displays, sources);
                 } else if (process.platform === 'darwin') {
-                    // On Mac OS the sourceId = 'screen' + displayId.
-                    // Try to match displayId with sourceId.
-                    let displayId = Number(parsedSourceId);
-
-                    if (isNaN(displayId)) {
-                        // The source id may have the following format "desktop_id:0".
-
-                        const idArr = parsedSourceId.split(":");
-
-                        if (idArr.length <= 1) {
-                            return;
-                        }
-
-                        displayId = Number(idArr[0]);
-                    }
-                    return displays.find(display => display.id === displayId);
+                    return getMacDisplayBySourceId(sourceId, displays);
                 } else {
                     return undefined;
                 }

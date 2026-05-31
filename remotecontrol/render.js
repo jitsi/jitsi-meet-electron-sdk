@@ -5,10 +5,12 @@ const constants = require("./constants");
 const robot = require("@jitsi/robotjs");
 
 const {
+    DISPLAYS_CHANGED_EVENT,
     EVENTS,
     KEY_ACTIONS_FROM_EVENT_TYPE,
     MOUSE_ACTIONS_FROM_EVENT_TYPE,
     MOUSE_BUTTONS,
+    GET_DISPLAY_EVENT,
     REMOTE_CONTROL_MESSAGE_NAME,
     REQUESTS
 } = constants;
@@ -65,10 +67,15 @@ class RemoteControl {
      * remote control.
      *
      * @param {string} sourceId - The source id of the desktop sharing stream.
-     * @returns {void}
+     * @returns {Promise<Object|undefined>}
      */
     _setDisplayMetrics(sourceId) {
-        this._display = ipcRenderer.sendSync('jitsi-remotecontrol-get-display', sourceId);
+        return ipcRenderer.invoke(GET_DISPLAY_EVENT, sourceId)
+            .then(display => {
+                this._display = display;
+
+                return display;
+            });
     }
 
     /**
@@ -78,23 +85,28 @@ class RemoteControl {
      * response.
      * @param {string} sourceId - The source id of the desktop sharing stream.
      */
-    _start(id, sourceId) {
-        this._displayMetricsChangeListener = () => {
-            this._setDisplayMetrics(sourceId);
-        };
-        ipcRenderer.on('jitsi-remotecontrol-displays-changed', this._displayMetricsChangeListener);
-        this._setDisplayMetrics(sourceId);
-
+    async _start(id, sourceId) {
         const response = {
             id,
             type: 'response'
         };
 
-        if(this._display) {
-            response.result = true;
-        } else {
-            response.error
-                = 'Error: Can\'t detect the display that is currently shared';
+        this._displayMetricsChangeListener = () => {
+            void this._setDisplayMetrics(sourceId);
+        };
+        ipcRenderer.on(DISPLAYS_CHANGED_EVENT, this._displayMetricsChangeListener);
+
+        try {
+            const display = await this._setDisplayMetrics(sourceId);
+
+            if(display) {
+                response.result = true;
+            } else {
+                response.error
+                    = 'Error: Can\'t detect the display that is currently shared';
+            }
+        } catch (error) {
+            response.error = `Error: ${error.message}`;
         }
 
         this._sendMessage(response);
@@ -106,7 +118,7 @@ class RemoteControl {
     _stop() {
         this._display = undefined;
         if (this._displayMetricsChangeListener) {
-            ipcRenderer.removeListener('jitsi-remotecontrol-displays-changed', this._displayMetricsChangeListener);
+            ipcRenderer.removeListener(DISPLAYS_CHANGED_EVENT, this._displayMetricsChangeListener);
             this._displayMetricsChangeListener = undefined;
         }
     }
@@ -198,7 +210,7 @@ class RemoteControl {
                 break;
             }
             case REQUESTS.start: {
-                this._start(id, data.sourceId);
+                void this._start(id, data.sourceId);
                 break;
             }
             case EVENTS.stop: {
@@ -246,4 +258,3 @@ class RemoteControl {
 module.exports = function setupRemoteControlRender(api) {
     return new RemoteControl(api);
 };
-

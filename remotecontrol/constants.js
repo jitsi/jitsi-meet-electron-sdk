@@ -5,6 +5,11 @@ module.exports = {
     DISPLAY_METRICS_CHANGED: 'display-metrics-changed',
 
     /**
+     * Event for notifying renderers that display metrics changed.
+     */
+    DISPLAYS_CHANGED_EVENT: 'jitsi-remotecontrol-displays-changed',
+
+    /**
      * Types of remote-control events.
      */
     EVENTS: {

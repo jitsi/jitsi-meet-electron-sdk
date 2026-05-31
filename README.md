@@ -8,7 +8,7 @@ Install from npm:
 
     npm install @jitsi/electron-sdk
 
-Note: This package contains native code on Windows for the remote control module. Binary prebuilds are packaged with prebuildify as part of the npm package.
+Note: The remote control module uses Electron APIs to map shared screens to displays across supported desktop platforms.
 
 ## Usage
 #### Remote Control
@@ -193,9 +193,9 @@ Enable husky to avoid accidental pushes to the main branch:
 
     npx husky install
 
-To rebuild the native code, use:
+Install dependencies with:
 
-    npx node-gyp rebuild
+    npm install
 
 ## Publishing
 
