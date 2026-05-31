@@ -4,7 +4,7 @@ const Module = require('module');
 const REMOTE_CONTROL_MODULE_PATH = '../remotecontrol/render';
 
 function flushPromises() {
-    return new Promise(resolve => setImmediate(resolve));
+    return new Promise(resolve => setTimeout(resolve, 0));
 }
 
 function loadModuleWithMocks(modulePath, mocks) {
@@ -29,6 +29,7 @@ function loadModuleWithMocks(modulePath, mocks) {
 }
 
 function createRemoteControlHarness({ invokeResult } = {}) {
+    const previousWindow = global.window;
     let messageListener;
     const sentMessages = [];
     const invocations = [];
@@ -119,12 +120,16 @@ function createRemoteControlHarness({ invokeResult } = {}) {
     });
     const remoteControl = setupRemoteControlRender(api);
 
+    global.window = {};
     iframe._loadListener();
 
     return {
         apiListeners,
         invocations,
         messageListener,
+        restoreGlobals() {
+            global.window = previousWindow;
+        },
         remoteControl,
         robotCalls,
         sentMessages
@@ -135,118 +140,132 @@ describe('remotecontrol/render', () => {
     it('announces support and requires approval before starting', () => {
         const harness = createRemoteControlHarness();
 
-        assert.equal(harness.sentMessages[0].params.data.type, 'supported');
+        try {
+            assert.equal(harness.sentMessages[0].params.data.type, 'supported');
 
-        harness.messageListener({
-            data: {
-                controllerId: 'controller-1',
-                name: 'remote-control',
-                sourceId: 'screen:1',
-                type: 'start'
-            },
-            id: 7
-        });
+            harness.messageListener({
+                data: {
+                    controllerId: 'controller-1',
+                    name: 'remote-control',
+                    sourceId: 'screen:1',
+                    type: 'start'
+                },
+                id: 7
+            });
 
-        assert.equal(harness.sentMessages[1].params.error, 'Error: Remote control has not been approved for this participant');
-        assert.equal(harness.robotCalls.length, 0);
+            assert.equal(harness.sentMessages[1].params.error, 'Error: Remote control has not been approved for this participant');
+            assert.equal(harness.robotCalls.length, 0);
+        } finally {
+            harness.restoreGlobals();
+            harness.remoteControl.dispose();
+        }
     });
 
     it('prompts for approval and only accepts input from the approved controller', async () => {
         const harness = createRemoteControlHarness({
             invokeResult: { action: 'grant' }
         });
+        try {
+            harness.messageListener({
+                data: {
+                    action: 'request',
+                    controllerId: 'controller-1',
+                    displayName: 'Alice',
+                    name: 'remote-control',
+                    screenSharing: false,
+                    type: 'permissions'
+                },
+                id: 1
+            });
 
-        harness.messageListener({
-            data: {
-                action: 'request',
-                controllerId: 'controller-1',
-                displayName: 'Alice',
-                name: 'remote-control',
-                screenSharing: false,
-                type: 'permissions'
-            },
-            id: 1
-        });
+            await flushPromises();
 
-        await flushPromises();
+            assert.deepEqual(harness.invocations[0], {
+                channelName: 'jitsi-remotecontrol-prompt',
+                request: {
+                    controllerId: 'controller-1',
+                    displayName: 'Alice',
+                    participantId: undefined,
+                    screenSharing: false,
+                    userId: undefined
+                }
+            });
+            assert.equal(harness.sentMessages[1].params.data.action, 'grant');
 
-        assert.deepEqual(harness.invocations[0], {
-            channelName: 'jitsi-remotecontrol-prompt',
-            request: {
-                controllerId: 'controller-1',
-                displayName: 'Alice',
-                participantId: undefined,
-                screenSharing: false,
-                userId: undefined
-            }
-        });
-        assert.equal(harness.sentMessages[1].params.data.action, 'grant');
+            harness.messageListener({
+                data: {
+                    controllerId: 'controller-1',
+                    name: 'remote-control',
+                    sourceId: 'screen:1',
+                    type: 'start'
+                },
+                id: 2
+            });
+            harness.messageListener({
+                data: {
+                    controllerId: 'controller-1',
+                    name: 'remote-control',
+                    type: 'mousemove',
+                    x: 0.5,
+                    y: 0.25
+                }
+            });
+            harness.messageListener({
+                data: {
+                    controllerId: 'controller-2',
+                    name: 'remote-control',
+                    type: 'mousemove',
+                    x: 0.2,
+                    y: 0.5
+                }
+            });
+            harness.messageListener({
+                data: {
+                    controllerId: 'controller-1',
+                    name: 'remote-control',
+                    type: 'stop'
+                }
+            });
+            harness.messageListener({
+                data: {
+                    controllerId: 'controller-1',
+                    name: 'remote-control',
+                    type: 'mousemove',
+                    x: 0.5,
+                    y: 0.25
+                }
+            });
 
-        harness.messageListener({
-            data: {
-                controllerId: 'controller-1',
-                name: 'remote-control',
-                sourceId: 'screen:1',
-                type: 'start'
-            },
-            id: 2
-        });
-        harness.messageListener({
-            data: {
-                controllerId: 'controller-1',
-                name: 'remote-control',
-                type: 'mousemove',
-                x: 0.5,
-                y: 0.25
-            }
-        });
-        harness.messageListener({
-            data: {
-                controllerId: 'controller-2',
-                name: 'remote-control',
-                type: 'mousemove',
-                x: 0.2,
-                y: 0.5
-            }
-        });
-        harness.messageListener({
-            data: {
-                controllerId: 'controller-1',
-                name: 'remote-control',
-                type: 'stop'
-            }
-        });
-        harness.messageListener({
-            data: {
-                controllerId: 'controller-1',
-                name: 'remote-control',
-                type: 'mousemove',
-                x: 0.5,
-                y: 0.25
-            }
-        });
-
-        assert.equal(harness.sentMessages[2].params.result, true);
-        assert.deepEqual(harness.robotCalls, [
-            [ 'moveMouse', 60, 70 ]
-        ]);
+            assert.equal(harness.sentMessages[2].params.result, true);
+            assert.deepEqual(harness.robotCalls, [
+                [ 'moveMouse', 60, 70 ]
+            ]);
+        } finally {
+            harness.restoreGlobals();
+            harness.remoteControl.dispose();
+        }
     });
 
     it('denies malformed authorization requests', async () => {
         const harness = createRemoteControlHarness();
 
-        harness.messageListener({
-            data: {
-                action: 'request',
-                name: 'remote-control',
-                type: 'permissions'
-            },
-            id: 9
-        });
+        try {
+            harness.messageListener({
+                data: {
+                    action: 'request',
+                    name: 'remote-control',
+                    type: 'permissions'
+                },
+                id: 9
+            });
 
-        await flushPromises();
+            await flushPromises();
 
-        assert.equal(harness.invocations.length, 0);
-        assert.equal(harness.sentMessages[1].params.data.action, 'error');
+            assert.equal(harness.invocations.length, 0);
+            assert.equal(harness.sentMessages[1].params.data.action, 'error');
+        } finally {
+            harness.restoreGlobals();
+            harness.remoteControl.dispose();
+        }
     });
 });

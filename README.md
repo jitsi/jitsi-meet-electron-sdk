@@ -54,6 +54,11 @@ Remote control requests are denied by default until the host application approve
 To customize the prompt, provide an `onRemoteControlRequest` handler in the main process:
 
 ```Javascript
+const { dialog } = require('electron');
+const {
+    setupRemoteControlMain
+} = require("@jitsi/electron-sdk");
+
 setupRemoteControlMain(mainWindow, {
     onRemoteControlRequest: async ({ displayName, screenSharing, window }) => {
         const result = await dialog.showMessageBox(window, {
