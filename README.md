@@ -16,6 +16,7 @@ Note: This package contains native code on Windows for the remote control module
 **Requirements**:
 1. Jitsi Meet should be initialized through our [iframe API](https://github.com/jitsi/jitsi-meet/blob/master/doc/api.md)
 2. The remote control utility requires the Jitsi Meet iframe API object.
+3. Use a Jitsi Meet build that sends remote control permission requests through the iframe-to-host handshake before sending start or input events.
 
 **Enable the remote control:**
 
@@ -47,6 +48,31 @@ const {
 // jitsiMeetWindow - The BrowserWindow instance of the window where Jitsi Meet is loaded.
 setupRemoteControlMain(mainWindow);
 ```
+
+Remote control requests are denied by default until the host application approves a specific incoming request. The SDK shows a native prompt only when another participant requests control.
+
+To customize the prompt, provide an `onRemoteControlRequest` handler in the main process:
+
+```Javascript
+setupRemoteControlMain(mainWindow, {
+    onRemoteControlRequest: async ({ displayName, screenSharing, window }) => {
+        const result = await dialog.showMessageBox(window, {
+            type: 'warning',
+            buttons: [ 'Allow', 'Decline' ],
+            defaultId: 0,
+            cancelId: 1,
+            message: 'Allow remote control?',
+            detail: screenSharing
+                ? `${displayName || 'Another participant'} wants to control your shared screen.`
+                : `${displayName || 'Another participant'} wants to control your screen. Approving will start sharing your entire screen if needed.`
+        });
+
+        return result.response === 0;
+    }
+});
+```
+
+The host callback receives the participant identity supplied by Jitsi Meet and must return `true` to approve the request. Approval is scoped to a single active remote control session and is cleared on stop, dispose, or iframe reload.
 
 #### Screen Sharing
 

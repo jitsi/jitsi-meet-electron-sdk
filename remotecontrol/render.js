@@ -9,6 +9,8 @@ const {
     KEY_ACTIONS_FROM_EVENT_TYPE,
     MOUSE_ACTIONS_FROM_EVENT_TYPE,
     MOUSE_BUTTONS,
+    PERMISSIONS_ACTIONS,
+    PROMPT_REMOTE_CONTROL_EVENT,
     REMOTE_CONTROL_MESSAGE_NAME,
     REQUESTS
 } = constants;
@@ -28,6 +30,8 @@ class RemoteControl {
         this._api = api;
         this._iframe = this._api.getIFrame();
         this._iframe.addEventListener('load', () => this._onIFrameLoad());
+        this._approvedControllerId = undefined;
+        this._authorizedRequestId = undefined;
         /**
          * The status ("up"/"down") of the mouse button.
          * FIXME: Assuming that one button at a time can be pressed. Haven't
@@ -45,6 +49,7 @@ class RemoteControl {
             this._channel.destroy();
             this._channel = null;
         }
+        this._clearAuthorization();
         this._stop();
     }
 
@@ -101,10 +106,21 @@ class RemoteControl {
     }
 
     /**
+     * Clears the authorization state for remote control.
+     *
+     * @returns {void}
+     */
+    _clearAuthorization() {
+        this._approvedControllerId = undefined;
+        this._authorizedRequestId = undefined;
+    }
+
+    /**
      * Stops processing the events.
      */
     _stop() {
         this._display = undefined;
+        this._mouseButtonStatus = "up";
         if (this._displayMetricsChangeListener) {
             ipcRenderer.removeListener('jitsi-remotecontrol-displays-changed', this._displayMetricsChangeListener);
             this._displayMetricsChangeListener = undefined;
@@ -112,9 +128,116 @@ class RemoteControl {
     }
 
     /**
+     * Resolves the controller identifier from a remote control message.
+     *
+     * @param {Object} data - The remote control payload.
+     * @returns {string|undefined}
+     */
+    _getControllerId(data = {}) {
+        return data.controllerId || data.participantId || data.userId;
+    }
+
+    /**
+     * Checks whether the message belongs to the approved controller.
+     *
+     * @param {Object} data - The remote control payload.
+     * @returns {boolean}
+     */
+    _isAuthorizedMessage(data = {}) {
+        const controllerId = this._getControllerId(data);
+
+        return Boolean(controllerId
+            && this._approvedControllerId
+            && controllerId === this._approvedControllerId);
+    }
+
+    /**
+     * Sends a permissions response to the iframe.
+     *
+     * @param {number|undefined} id - The request id.
+     * @param {Object} request - The request payload.
+     * @param {string} action - The permissions action.
+     * @param {string} [error] - Optional error message.
+     * @returns {void}
+     */
+    _sendPermissionsResponse(id, request, action, error) {
+        this._sendEvent({
+            ...request,
+            action,
+            error,
+            type: EVENTS.permissions
+        }, id);
+    }
+
+    /**
+     * Handles remote control authorization requests.
+     *
+     * @param {Object} message - The remote control message.
+     * @returns {Promise<void>}
+     */
+    async _handleAuthorizationRequest(message) {
+        const { id, data } = message;
+        const controllerId = this._getControllerId(data);
+
+        this._stop();
+        this._clearAuthorization();
+
+        if (!controllerId) {
+            this._sendPermissionsResponse(
+                id,
+                data,
+                PERMISSIONS_ACTIONS.error,
+                'Remote control request is missing the controller identity');
+
+            return;
+        }
+
+        let response;
+
+        try {
+            response = await ipcRenderer.invoke(PROMPT_REMOTE_CONTROL_EVENT, {
+                controllerId,
+                displayName: data.displayName,
+                participantId: data.participantId,
+                screenSharing: Boolean(data.screenSharing),
+                userId: data.userId
+            });
+        } catch (error) {
+            this._sendPermissionsResponse(
+                id,
+                data,
+                PERMISSIONS_ACTIONS.error,
+                error.message);
+
+            return;
+        }
+
+        if (!this._channel) {
+            return;
+        }
+
+        if (response && response.action === PERMISSIONS_ACTIONS.grant) {
+            this._approvedControllerId = controllerId;
+            this._authorizedRequestId = id;
+            this._sendPermissionsResponse(id, data, PERMISSIONS_ACTIONS.grant);
+        } else if (response && response.action === PERMISSIONS_ACTIONS.error) {
+            this._sendPermissionsResponse(
+                id,
+                data,
+                PERMISSIONS_ACTIONS.error,
+                response.error || 'Remote control approval failed');
+        } else {
+            this._sendPermissionsResponse(id, data, PERMISSIONS_ACTIONS.deny);
+        }
+    }
+
+    /**
      * Handles iframe load events.
      */
     _onIFrameLoad() {
+        this._stop();
+        this._clearAuthorization();
+
         this._api.on('_willDispose', () => {
             this.dispose();
         });
@@ -143,9 +266,31 @@ class RemoteControl {
      */
     _onRemoteControlMessage(message) {
         const { id, data } = message;
+        const isAuthorizationRequest
+            = data.type === EVENTS.permissions
+                && data.action === PERMISSIONS_ACTIONS.request;
+
+        if (isAuthorizationRequest) {
+            this._handleAuthorizationRequest(message);
+
+            return;
+        }
 
         // If we haven't set the display prop. We haven't received the remote
         // control start message or there was an error associating a display.
+        if ((data.type === REQUESTS.start || data.type === EVENTS.stop || this._display)
+            && !this._isAuthorizedMessage(data)) {
+            if (data.type === REQUESTS.start) {
+                this._sendMessage({
+                    error: 'Error: Remote control has not been approved for this participant',
+                    id,
+                    type: 'response'
+                });
+            }
+
+            return;
+        }
+
         if(!this._display
             && data.type != REQUESTS.start) {
             return;
@@ -198,11 +343,13 @@ class RemoteControl {
                 break;
             }
             case REQUESTS.start: {
+                this._authorizedRequestId = id;
                 this._start(id, data.sourceId);
                 break;
             }
             case EVENTS.stop: {
                 this._stop();
+                this._clearAuthorization();
                 break;
             }
             default:
@@ -215,12 +362,15 @@ class RemoteControl {
      *
      * @param {Object} event the remote control event.
      */
-    _sendEvent(event) {
+    _sendEvent(event, id) {
         const remoteControlEvent = Object.assign(
             { name: REMOTE_CONTROL_MESSAGE_NAME },
             event
         );
-        this._sendMessage({ data: remoteControlEvent });
+        this._sendMessage({
+            data: remoteControlEvent,
+            id
+        });
     }
 
     /**
@@ -246,4 +396,3 @@ class RemoteControl {
 module.exports = function setupRemoteControlRender(api) {
     return new RemoteControl(api);
 };
-

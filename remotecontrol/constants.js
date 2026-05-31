@@ -15,6 +15,7 @@ module.exports = {
         mousescroll: "mousescroll",
         keydown: "keydown",
         keyup: "keyup",
+        permissions: "permissions",
         stop: "stop",
         supported: "supported"
     },
@@ -23,6 +24,11 @@ module.exports = {
      * Event for retrieving display metrics
      */
     GET_DISPLAY_EVENT: 'jitsi-remotecontrol-get-display',
+
+    /**
+     * Event for requesting remote control authorization from the host.
+     */
+    PROMPT_REMOTE_CONTROL_EVENT: 'jitsi-remotecontrol-prompt',
 
     /**
      * Key actions mapping between the values in remote control key event and
@@ -62,5 +68,15 @@ module.exports = {
      */
     REQUESTS: {
         start: "start"
+    },
+
+    /**
+     * Actions for remote-control permission events.
+     */
+    PERMISSIONS_ACTIONS: {
+        request: "request",
+        grant: "grant",
+        deny: "deny",
+        error: "error"
     }
 };
