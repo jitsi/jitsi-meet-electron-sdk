@@ -16,7 +16,7 @@ Note: This package contains native code on Windows for the remote control module
 **Requirements**:
 1. Jitsi Meet should be initialized through our [iframe API](https://github.com/jitsi/jitsi-meet/blob/master/doc/api.md)
 2. The remote control utility requires the Jitsi Meet iframe API object.
-3. Use a Jitsi Meet build that sends remote control permission requests through the iframe-to-host handshake before sending start or input events.
+3. Use a Jitsi Meet build that sends remote control permission requests with a trusted `controllerId` through the iframe-to-host handshake before sending start or input events.
 
 **Enable the remote control:**
 

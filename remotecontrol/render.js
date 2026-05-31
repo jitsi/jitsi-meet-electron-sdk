@@ -31,7 +31,6 @@ class RemoteControl {
         this._iframe = this._api.getIFrame();
         this._iframe.addEventListener('load', () => this._onIFrameLoad());
         this._approvedControllerId = undefined;
-        this._authorizedRequestId = undefined;
         /**
          * The status ("up"/"down") of the mouse button.
          * FIXME: Assuming that one button at a time can be pressed. Haven't
@@ -112,7 +111,6 @@ class RemoteControl {
      */
     _clearAuthorization() {
         this._approvedControllerId = undefined;
-        this._authorizedRequestId = undefined;
     }
 
     /**
@@ -134,7 +132,7 @@ class RemoteControl {
      * @returns {string|undefined}
      */
     _getControllerId(data = {}) {
-        return data.controllerId || data.participantId || data.userId;
+        return data.controllerId;
     }
 
     /**
@@ -198,9 +196,7 @@ class RemoteControl {
             response = await ipcRenderer.invoke(PROMPT_REMOTE_CONTROL_EVENT, {
                 controllerId,
                 displayName: data.displayName,
-                participantId: data.participantId,
-                screenSharing: Boolean(data.screenSharing),
-                userId: data.userId
+                screenSharing: Boolean(data.screenSharing)
             });
         } catch (error) {
             this._sendPermissionsResponse(
@@ -218,7 +214,6 @@ class RemoteControl {
 
         if (response && response.action === PERMISSIONS_ACTIONS.grant) {
             this._approvedControllerId = controllerId;
-            this._authorizedRequestId = id;
             this._sendPermissionsResponse(id, data, PERMISSIONS_ACTIONS.grant);
         } else if (response && response.action === PERMISSIONS_ACTIONS.error) {
             this._sendPermissionsResponse(
@@ -343,7 +338,6 @@ class RemoteControl {
                 break;
             }
             case REQUESTS.start: {
-                this._authorizedRequestId = id;
                 this._start(id, data.sourceId);
                 break;
             }

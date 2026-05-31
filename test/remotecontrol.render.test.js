@@ -185,9 +185,7 @@ describe('remotecontrol/render', () => {
                 request: {
                     controllerId: 'controller-1',
                     displayName: 'Alice',
-                    participantId: undefined,
-                    screenSharing: false,
-                    userId: undefined
+                    screenSharing: false
                 }
             });
             assert.equal(harness.sentMessages[1].params.data.action, 'grant');
@@ -246,7 +244,7 @@ describe('remotecontrol/render', () => {
         }
     });
 
-    it('denies malformed authorization requests', async () => {
+    it('denies authorization requests without a trusted controller id', async () => {
         const harness = createRemoteControlHarness();
 
         try {
@@ -254,6 +252,7 @@ describe('remotecontrol/render', () => {
                 data: {
                     action: 'request',
                     name: 'remote-control',
+                    participantId: 'legacy-controller',
                     type: 'permissions'
                 },
                 id: 9
