@@ -10,6 +10,45 @@ Install from npm:
 
 Note: This package contains native code on Windows for the remote control module. Binary prebuilds are packaged with prebuildify as part of the npm package.
 
+## Entry points
+
+In addition to the default entry (`require('@jitsi/electron-sdk')`), the SDK now
+ships three entry points named after the Electron context the code runs in. They
+let a consuming app enable `contextIsolation: true` on the window that hosts
+Jitsi Meet:
+
+| Entry point | Runs in | Exposes |
+| --- | --- | --- |
+| `@jitsi/electron-sdk/main` | Electron main process | `setup*Main`, `initPopupsConfigurationMain`, `getPopupTarget`, `popupsConfigRegistry`, `cleanupPowerMonitorMain` |
+| `@jitsi/electron-sdk/preload` | preload script | side-effect import that installs `window.jitsiElectronSDK` via `contextBridge` |
+| `@jitsi/electron-sdk/renderer` | page ("main world") | `setup*Render`, `initPopupsConfigurationRender` (browser-safe) |
+
+The preload and renderer entries communicate over a single, namespaced,
+validated bridge object (`window.jitsiElectronSDK`) instead of touching
+`ipcRenderer` directly. In the app's preload script:
+
+```Javascript
+// Bundle this into the preload (a sandboxed preload cannot require from node_modules).
+import '@jitsi/electron-sdk/preload';
+```
+
+In the app's renderer bundle:
+
+```Javascript
+import { setupScreenSharingRender } from '@jitsi/electron-sdk/renderer';
+
+// api - The JitsiMeetExternalAPI instance created by the page.
+setupScreenSharingRender(api);
+```
+
+The `setup*Render` signatures are unchanged. Each throws a descriptive error if
+the SDK preload is missing or its `apiVersion` does not match, so a stale or
+absent preload fails fast.
+
+> Note: `setupRemoteControlRender` is not yet available from `/renderer` — remote
+> control still runs robotjs in the renderer and requires `contextIsolation:
+> false`. Use the default entry for it until it is migrated.
+
 ## Usage
 #### Remote Control
 
