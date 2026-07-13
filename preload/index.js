@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 const { BRIDGE_API_VERSION } = require('../bridgeVersion');
 const createPipBridge = require('../pip/bridge');
 const createPowerMonitorBridge = require('../powermonitor/bridge');
+const createRemoteControlBridge = require('../remotecontrol/bridge');
 const createScreenSharingBridge = require('../screensharing/bridge');
 
 /**
@@ -33,6 +34,7 @@ const jitsiElectronSDK = {
     apiVersion: BRIDGE_API_VERSION,
     pip: createPipBridge(context),
     powerMonitor: createPowerMonitorBridge(context),
+    remoteControl: createRemoteControlBridge(context),
     screenSharing: createScreenSharingBridge(context)
 };
 

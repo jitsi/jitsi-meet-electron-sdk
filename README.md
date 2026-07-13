@@ -45,9 +45,10 @@ The `setup*Render` signatures are unchanged. Each throws a descriptive error if
 the SDK preload is missing or its `apiVersion` does not match, so a stale or
 absent preload fails fast.
 
-> Note: `setupRemoteControlRender` is not yet available from `/renderer` — remote
-> control still runs robotjs in the renderer and requires `contextIsolation:
-> false`. Use the default entry for it until it is migrated.
+Remote control is included: `setupRemoteControlRender` now forwards mouse and
+keyboard events over the bridge, and the main process (`setupRemoteControlMain`)
+executes them via robotjs. The native `@jitsi/robotjs` module is only ever
+loaded in the main process, so the renderer stays browser-safe.
 
 ## Usage
 #### Remote Control
