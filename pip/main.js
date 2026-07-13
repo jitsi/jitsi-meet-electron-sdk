@@ -1,4 +1,4 @@
-const { ipcMain } = require('electron');
+const { addSendRoute, removeSendRoute } = require('../helpers/ipcRouter');
 const { PIP_CHANNEL } = require('./constants');
 const log = require('@jitsi/logger');
 
@@ -17,11 +17,12 @@ class PictureInPictureMainHook {
      */
     constructor(jitsiMeetWindow) {
         this._jitsiMeetWindow = jitsiMeetWindow;
+        this._webContents = jitsiMeetWindow.webContents;
         this._handlePipRequest = this._handlePipRequest.bind(this);
         this.cleanup = this.cleanup.bind(this);
 
-        // Listen for PiP requests from the renderer process.
-        ipcMain.on(PIP_CHANNEL, this._handlePipRequest);
+        // Listen for PiP requests from this window's renderer only.
+        addSendRoute(PIP_CHANNEL, { owner: this._webContents, handler: this._handlePipRequest });
         logger.info('PiP main process hook initialized');
 
         // Automatically cleanup when the window is closed.
@@ -80,7 +81,7 @@ class PictureInPictureMainHook {
      */
     cleanup() {
         logger.info('Cleaning up PiP main process hook');
-        ipcMain.removeListener(PIP_CHANNEL, this._handlePipRequest);
+        removeSendRoute(PIP_CHANNEL, this._webContents);
 
         // Remove the window close listener if the window still exists.
         if (this._jitsiMeetWindow && !this._jitsiMeetWindow.isDestroyed()) {

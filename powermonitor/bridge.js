@@ -37,27 +37,21 @@ function sanitizeQuery(message) {
 module.exports = function createPowerMonitorBridge({ ipcRenderer, subscribe }) {
     return {
         /**
-         * Sends a system idle query to the main process. The response arrives
-         * asynchronously through `onQueryResponse`.
+         * Sends a system idle query to the main process and resolves with the
+         * response object (`{ id, result | error, type: 'response' }`).
          *
          * @param {Object} message - The query message.
-         * @returns {void}
+         * @returns {Promise<Object>} The query response.
          */
-        sendQuery: message => {
+        query: message => {
             const sanitized = sanitizeQuery(message);
 
-            if (sanitized) {
-                ipcRenderer.send(POWER_MONITOR_QUERIES_CHANNEL, sanitized);
+            if (!sanitized) {
+                return Promise.resolve({ error: 'Error: invalid power monitor query' });
             }
-        },
 
-        /**
-         * Subscribes to query responses pushed from the main process.
-         *
-         * @param {Function} callback - Invoked with the response payload.
-         * @returns {Function} An unsubscribe function.
-         */
-        onQueryResponse: callback => subscribe(POWER_MONITOR_QUERIES_CHANNEL, callback),
+            return ipcRenderer.invoke(POWER_MONITOR_QUERIES_CHANNEL, sanitized);
+        },
 
         /**
          * Subscribes to power monitor events pushed from the main process.

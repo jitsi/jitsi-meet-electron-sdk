@@ -1,10 +1,10 @@
 const {
     app,
-    ipcMain,
     screen,
 } = require('electron');
 const process = require('process');
 
+const { addInvokeRoute, addSendRoute, removeInvokeRoute, removeSendRoute } = require('../helpers/ipcRouter');
 const {
     DISPLAY_METRICS_CHANGED,
     EVENTS,
@@ -31,6 +31,7 @@ class RemoteControlMain {
      */
     constructor(jitsiMeetWindow) {
         this._jitsiMeetWindow = jitsiMeetWindow;
+        this._webContents = jitsiMeetWindow.webContents;
 
         // robotjs is a native module. Load it lazily here (rather than at the
         // top of the file) so that importing `@jitsi/electron-sdk/main` does not
@@ -58,9 +59,12 @@ class RemoteControlMain {
         this._handleStop = this._handleStop.bind(this);
         this._handleEvent = this._handleEvent.bind(this);
 
-        ipcMain.handle(RC_START, this._handleStart);
-        ipcMain.on(RC_STOP, this._handleStop);
-        ipcMain.on(RC_EVENT, this._handleEvent);
+        // Route by sender so only the window this session belongs to can drive
+        // it, and so several windows can each run remote control without the
+        // process-wide ipcMain.handle(RC_START) colliding.
+        addInvokeRoute(RC_START, { owner: this._webContents, handler: this._handleStart });
+        addSendRoute(RC_STOP, { owner: this._webContents, handler: this._handleStop });
+        addSendRoute(RC_EVENT, { owner: this._webContents, handler: this._handleEvent });
 
         app.whenReady().then(() => {
             screen.on(DISPLAY_METRICS_CHANGED, this._handleDisplayMetricsChanged);
@@ -74,9 +78,9 @@ class RemoteControlMain {
      * Cleanup any handlers.
      */
     cleanup() {
-        ipcMain.removeHandler(RC_START);
-        ipcMain.removeListener(RC_STOP, this._handleStop);
-        ipcMain.removeListener(RC_EVENT, this._handleEvent);
+        removeInvokeRoute(RC_START, this._webContents);
+        removeSendRoute(RC_STOP, this._webContents);
+        removeSendRoute(RC_EVENT, this._webContents);
         screen.removeListener(DISPLAY_METRICS_CHANGED, this._handleDisplayMetricsChanged);
     }
 

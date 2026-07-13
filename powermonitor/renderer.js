@@ -14,24 +14,9 @@ let _bridge;
 let _channel;
 
 /**
- * Unsubscribe function for the query-response subscription.
- */
-let _unsubscribeQueries;
-
-/**
  * Unsubscribe function for the power monitor events subscription.
  */
 let _unsubscribeEvents;
-
-/**
- * The listener for query responses.
- *
- * @param {Object} response - The response to send.
- * @returns {void}
- */
-function queriesChannelListener(response) {
-    _sendMessage(response);
-}
 
 /**
  * The listener we use to listen for power monitor events.
@@ -60,6 +45,13 @@ function _sendEvent(event) {
  * @param {Object} message the message to be sent.
  */
 function _sendMessage(message) {
+    // A query invoke can resolve after dispose() has torn down the channel
+    // (e.g. the iframe closed mid-query); drop the late response as the old
+    // subscription-based path did.
+    if (!_channel) {
+        return;
+    }
+
     _channel.send({
           method: 'message',
           params: message
@@ -70,10 +62,6 @@ function _sendMessage(message) {
  * Disposes the power monitor functionality.
  */
 function dispose() {
-    if (_unsubscribeQueries) {
-        _unsubscribeQueries();
-        _unsubscribeQueries = null;
-    }
     if (_unsubscribeEvents) {
         _unsubscribeEvents();
         _unsubscribeEvents = null;
@@ -106,12 +94,13 @@ module.exports = function setupPowerMonitorRender(api) {
             scope: 'jitsi-power-monitor'
         });
         _channel.ready(() => {
-            _unsubscribeQueries = _bridge.onQueryResponse(queriesChannelListener);
             _unsubscribeEvents = _bridge.onEvent(eventsChannelListener);
             _channel.listen('message', message => {
                 const { name } = message.data;
                 if(name === POWER_MONITOR_MESSAGE_NAME) {
-                    _bridge.sendQuery(message);
+                    _bridge.query(message)
+                        .then(response => _sendMessage(response))
+                        .catch(() => { /* window tearing down; drop the response */ });
                 }
             });
         });

@@ -36,13 +36,13 @@ const POWER_MONITOR_MESSAGE_NAME = 'power-monitor';
  * The name of the channel that exchange events between render and main process.
  * @type {string}
  */
-const POWER_MONITOR_EVENTS_CHANNEL = 'power-monitor-events';
+const POWER_MONITOR_EVENTS_CHANNEL = 'jitsi-power-monitor-events';
 
 /**
  * The name of the channel that is used to query power monitor from render to main process.
  * @type {string}
  */
-const POWER_MONITOR_QUERIES_CHANNEL = 'power-monitor-queries';
+const POWER_MONITOR_QUERIES_CHANNEL = 'jitsi-power-monitor-queries';
 
 module.exports = {
     POWER_MONITOR_EVENTS,

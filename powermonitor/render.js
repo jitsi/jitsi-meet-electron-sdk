@@ -14,15 +14,6 @@ const {
 let _channel;
 
 /**
- * The listener for query responses.
- * @param _ - Not used.
- * @param response - The response to send.
- */
-function queriesChannelListener(_, response) {
-    _sendMessage(response);
-}
-
-/**
  * The listener we use to listen for power monitor events.
  * @param _ - Not used.
  * @param event - The event.
@@ -48,6 +39,13 @@ function _sendEvent(event) {
  * @param {Object} message the message to be sent.
  */
 function _sendMessage(message) {
+    // A query invoke can resolve after dispose() has torn down the channel
+    // (e.g. the iframe closed mid-query); drop the late response as the old
+    // response-listener path did.
+    if (!_channel) {
+        return;
+    }
+
     _channel.send({
           method: 'message',
           params: message
@@ -58,8 +56,6 @@ function _sendMessage(message) {
  * Disposes the power monitor functionality.
  */
 function dispose() {
-    ipcRenderer.removeListener(
-        POWER_MONITOR_QUERIES_CHANNEL, queriesChannelListener);
     ipcRenderer.removeListener(
         POWER_MONITOR_EVENTS_CHANNEL, eventsChannelListener);
 
@@ -88,12 +84,13 @@ module.exports = function setupPowerMonitorRender(api) {
             scope: 'jitsi-power-monitor'
         });
         _channel.ready(() => {
-            ipcRenderer.on(POWER_MONITOR_QUERIES_CHANNEL, queriesChannelListener);
             ipcRenderer.on(POWER_MONITOR_EVENTS_CHANNEL, eventsChannelListener);
             _channel.listen('message', message => {
                 const { name } = message.data;
                 if(name === POWER_MONITOR_MESSAGE_NAME) {
-                    ipcRenderer.send(POWER_MONITOR_QUERIES_CHANNEL, message);
+                    ipcRenderer.invoke(POWER_MONITOR_QUERIES_CHANNEL, message)
+                        .then(response => _sendMessage(response))
+                        .catch(() => { /* window tearing down; drop the response */ });
                 }
             });
         });
