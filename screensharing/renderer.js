@@ -1,12 +1,11 @@
-
-const { ipcRenderer } = require('electron');
-
-const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES } = require('./constants');
+const { getBridge } = require('../renderer/bridge');
+const { SCREEN_SHARE_EVENTS } = require('./constants');
 const { logWarning, setLogger } = require('./utils');
 
 /**
  * Renderer process component that sets up electron specific screen sharing functionality, like screen sharing
- * marker and window selection.
+ * marker and window selection. This runs in the page ("main world") and talks to the main process only through
+ * the `window.jitsiElectronSDK.screenSharing` bridge exposed by the SDK preload.
  * {@link ScreenShareMainHook} needs to be initialized in the main process for the always on top tracker window
  * to work.
  */
@@ -18,6 +17,7 @@ class ScreenShareRenderHook {
      */
     constructor(api) {
         this._api = api;
+        this._bridge = getBridge('screenSharing');
 
         this._onScreenSharingStatusChanged = this._onScreenSharingStatusChanged.bind(this);
         this._sendCloseTrackerEvent = this._sendCloseTrackerEvent.bind(this);
@@ -25,7 +25,7 @@ class ScreenShareRenderHook {
         this._onRequestDesktopSources = this._onRequestDesktopSources.bind(this);
         this._onApiDispose = this._onApiDispose.bind(this);
 
-        ipcRenderer.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+        this._unsubscribe = this._bridge.onEvent(this._onScreenSharingEvent);
 
         this._api.on('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
         this._api.on('videoConferenceLeft', this._sendCloseTrackerEvent);
@@ -43,25 +43,22 @@ class ScreenShareRenderHook {
     _onRequestDesktopSources(request, callback) {
         const { options } = request;
 
-        ipcRenderer.invoke(SCREEN_SHARE_GET_SOURCES, options)
-            .then(sources => {
-                sources.forEach(item => {
-                    item.thumbnail.dataUrl = item.thumbnail.toDataURL();
-                });
-                callback({ sources });
-            })
-            .catch((error) => callback({ error }));
+        // Thumbnails are already serialized to `thumbnail.dataUrl` by the bridge; NativeImage
+        // instances cannot cross the contextBridge.
+        this._bridge.getDesktopSources(options)
+            .then(sources => callback({ sources }))
+            .catch(error => callback({ error }));
     }
 
     /**
      * Listen for events coming on the screen sharing event channel.
      *
-     * @param {Object} event - Electron event data.
-     * @param {Object} data - Channel specific data.
+     * @param {Object} payload - Channel payload forwarded by the bridge.
+     * @param {Object} payload.data - Channel specific data.
      *
      * @returns {void}
      */
-    _onScreenSharingEvent(event, { data }) {
+    _onScreenSharingEvent({ data }) {
         switch (data.name) {
             // Event send by the screen sharing tracker window when a user stops screen sharing from it.
             // Send appropriate command to jitsi meet api.
@@ -75,28 +72,24 @@ class ScreenShareRenderHook {
                 const { requestId } = data;
 
                 this._api._openDesktopPicker().then(r => {
-                    ipcRenderer.send(SCREEN_SHARE_EVENTS_CHANNEL, {
-                        data: {
-                            name: SCREEN_SHARE_EVENTS.DO_GDM,
-                            requestId,
-                            ...r
-                        }
+                    this._bridge.sendEvent({
+                        name: SCREEN_SHARE_EVENTS.DO_GDM,
+                        requestId,
+                        ...r
                     });
                 }).catch(error => {
                     // If picker fails, still send DO_GDM with requestId to complete the flow
                     logWarning(`Desktop picker error: ${error}`);
-                    ipcRenderer.send(SCREEN_SHARE_EVENTS_CHANNEL, {
-                        data: {
-                            name: SCREEN_SHARE_EVENTS.DO_GDM,
-                            requestId,
-                            source: null
-                        }
+                    this._bridge.sendEvent({
+                        name: SCREEN_SHARE_EVENTS.DO_GDM,
+                        requestId,
+                        source: null
                     });
                 });
                 break;
             }
             default:
-                logWarning(`Unhandled ${SCREEN_SHARE_EVENTS_CHANNEL}: ${data}`);
+                logWarning(`Unhandled screen sharing event: ${data && data.name}`);
 
         }
     }
@@ -113,11 +106,7 @@ class ScreenShareRenderHook {
         if (event.on) {
             this._isScreenSharing = true;
             // Send event which should open an always on top tracker window from the main process.
-            ipcRenderer.send(SCREEN_SHARE_EVENTS_CHANNEL, {
-                data: {
-                    name: SCREEN_SHARE_EVENTS.OPEN_TRACKER
-                }
-            });
+            this._bridge.sendEvent({ name: SCREEN_SHARE_EVENTS.OPEN_TRACKER });
         } else {
             this._isScreenSharing = false;
             this._sendCloseTrackerEvent();
@@ -130,11 +119,7 @@ class ScreenShareRenderHook {
      * @return {void}
      */
     _sendCloseTrackerEvent() {
-        ipcRenderer.send(SCREEN_SHARE_EVENTS_CHANNEL, {
-            data: {
-                name: SCREEN_SHARE_EVENTS.CLOSE_TRACKER
-            }
-        });
+        this._bridge.sendEvent({ name: SCREEN_SHARE_EVENTS.CLOSE_TRACKER });
     }
 
     /**
@@ -143,7 +128,10 @@ class ScreenShareRenderHook {
      * @returns {void}
      */
     _onApiDispose() {
-        ipcRenderer.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
+        if (this._unsubscribe) {
+            this._unsubscribe();
+            this._unsubscribe = null;
+        }
         this._sendCloseTrackerEvent();
 
         this._api.removeListener('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
@@ -158,6 +146,8 @@ class ScreenShareRenderHook {
  * jitsi meet iframe.
  *
  * @param {JitsiIFrameApi} api - The Jitsi Meet iframe api object.
+ * @param {Array} loggerTransports - Optional array of logger transports for configuring the logger.
+ * @returns {ScreenShareRenderHook} The screen sharing render hook instance.
  */
 module.exports = function setupScreenSharingRender(api, loggerTransports = null) {
     setLogger(loggerTransports);

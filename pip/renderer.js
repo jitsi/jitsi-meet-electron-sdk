@@ -1,14 +1,14 @@
-const { ipcRenderer } = require('electron');
 const log = require('@jitsi/logger');
 
-const { PIP_CHANNEL } = require('./constants');
+const { getBridge } = require('../renderer/bridge');
 
 let logger;
 
 /**
  * Renderer process hook that sets up Electron-specific picture-in-picture functionality.
  * Listens for postMessage requests from the jitsi-meet iframe and forwards them to the main process
- * which can execute requestPictureInPicture with userGesture: true.
+ * (through the `window.jitsiElectronSDK.pip` bridge) which can execute requestPictureInPicture with
+ * userGesture: true.
  */
 class PictureInPictureRenderHook {
     /**
@@ -18,6 +18,7 @@ class PictureInPictureRenderHook {
      */
     constructor(api) {
         this._api = api;
+        this._bridge = getBridge('pip');
         this._handlePipRequested = this._handlePipRequested.bind(this);
         this._onApiDispose = this._onApiDispose.bind(this);
 
@@ -31,7 +32,7 @@ class PictureInPictureRenderHook {
 
     /**
      * Handles external API events from the jitsi-meet iframe.
-     * Forwards picture-in-picture requests to the main process via IPC.
+     * Forwards picture-in-picture requests to the main process via the bridge.
      *
      * @returns {void}
      */
@@ -42,8 +43,8 @@ class PictureInPictureRenderHook {
 
         logger.info('Forwarding PiP request to main process, frameName:', frameName);
 
-        // Forward to main process via IPC.
-        ipcRenderer.send(PIP_CHANNEL, frameName);
+        // Forward to main process via the bridge.
+        this._bridge.request(frameName);
     }
 
     /**

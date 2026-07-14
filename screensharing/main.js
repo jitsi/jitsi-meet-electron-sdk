@@ -3,16 +3,16 @@ const { exec } = require('child_process');
 const {
     BrowserWindow,
     desktopCapturer,
-    ipcMain,
     screen,
     systemPreferences
 } = require('electron');
 const os = require('os');
 const path = require('path');
 
+const { addInvokeRoute, addSendRoute, removeInvokeRoute, removeSendRoute } = require('../helpers/ipcRouter');
+const { windowsEnableScreenProtection } = require('../helpers/functions');
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES, TRACKER_SIZE } = require('./constants');
 const { isMac, isWayland } = require('./utils');
-const { windowsEnableScreenProtection } = require('../helpers/functions');
 
 /**
  * Main process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -30,8 +30,10 @@ class ScreenShareMainHook {
      */
     constructor(jitsiMeetWindow, identity, osxBundleId) {
         this._jitsiMeetWindow = jitsiMeetWindow;
+        this._webContents = jitsiMeetWindow.webContents;
         this._identity = identity;
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
+        this._acceptsEventSender = this._acceptsEventSender.bind(this);
         this._gdmRequestId = 0;
         this._pendingGdmRequests = new Map();
 
@@ -81,11 +83,36 @@ class ScreenShareMainHook {
         );
 
         // Listen for events coming in from the main render window and the screen share tracker window.
-        ipcMain.on(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
-        ipcMain.handle(SCREEN_SHARE_GET_SOURCES, (_event, opts) => desktopCapturer.getSources(opts));
+        addSendRoute(SCREEN_SHARE_EVENTS_CHANNEL, {
+            owner: this._webContents,
+            accepts: this._acceptsEventSender,
+            handler: this._onScreenSharingEvent
+        });
+
+        // getSources may only be requested by this window's renderer.
+        addInvokeRoute(SCREEN_SHARE_GET_SOURCES, {
+            owner: this._webContents,
+            handler: (_event, opts) => desktopCapturer.getSources(opts)
+        });
 
         // Clean up ipcMain handlers to avoid leaks.
         this._jitsiMeetWindow.on('closed', this.cleanup);
+    }
+
+    /**
+     * Decides whether an incoming screen sharing event belongs to this hook.
+     * Events legitimately arrive from the meeting window's renderer and from the
+     * always-on-top tracker window this hook creates; everything else is
+     * rejected.
+     *
+     * @param {Electron.WebContents} sender - The event sender.
+     * @returns {boolean} True when the sender is trusted.
+     */
+    _acceptsEventSender(sender) {
+        return sender === this._webContents
+            || Boolean(this._screenShareTracker
+                && !this._screenShareTracker.isDestroyed()
+                && sender === this._screenShareTracker.webContents);
     }
 
     /**
@@ -99,8 +126,8 @@ class ScreenShareMainHook {
         });
         this._pendingGdmRequests.clear();
 
-        ipcMain.removeListener(SCREEN_SHARE_EVENTS_CHANNEL, this._onScreenSharingEvent);
-        ipcMain.removeHandler(SCREEN_SHARE_GET_SOURCES);
+        removeSendRoute(SCREEN_SHARE_EVENTS_CHANNEL, this._webContents);
+        removeInvokeRoute(SCREEN_SHARE_GET_SOURCES, this._webContents);
     }
 
     /**

@@ -20,9 +20,22 @@ module.exports = {
     },
 
     /**
-     * Event for retrieving display metrics
+     * IPC channel carrying a single mouse/keyboard event from the renderer to
+     * the main process, where it is executed via robotjs.
      */
-    GET_DISPLAY_EVENT: 'jitsi-remotecontrol-get-display',
+    RC_EVENT: 'jitsi-remotecontrol-event',
+
+    /**
+     * IPC channel (ipcMain.handle) used to start a remote control session. The
+     * main process resolves the shared display for the given sourceId and
+     * replies with `{ result: true }` or `{ error }`.
+     */
+    RC_START: 'jitsi-remotecontrol-start',
+
+    /**
+     * IPC channel used to stop a remote control session.
+     */
+    RC_STOP: 'jitsi-remotecontrol-stop',
 
     /**
      * Key actions mapping between the values in remote control key event and
