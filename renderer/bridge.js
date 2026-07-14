@@ -1,4 +1,4 @@
-const { BRIDGE_API_VERSION } = require('../bridgeVersion');
+const { BRIDGE_API_VERSION, BRIDGE_GLOBAL_KEY } = require('../bridgeVersion');
 
 /**
  * Retrieves a feature fragment from the `window.jitsiElectronSDK` bridge,
@@ -9,7 +9,7 @@ const { BRIDGE_API_VERSION } = require('../bridgeVersion');
  * @throws {Error} If the preload is missing, out of date, or lacks the feature.
  */
 function getBridge(feature) {
-    const sdk = typeof window === 'undefined' ? undefined : window.jitsiElectronSDK;
+    const sdk = typeof window === 'undefined' ? undefined : window[BRIDGE_GLOBAL_KEY];
 
     if (!sdk) {
         throw new Error(

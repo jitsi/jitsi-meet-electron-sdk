@@ -31,7 +31,7 @@ module-resolution error by design.
 | Entry point | Runs in | Exposes |
 | --- | --- | --- |
 | `@jitsi/electron-sdk/main` | Electron **main process** | `setupRemoteControlMain`, `setupScreenSharingMain`, `setupPowerMonitorMain`, `cleanupPowerMonitorMain`, `setupPictureInPictureMain`, `initPopupsConfigurationMain`, `getPopupTarget`, `popupsConfigRegistry` |
-| `@jitsi/electron-sdk/preload` | app **preload** script | side-effect import that installs `window.jitsiElectronSDK` via `contextBridge` |
+| `@jitsi/electron-sdk/preload` | app **preload** script | `install()` — exposes the SDK bridge on the main world via `contextBridge` |
 | `@jitsi/electron-sdk/renderer` | the **page** ("main world") | `setupRemoteControlRender`, `setupScreenSharingRender`, `setupPowerMonitorRender`, `setupPictureInPictureRender`, `initPopupsConfigurationRender` |
 
 ```
@@ -79,12 +79,18 @@ const jitsiMeetWindow = new BrowserWindow({
 ### 2. Preload script
 
 A sandboxed preload cannot `require` from `node_modules`, so the app's preload must be
-bundled (esbuild, webpack, etc.). Import the SDK preload for its side effect:
+bundled (esbuild, webpack, etc.). Call `install()` from it to expose the bridge:
 
 ```Javascript
 // app preload (bundled)
-import '@jitsi/electron-sdk/preload';
+import { install } from '@jitsi/electron-sdk/preload';
+
+install();
 ```
+
+`install()` puts the bridge on the main world under an SDK-internal key that the
+`/renderer` helpers read for you — your code never names it. Call it once, from a preload
+running with `contextIsolation` enabled.
 
 ### 3. Main process
 
@@ -267,10 +273,9 @@ load them and how the window is configured.
   `@jitsi/electron-sdk/renderer` depending on where the code runs.
 - **The Jitsi Meet window must use `contextIsolation: true`.** Because robotjs left the
   renderer, that window can also run with `sandbox: true`.
-- **Add the preload import.** The app's (bundled) preload must
-  `import '@jitsi/electron-sdk/preload'` so `window.jitsiElectronSDK` is installed. Renderer
-  code no longer receives `ipcRenderer` and must not assign the SDK helpers onto `window`
-  itself.
+- **Install the bridge from the preload.** The app's (bundled) preload must call
+  `install()` from `@jitsi/electron-sdk/preload`. Renderer code no longer receives
+  `ipcRenderer` and must not assign the SDK helpers onto `window` itself.
 - **Move `setup*Render` calls into the app's renderer bundle** and call them directly with
   the `JitsiMeetExternalAPI` instance (instead of via a `window.*` object bridged from the
   preload). The signatures are unchanged.

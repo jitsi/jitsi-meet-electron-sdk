@@ -10,4 +10,15 @@
  */
 const BRIDGE_API_VERSION = 1;
 
-module.exports = { BRIDGE_API_VERSION };
+/**
+ * The single `window` property the SDK preload exposes and the SDK renderer
+ * reads. It is an SDK-internal detail: embedders install it through the
+ * preload's `install()` and reach it only through the `setup*Render` helpers,
+ * so they never name this key themselves. Kept here as the one source of truth
+ * so the preload and renderer halves cannot drift.
+ *
+ * @type {string}
+ */
+const BRIDGE_GLOBAL_KEY = 'jitsiElectronSDK';
+
+module.exports = { BRIDGE_API_VERSION, BRIDGE_GLOBAL_KEY };
