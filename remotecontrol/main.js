@@ -143,54 +143,64 @@ class RemoteControlMain {
 
         const robot = this._robot;
 
-        switch (data.type) {
-            case EVENTS.mousemove: {
-                const { width, height, x, y } = this._display.bounds;
-                const scaleFactor = this._getDisplayScaleFactor();
-                const destX = data.x * width * scaleFactor + x;
-                const destY = data.y * height * scaleFactor + y;
+        // NOTE: robotjs throws on input it doesn't recognize (an unknown key or
+        // modifier, for instance). Now that it runs here rather than in the
+        // renderer, an escaping exception is an uncaught exception in the main
+        // process, which takes the whole app down. The preload sanitizes events
+        // before they get here; this catch makes sure that a malformed - or
+        // hostile - event that slips through only drops the event.
+        try {
+            switch (data.type) {
+                case EVENTS.mousemove: {
+                    const { width, height, x, y } = this._display.bounds;
+                    const scaleFactor = this._getDisplayScaleFactor();
+                    const destX = data.x * width * scaleFactor + x;
+                    const destY = data.y * height * scaleFactor + y;
 
-                if (this._mouseButtonStatus === 'down') {
-                    robot.dragMouse(destX, destY);
-                } else {
-                    robot.moveMouse(destX, destY);
+                    if (this._mouseButtonStatus === 'down') {
+                        robot.dragMouse(destX, destY);
+                    } else {
+                        robot.moveMouse(destX, destY);
+                    }
+                    break;
                 }
-                break;
-            }
-            case EVENTS.mousedown:
-            case EVENTS.mouseup: {
-                this._mouseButtonStatus = MOUSE_ACTIONS_FROM_EVENT_TYPE[data.type];
-                robot.mouseToggle(
-                    this._mouseButtonStatus,
-                    (data.button ? MOUSE_BUTTONS[data.button] : undefined));
-                break;
-            }
-            case EVENTS.mousedblclick: {
-                robot.mouseClick(
-                    (data.button ? MOUSE_BUTTONS[data.button] : undefined),
-                    true);
-                break;
-            }
-            case EVENTS.mousescroll: {
-                const { x, y } = data;
+                case EVENTS.mousedown:
+                case EVENTS.mouseup: {
+                    this._mouseButtonStatus = MOUSE_ACTIONS_FROM_EVENT_TYPE[data.type];
+                    robot.mouseToggle(
+                        this._mouseButtonStatus,
+                        (data.button ? MOUSE_BUTTONS[data.button] : undefined));
+                    break;
+                }
+                case EVENTS.mousedblclick: {
+                    robot.mouseClick(
+                        (data.button ? MOUSE_BUTTONS[data.button] : undefined),
+                        true);
+                    break;
+                }
+                case EVENTS.mousescroll: {
+                    const { x, y } = data;
 
-                if (x !== 0 || y !== 0) {
-                    robot.scrollMouse(x, y);
+                    if (x !== 0 || y !== 0) {
+                        robot.scrollMouse(x, y);
+                    }
+                    break;
                 }
-                break;
-            }
-            case EVENTS.keydown:
-            case EVENTS.keyup: {
-                if (data.key) {
-                    robot.keyToggle(
-                        data.key === 'caps_lock' ? 'capslock' : data.key,
-                        KEY_ACTIONS_FROM_EVENT_TYPE[data.type],
-                        data.modifiers);
+                case EVENTS.keydown:
+                case EVENTS.keyup: {
+                    if (data.key) {
+                        robot.keyToggle(
+                            data.key === 'caps_lock' ? 'capslock' : data.key,
+                            KEY_ACTIONS_FROM_EVENT_TYPE[data.type],
+                            data.modifiers);
+                    }
+                    break;
                 }
-                break;
+                default:
+                    console.error('Unknown event type!');
             }
-            default:
-                console.error('Unknown event type!');
+        } catch (error) {
+            console.error('Error executing remote control event:', error && error.message);
         }
     }
 

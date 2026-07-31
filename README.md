@@ -53,10 +53,9 @@ module-resolution error by design.
 The preload entry exposes one namespaced object to the page. Renderer code never touches
 `ipcRenderer` directly — it talks to the main process only through this surface. Only
 cloneable data crosses the bridge; callbacks are supported as subscriptions that return an
-unsubscribe function. The object carries an `apiVersion`; every bridge-backed `setup*Render`
-throws a descriptive error if the preload is missing, was created without context isolation,
-or its `apiVersion` does not match the renderer build — so a stale or absent preload fails
-fast instead of silently doing nothing. (`initPopupsConfigurationRender` is the one
+unsubscribe function. Every bridge-backed `setup*Render` reads its fragment off
+`window.jitsiElectronSDK`, so the preload must be installed — and the window created with
+context isolation — before they are called. (`initPopupsConfigurationRender` is the one
 exception: it is a no-op and does not use the bridge.)
 
 ## Setup
@@ -303,5 +302,3 @@ On every push to the `master` branch, `.github/workflows/ci.yml` creates a new v
 publishes to npm. For a major or minor release, use the respective keywords in the commit
 message — see the
 [gh-action-bump-version workflow](https://github.com/phips28/gh-action-bump-version#workflow).
-</content>
-</invoke>

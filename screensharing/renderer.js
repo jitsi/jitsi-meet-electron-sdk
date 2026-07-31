@@ -1,4 +1,3 @@
-const { getBridge } = require('../renderer/bridge');
 const { SCREEN_SHARE_EVENTS } = require('./constants');
 const { logWarning, setLogger } = require('./utils');
 
@@ -17,7 +16,7 @@ class ScreenShareRenderHook {
      */
     constructor(api) {
         this._api = api;
-        this._bridge = getBridge('screenSharing');
+        this._bridge = window.jitsiElectronSDK?.screenSharing;
 
         this._onScreenSharingStatusChanged = this._onScreenSharingStatusChanged.bind(this);
         this._sendCloseTrackerEvent = this._sendCloseTrackerEvent.bind(this);

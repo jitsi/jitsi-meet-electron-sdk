@@ -1,6 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const { BRIDGE_API_VERSION, BRIDGE_GLOBAL_KEY } = require('../bridgeVersion');
 const createPipBridge = require('../pip/bridge');
 const createPowerMonitorBridge = require('../powermonitor/bridge');
 const createRemoteControlBridge = require('../remotecontrol/bridge');
@@ -27,8 +26,8 @@ function subscribe(channel, callback) {
  * Installs the SDK bridge onto the main world. Call this once from the app's
  * preload script (which must run with contextIsolation enabled). It is an
  * explicit call rather than an import side effect so the embedder controls when
- * the bridge is installed. The window key it uses is an SDK-internal detail
- * (see {@link BRIDGE_GLOBAL_KEY}); embedders reach the bridge only through the
+ * the bridge is installed. The `window.jitsiElectronSDK` key it uses is an
+ * SDK-internal detail; embedders reach the bridge only through the
  * `@jitsi/electron-sdk/renderer` `setup*Render` helpers, never by name.
  *
  * @returns {void}
@@ -38,7 +37,6 @@ function install() {
 
     // The single, namespaced bridge object the SDK exposes to the main world.
     const jitsiElectronSDK = {
-        apiVersion: BRIDGE_API_VERSION,
         pip: createPipBridge(context),
         powerMonitor: createPowerMonitorBridge(context),
         remoteControl: createRemoteControlBridge(context),
@@ -46,7 +44,7 @@ function install() {
     };
 
     try {
-        contextBridge.exposeInMainWorld(BRIDGE_GLOBAL_KEY, jitsiElectronSDK);
+        contextBridge.exposeInMainWorld('jitsiElectronSDK', jitsiElectronSDK);
     } catch (error) {
         // exposeInMainWorld throws if the key is already registered (install was
         // called more than once in the same context) or if contextBridge is

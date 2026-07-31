@@ -1,6 +1,5 @@
 const postis = require('postis');
 
-const { getBridge } = require('../renderer/bridge');
 const { POWER_MONITOR_MESSAGE_NAME } = require('./constants');
 
 /**
@@ -80,7 +79,7 @@ function dispose() {
  * @param {JitsiIFrameApi} api - the Jitsi Meet iframe api object.
  */
 module.exports = function setupPowerMonitorRender(api) {
-    _bridge = getBridge('powerMonitor');
+    _bridge = window.jitsiElectronSDK?.powerMonitor;
 
     const iframe = api.getIFrame();
 

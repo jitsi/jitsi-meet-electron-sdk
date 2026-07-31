@@ -1,7 +1,5 @@
 const log = require('@jitsi/logger');
 
-const { getBridge } = require('../renderer/bridge');
-
 let logger;
 
 /**
@@ -18,7 +16,7 @@ class PictureInPictureRenderHook {
      */
     constructor(api) {
         this._api = api;
-        this._bridge = getBridge('pip');
+        this._bridge = window.jitsiElectronSDK?.pip;
         this._handlePipRequested = this._handlePipRequested.bind(this);
         this._onApiDispose = this._onApiDispose.bind(this);
 

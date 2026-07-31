@@ -1,6 +1,5 @@
 const postis = require('postis');
 
-const { getBridge } = require('../renderer/bridge');
 const { EVENTS, REMOTE_CONTROL_MESSAGE_NAME, REQUESTS } = require('./constants');
 
 /**
@@ -19,7 +18,7 @@ class RemoteControl {
      */
     constructor(api) {
         this._api = api;
-        this._bridge = getBridge('remoteControl');
+        this._bridge = window.jitsiElectronSDK?.remoteControl;
         this._iframe = this._api.getIFrame();
 
         // Whether a remote control session has been started. Guards against
