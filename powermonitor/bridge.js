@@ -18,7 +18,9 @@ function sanitizeQuery(message) {
     if (data && typeof data === 'object') {
         sanitized.data = { type: data.type };
 
-        if ('idleThreshold' in data) {
+        // powerMonitor.getSystemIdleState throws on a threshold it cannot read
+        // as an integer, so only forward one that is actually a number.
+        if (Number.isFinite(data.idleThreshold)) {
             sanitized.data.idleThreshold = data.idleThreshold;
         }
     }
@@ -47,7 +49,13 @@ module.exports = function createPowerMonitorBridge({ ipcRenderer, subscribe }) {
             const sanitized = sanitizeQuery(message);
 
             if (!sanitized) {
-                return Promise.resolve({ error: 'Error: invalid power monitor query' });
+                // Keep the response shape the iframe matches against, otherwise
+                // its pending query never settles.
+                return Promise.resolve({
+                    id: message && message.id,
+                    error: 'Error: invalid power monitor query',
+                    type: 'response'
+                });
             }
 
             return ipcRenderer.invoke(POWER_MONITOR_QUERIES_CHANNEL, sanitized);

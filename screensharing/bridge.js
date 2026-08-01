@@ -30,6 +30,30 @@ function sanitizeSourceOptions(options) {
 }
 
 /**
+ * Shapes a picked desktop source down to the `{ id, name }` strings the
+ * `getDisplayMedia` callback in the main process needs. Anything without a
+ * usable id is reported as no source at all: main hands the value straight to
+ * `callback({ video: source })`, and a malformed one would throw inside an
+ * `ipcMain.on` listener, i.e. crash the main process.
+ *
+ * @param {Object} source - The source from the main world.
+ * @returns {Object|null} `{ id, name? }`, or null when the source is unusable.
+ */
+function sanitizeSource(source) {
+    if (!source || typeof source !== 'object' || typeof source.id !== 'string') {
+        return null;
+    }
+
+    const sanitized = { id: source.id };
+
+    if (typeof source.name === 'string') {
+        sanitized.name = source.name;
+    }
+
+    return sanitized;
+}
+
+/**
  * Whitelists an outgoing screen sharing event before it is sent to the main
  * process. Events with an unknown name are dropped.
  *
@@ -53,10 +77,11 @@ function sanitizeOutgoingEvent(data) {
         sanitized.requestId = data.requestId;
     }
     if ('source' in data) {
-        sanitized.source = data.source;
+        // A null source is the "picker cancelled" signal main already handles.
+        sanitized.source = sanitizeSource(data.source);
     }
     if ('screenShareAudio' in data) {
-        sanitized.screenShareAudio = data.screenShareAudio;
+        sanitized.screenShareAudio = Boolean(data.screenShareAudio);
     }
 
     return sanitized;

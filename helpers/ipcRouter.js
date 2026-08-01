@@ -12,7 +12,8 @@ const { ipcMain } = require('electron');
  * This router registers each channel with `ipcMain` exactly once and keeps a
  * table of per-window routes. Every incoming event is dispatched to the first
  * route whose `accepts(sender)` predicate matches `event.sender`. Events from a
- * sender that matches no route are rejected (invoke) or dropped (send), which is
+ * sender that matches no route make the invoke reject (or are dropped, for
+ * send), which is
  * the sender validation required by the migration plan: only the WebContents a
  * feature was set up for can reach its handler. When the last route for a
  * channel is removed the global `ipcMain` registration is torn down.
@@ -100,7 +101,13 @@ function addInvokeRoute(channel, route) {
             const matched = routeFor(entry.routes, event);
 
             if (!matched) {
-                return { error: 'Error: rejected IPC from an untrusted sender' };
+                // Throw rather than resolve with an { error } object: that makes
+                // `ipcRenderer.invoke` reject, which every caller already
+                // handles. An { error } payload would instead have to match each
+                // channel's own response shape, and silently breaks the ones
+                // that don't (a bare object where an array of sources or an
+                // { id, type: 'response' } reply was expected).
+                throw new Error('Rejected IPC from an untrusted sender');
             }
 
             return matched.handler(event, ...args);

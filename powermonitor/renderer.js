@@ -99,7 +99,17 @@ module.exports = function setupPowerMonitorRender(api) {
                 if(name === POWER_MONITOR_MESSAGE_NAME) {
                     _bridge.query(message)
                         .then(response => _sendMessage(response))
-                        .catch(() => { /* window tearing down; drop the response */ });
+                        .catch(error => {
+                            // Always answer: an unanswered query leaves the
+                            // iframe's pending promise hanging forever. The
+                            // _channel guard in _sendMessage still drops this
+                            // when the rejection was just teardown.
+                            _sendMessage({
+                                id: message.id,
+                                error: String(error),
+                                type: 'response'
+                            });
+                        });
                 }
             });
         });
