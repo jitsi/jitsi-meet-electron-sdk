@@ -337,7 +337,6 @@ To rebuild the native code (Windows), use:
 
 ## Publishing
 
-On every push to the `master` branch, `.github/workflows/ci.yml` creates a new version and
-publishes to npm. For a major or minor release, use the respective keywords in the commit
-message — see the
+On every push to the `master` branch, `.github/workflows/ci.yml` creates a new patch version and
+publishes to npm. For a major or minor release, manually bump the version in package.json
 [gh-action-bump-version workflow](https://github.com/phips28/gh-action-bump-version#workflow).
