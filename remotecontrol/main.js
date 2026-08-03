@@ -1,5 +1,6 @@
 const {
     app,
+    dialog,
     screen,
 } = require('electron');
 const process = require('process');
@@ -18,20 +19,34 @@ const {
 
 /**
  * Module to run on the main process. It owns the remote control session: it
- * resolves the shared display, tracks it across display changes and executes
- * the mouse/keyboard events (via robotjs) forwarded by the renderer. Keeping
- * robotjs and the OS input synthesis in the trusted main process is what lets
- * the Jitsi Meet window run with context isolation enabled.
+ * asks the user for consent, resolves the shared display, tracks it across
+ * display changes and executes the mouse/keyboard events (via robotjs)
+ * forwarded by the renderer. Keeping robotjs and the OS input synthesis in the
+ * trusted main process is what lets the Jitsi Meet window run with context
+ * isolation enabled.
  */
 class RemoteControlMain {
     /**
      * Constructs a new instance and wires up the IPC handlers.
      *
      * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which displays the meeting.
+     * @param {Object} [options] - Optional configuration.
+     * @param {function(Object): Promise<boolean>|boolean|false} [options.requestConsent] - Asks the
+     * user whether a remote control session may start, receiving `{ sourceId }`. It must resolve to
+     * true only when the user explicitly allowed it. Defaults to a native message box parented to
+     * `jitsiMeetWindow`. Embedders should supply this to provide their own (e.g. localized) wording,
+     * but whatever they supply MUST NOT be renderable or dismissable by web content. Pass `false` to
+     * disable the gate entirely and start every session that is requested - see
+     * {@link _resolveRequestConsent} for when that is (and is not) defensible.
      */
-    constructor(jitsiMeetWindow) {
+    constructor(jitsiMeetWindow, options = {}) {
         this._jitsiMeetWindow = jitsiMeetWindow;
         this._webContents = jitsiMeetWindow.webContents;
+        this._requestConsent = this._resolveRequestConsent(options.requestConsent);
+
+        // Whether a consent request is currently on screen. Guards against a
+        // hostile - or merely repeating - renderer stacking up dialogs.
+        this._consentPending = false;
 
         // robotjs is a native module. Load it lazily here (rather than at the
         // top of the file) so that importing `@jitsi/electron-sdk/main` does not
@@ -97,14 +112,97 @@ class RemoteControlMain {
     }
 
     /**
-     * Handles the RC_START request: resolves and stores the display for the
-     * shared sourceId so subsequent events can be mapped to screen coordinates.
+     * Resolves the `requestConsent` option into the function `_handleStart`
+     * calls.
+     *
+     * `false` opts out of the gate: every requested session starts without
+     * asking. That is only defensible when the embedder can guarantee that a
+     * start request cannot originate from untrusted web content - for instance a
+     * kiosk or support appliance that loads a single deployment it controls, and
+     * that has already obtained consent out of band. It is NOT defensible for a
+     * general purpose client whose server URL the user (or an attacker) can
+     * point anywhere: the request arrives as an iframe -> top frame postMessage,
+     * so with the gate off any page loaded in the meeting iframe can drive the
+     * mouse and keyboard with no interaction at all.
+     *
+     * @param {function(Object): Promise<boolean>|boolean|false|undefined} requestConsent - The
+     * option as passed by the embedder.
+     * @returns {function(Object): Promise<boolean>|boolean} The consent function.
+     */
+    _resolveRequestConsent(requestConsent) {
+        if (requestConsent === false) {
+            console.warn('[remotecontrol] The user consent gate is disabled: remote control sessions '
+                + 'will start without asking.');
+
+            return () => true;
+        }
+
+        return requestConsent || this._showConsentDialog.bind(this);
+    }
+
+    /**
+     * Shows the default consent dialog: a native, modal message box parented to
+     * the meeting window. Web content can neither render, click nor dismiss it,
+     * which is the point - it holds even if both the Jitsi Meet iframe and the
+     * renderer hosting it are fully compromised.
+     *
+     * @returns {Promise<boolean>} Whether the user allowed the session.
+     */
+    async _showConsentDialog() {
+        const { response } = await dialog.showMessageBox(this._jitsiMeetWindow, {
+            type: 'warning',
+            buttons: [ 'Deny', 'Allow' ],
+            defaultId: 0,
+            cancelId: 0,
+            message: 'Allow remote control of this computer?',
+            detail: 'A meeting participant is requesting control of your mouse and keyboard.'
+        });
+
+        return response === 1;
+    }
+
+    /**
+     * Handles the RC_START request: asks the user for consent, then resolves and
+     * stores the display for the shared sourceId so subsequent events can be
+     * mapped to screen coordinates.
+     *
+     * The consent gate lives here rather than in the renderer on purpose. The
+     * start request reaches the renderer as an iframe -> top frame postMessage,
+     * a channel that carries no trustworthy identity, so the only consent that
+     * cannot be forged by the page is one collected by the main process.
      *
      * @param {IpcMainInvokeEvent} event - The electron event.
      * @param {string} sourceId - The source id of the desktop sharing stream.
-     * @returns {Object} `{ result: true }` on success, otherwise `{ error }`.
+     * @returns {Promise<Object>} `{ result: true }` on success, otherwise `{ error }`.
      */
-    _handleStart(event, sourceId) {
+    async _handleStart(event, sourceId) {
+        if (this._consentPending) {
+            return { error: 'Error: a remote control request is already pending' };
+        }
+
+        this._consentPending = true;
+
+        let granted;
+
+        try {
+            granted = await this._requestConsent({ sourceId });
+        } catch (error) {
+            console.error('Error requesting remote control consent:', error && error.message);
+            granted = false;
+        } finally {
+            this._consentPending = false;
+        }
+
+        if (!granted) {
+            return { error: 'Error: remote control denied by the user' };
+        }
+
+        // The window may have gone away while the dialog was up, in which case
+        // the session (and its IPC routes) no longer exist.
+        if (this._jitsiMeetWindow.isDestroyed()) {
+            return { error: 'Error: the meeting window is gone' };
+        }
+
         this._mouseButtonStatus = 'up';
         this._sourceId = sourceId;
         this._display = this._getDisplay(sourceId);
@@ -296,8 +394,13 @@ class RemoteControlMain {
  * Initializes the remote control functionality in the main electron process.
  *
  * @param {BrowserWindow} jitsiMeetWindow - the BrowserWindow object which displays the meeting.
+ * @param {Object} [options] - Optional configuration.
+ * @param {function(Object): Promise<boolean>|boolean|false} [options.requestConsent] - Asks the
+ * user whether a remote control session may start, receiving `{ sourceId }`. Defaults to a native
+ * message box parented to `jitsiMeetWindow`. Pass `false` to disable the gate entirely, which is
+ * only safe when a start request cannot come from untrusted web content.
  * @returns {RemoteControlMain} - the remote control object.
  */
-module.exports = function setupRemoteControlMain(jitsiMeetWindow) {
-    return new RemoteControlMain(jitsiMeetWindow);
+module.exports = function setupRemoteControlMain(jitsiMeetWindow, options) {
+    return new RemoteControlMain(jitsiMeetWindow, options);
 };

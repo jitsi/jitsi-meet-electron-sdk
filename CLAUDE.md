@@ -58,8 +58,9 @@ Communication between processes uses Electron's IPC (ipcMain/ipcRenderer) and po
 
 #### Remote Control (`remotecontrol/`)
 Enables remote desktop control during Jitsi Meet sessions:
-- `RemoteControlMain`: Runs in main process, handles display metrics and IPC
-- `RemoteControl`: Runs in renderer, uses robotjs to execute mouse/keyboard events from remote participants
+- `RemoteControlMain`: Runs in main process, gates session start on user consent, handles display metrics and IPC, and executes the mouse/keyboard events via robotjs
+- `RemoteControl`: Runs in renderer, relays start/stop/events between the Jitsi Meet iframe (postis) and the main process
+- Session start requires explicit consent collected in the main process (native modal dialog by default, overridable with `setupRemoteControlMain(window, { requestConsent })`, or disabled with `requestConsent: false`). The start request arrives as an iframe → top-frame `postMessage`, so no renderer-side prompt can be trusted
 - Windows native addon `sourceId2Coordinates` converts screen source IDs to coordinates
 
 #### Screen Sharing (`screensharing/`)
