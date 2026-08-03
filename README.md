@@ -138,6 +138,45 @@ const { setupRemoteControlMain } = require('@jitsi/electron-sdk/main');
 setupRemoteControlMain(jitsiMeetWindow);
 ```
 
+**User consent**: every session start is gated on an explicit confirmation collected in the
+main process, because the start request reaches the renderer as an iframe → top-frame
+`postMessage` and therefore carries no trustworthy identity. By default a native, modal
+message box parented to `jitsiMeetWindow` is shown; web content can neither render, click nor
+dismiss it. Pass `requestConsent` to provide your own wording (for instance a localized
+dialog); it receives `{ sourceId }` and must resolve to `true` only when the user explicitly
+allowed the session. Whatever you supply must not be renderable or dismissable by web
+content — a prompt inside the meeting page is not a consent gate.
+
+```Javascript
+setupRemoteControlMain(jitsiMeetWindow, {
+    async requestConsent({ sourceId }) { // eslint-disable-line no-unused-vars
+        const { response } = await dialog.showMessageBox(jitsiMeetWindow, {
+            type: 'warning',
+            buttons: [ t('remoteControl.deny'), t('remoteControl.allow') ],
+            defaultId: 0,
+            cancelId: 0,
+            message: t('remoteControl.message'),
+            detail: t('remoteControl.detail')
+        });
+
+        return response === 1;
+    }
+});
+```
+
+Passing `requestConsent: false` disables the gate: every requested session starts, with no
+prompt and no interaction.
+
+```Javascript
+// Starts remote control sessions unconditionally. Read the warning below first.
+setupRemoteControlMain(jitsiMeetWindow, { requestConsent: false });
+```
+
+> [!WARNING]
+> Only do this when you can guarantee that a start request cannot originate from untrusted
+> web content — a kiosk or support appliance that loads one deployment you control, and that
+> has already obtained consent out of band.
+
 In the **renderer** (page hosting Jitsi Meet):
 
 ```Javascript
