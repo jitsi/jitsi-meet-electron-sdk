@@ -57,10 +57,9 @@ jobs:
         path: prebuilds
         pattern: prebuilds-*
         merge-multiple: true
-    - uses: phips28/gh-action-bump-version@215e27a882516826c59df7f09da8c67d5f375cbd
+    - uses: jitsi/gh-actions/npm-version-bump@066f0d506761c59a0ba4aa26c06468d265f07a3c  # npm-version-bump/v1.0.0
       with:
         tag-prefix: 'v'
-        version-type:  'patch'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6
