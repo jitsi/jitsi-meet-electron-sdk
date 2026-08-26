@@ -14,6 +14,11 @@ const { windowsEnableScreenProtection } = require('../helpers/functions');
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES, TRACKER_SIZE } = require('./constants');
 const { isMac, isWayland } = require('./utils');
 
+// One refresh interval of slack over the desktop picker's UPDATE_INTERVAL (2000ms in
+// jitsi-meet), so consecutive refreshes are served from the same result. Keep this above
+// that interval if it ever changes.
+const WAYLAND_SOURCES_REUSE_WINDOW = 3000;
+
 /**
  * Main process component that sets up electron specific screen sharing functionality, like screen sharing
  * tracker and window selection.
@@ -36,6 +41,8 @@ class ScreenShareMainHook {
         this._acceptsEventSender = this._acceptsEventSender.bind(this);
         this._gdmRequestId = 0;
         this._pendingGdmRequests = new Map();
+        this._waylandSources = null;
+        this._waylandSourcesTimeout = null;
 
         this.cleanup = this.cleanup.bind(this);
 
@@ -92,11 +99,38 @@ class ScreenShareMainHook {
         // getSources may only be requested by this window's renderer.
         addInvokeRoute(SCREEN_SHARE_GET_SOURCES, {
             owner: this._webContents,
-            handler: (_event, opts) => desktopCapturer.getSources(opts)
+            handler: (_event, opts) => isWayland()
+                ? this._getCoalescedSources(opts)
+                : desktopCapturer.getSources(opts)
         });
 
         // Clean up ipcMain handlers to avoid leaks.
         this._jitsiMeetWindow.on('closed', this.cleanup);
+    }
+
+    /**
+     * Returns the desktop sources, reusing the pending result on Wayland.
+     *
+     * The desktop picker refreshes its thumbnails on a timer, and on Wayland every
+     * `desktopCapturer.getSources` call opens a new xdg-desktop-portal prompt. Serving
+     * consecutive refreshes from a single call keeps the portal dialog from reopening
+     * for as long as the picker stays open, while a later share still gets a new prompt.
+     *
+     * @param {Object} options - desktopCapturer.getSources options.
+     * @returns {Promise<Array<Electron.DesktopCapturerSource>>} The desktop sources.
+     */
+    _getCoalescedSources(options) {
+        const sources = this._waylandSources || desktopCapturer.getSources(options);
+
+        this._waylandSources = sources;
+
+        clearTimeout(this._waylandSourcesTimeout);
+        this._waylandSourcesTimeout = setTimeout(() => {
+            this._waylandSources = null;
+            this._waylandSourcesTimeout = null;
+        }, WAYLAND_SOURCES_REUSE_WINDOW);
+
+        return sources;
     }
 
     /**
@@ -125,6 +159,10 @@ class ScreenShareMainHook {
             gdmData.callback(null);
         });
         this._pendingGdmRequests.clear();
+
+        clearTimeout(this._waylandSourcesTimeout);
+        this._waylandSourcesTimeout = null;
+        this._waylandSources = null;
 
         removeSendRoute(SCREEN_SHARE_EVENTS_CHANNEL, this._webContents);
         removeInvokeRoute(SCREEN_SHARE_GET_SOURCES, this._webContents);
