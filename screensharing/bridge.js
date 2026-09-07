@@ -1,6 +1,30 @@
 const { SCREEN_SHARE_EVENTS, SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_GET_SOURCES } = require('./constants');
 
 /**
+ * Upper bound, in pixels, for a requested thumbnail dimension. A picker
+ * preview never needs more than this, so anything larger is clamped down.
+ * @type {number}
+ */
+const MAX_THUMBNAIL_DIMENSION = 320;
+
+/**
+ * Coerces one thumbnail dimension into a safe integer in
+ * `[0, MAX_THUMBNAIL_DIMENSION]`. Non-finite or negative values become 0.
+ *
+ * @param {*} value - The raw width/height from the main world.
+ * @returns {number} A bounded, integer pixel size.
+ */
+function clampDimension(value) {
+    const n = Number(value);
+
+    if (!Number.isFinite(n) || n <= 0) {
+        return 0;
+    }
+
+    return Math.min(Math.floor(n), MAX_THUMBNAIL_DIMENSION);
+}
+
+/**
  * Restricts `desktopCapturer.getSources` options to the known, cloneable fields
  * before they are forwarded to the main process. Anything else is dropped as
  * defense-in-depth against a compromised main world.
@@ -17,9 +41,10 @@ function sanitizeSourceOptions(options) {
     };
 
     if (opts.thumbnailSize && typeof opts.thumbnailSize === 'object') {
-        const { height, width } = opts.thumbnailSize;
-
-        safe.thumbnailSize = { height, width };
+        safe.thumbnailSize = {
+            height: clampDimension(opts.thumbnailSize.height),
+            width: clampDimension(opts.thumbnailSize.width)
+        };
     }
 
     if (typeof opts.fetchWindowIcons === 'boolean') {
