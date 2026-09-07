@@ -89,10 +89,11 @@ class ScreenShareMainHook {
             handler: this._onScreenSharingEvent
         });
 
-        // getSources may only be requested by this window's renderer.
+        // getSources may only be requested by this window's renderer, and only
+        // while a screen share the user actually started is in progress.
         addInvokeRoute(SCREEN_SHARE_GET_SOURCES, {
             owner: this._webContents,
-            handler: (_event, opts) => desktopCapturer.getSources(opts)
+            handler: (_event, opts) => this._getSources(opts)
         });
 
         // Clean up ipcMain handlers to avoid leaks.
@@ -113,6 +114,26 @@ class ScreenShareMainHook {
             || Boolean(this._screenShareTracker
                 && !this._screenShareTracker.isDestroyed()
                 && sender === this._screenShareTracker.webContents);
+    }
+
+    /**
+     * Returns the available desktop capture sources, but only while a screen
+     * share request the user actually initiated is awaiting a source selection.
+     *
+     * Source access is tied to the visible, user-triggered picker flow: a
+     * pending `getDisplayMedia` request is the only thing that populates
+     * `_pendingGdmRequests`, so the sources can only be read while the user is
+     * choosing what to share.
+     *
+     * @param {Object} opts - Sanitized desktopCapturer.getSources options.
+     * @returns {Promise<Array<Electron.DesktopCapturerSource>>} The sources.
+     */
+    _getSources(opts) {
+        if (this._pendingGdmRequests.size === 0) {
+            return Promise.reject(new Error('No screen sharing request in progress'));
+        }
+
+        return desktopCapturer.getSources(opts);
     }
 
     /**
