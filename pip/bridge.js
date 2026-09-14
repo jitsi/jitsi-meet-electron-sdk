@@ -1,4 +1,4 @@
-const { PIP_CHANNEL } = require('./constants');
+const { PIP_CHANNEL, PIP_FOCUS_MAIN_CHANNEL } = require('./constants');
 
 /**
  * Builds the picture-in-picture fragment of the `window.jitsiElectronSDK`
@@ -22,6 +22,17 @@ module.exports = function createPipBridge({ ipcRenderer }) {
             if (typeof frameName === 'string') {
                 ipcRenderer.send(PIP_CHANNEL, frameName);
             }
+        },
+
+        /**
+         * Asks the main process to focus the window hosting the meeting. Sent
+         * when the user double clicks the custom PiP window (the legacy
+         * always-on-top double-click behavior).
+         *
+         * @returns {void}
+         */
+        focusMainWindow: () => {
+            ipcRenderer.send(PIP_FOCUS_MAIN_CHANNEL);
         }
     };
 };

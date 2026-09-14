@@ -250,6 +250,35 @@ import { setupPictureInPictureRender } from '@jitsi/electron-sdk/renderer';
 const pipRender = setupPictureInPictureRender(api, loggerTransports);
 ```
 
+**Custom PiP window** (the legacy always-on-top experience): deployments with
+`config.pip.mode` unset or set to `'customWindow'` open a small frameless
+always-on-top window rendered by the meeting itself instead of the browser's
+video-element PiP. jitsi-meet opens it as a named popup
+(`JitsiMeetPiPWindow`) from inside the meeting iframe; `setupPictureInPictureMain`
+registers the popup configuration and finishes the window setup (always-on-top
+level that floats over full screen apps, 16:9 resizing,
+position persistence). The popup needs no Electron access of its own: the
+meeting page renders it and moves it with web platform APIs. Like the OAuth
+popups, it relies on the SDK-owned window open handler installed by
+`initPopupsConfigurationMain`, so apps using it need no extra wiring.
+
+A double click in the PiP window focuses the window hosting the meeting through
+the main process (like the legacy always-on-top window). Apps that need to react
+to the window's gestures themselves listen to the External API directly:
+
+```Javascript
+// The user double clicked the PiP window ('return to the meeting').
+api.on('pipDoubleClicked', () => { /* e.g. focus and bring the meeting view to the front */ });
+
+// PiP was left; `reason` is 'dismissed' (X button), 'focus' or 'requested'.
+api.on('pipLeft', ({ mode, reason }) => { /* ... */ });
+```
+
+The `pipEntered` / `pipLeft` events carry the implementation in use as `mode`
+(`'customWindow'`, `'videoPiP'` or `'documentPiP'`). When the embedding app
+cannot create the popup (older apps that deny unknown windows), jitsi-meet falls
+back to the video-element PiP automatically.
+
 ### Power Monitor
 
 Query Electron for system idle state and receive power-monitor events (suspend, resume,
