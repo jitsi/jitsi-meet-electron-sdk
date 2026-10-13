@@ -275,9 +275,10 @@ api.on('pipLeft', ({ mode, reason }) => { /* ... */ });
 ```
 
 The `pipEntered` / `pipLeft` events carry the implementation in use as `mode`
-(`'customWindow'`, `'videoPiP'` or `'documentPiP'`). When the embedding app
-cannot create the popup (older apps that deny unknown windows), jitsi-meet falls
-back to the video-element PiP automatically.
+(`'customWindow'`, `'videoPiP'` or `'documentPiP'`). jitsi-meet does not detect
+a denied popup: an app whose window open handler denies it (an SDK older than
+this one) shows no PiP at all, so such apps have to request the video-element
+PiP by passing `pip: { mode: 'videoPiP' }` in `configOverwrite`.
 
 ### Power Monitor
 
