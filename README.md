@@ -278,7 +278,10 @@ The `pipEntered` / `pipLeft` events carry the implementation in use as `mode`
 (`'customWindow'`, `'videoPiP'` or `'documentPiP'`). jitsi-meet does not detect
 a denied popup: an app whose window open handler denies it (an SDK older than
 this one) shows no PiP at all, so such apps have to request the video-element
-PiP by passing `pip: { mode: 'videoPiP' }` in `configOverwrite`.
+PiP by passing `pip: { mode: 'videoPiP' }` in `configOverwrite`. Apps that
+sandbox the meeting iframe (the External API's `sandbox` option) must include
+`allow-popups`, otherwise the browser itself blocks the popup with the same
+result; the OAuth popups already have this requirement.
 
 ### Power Monitor
 
