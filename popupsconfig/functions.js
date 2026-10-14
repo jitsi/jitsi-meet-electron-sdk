@@ -45,10 +45,18 @@ function testMatchPatterns(url, frameName, matchPatterns = {}) {
 }
 
 /**
- * Returns the BrowserWindow options a registered popup configuration provides
- * for the window about to be opened. A configuration may hold the options
- * directly or as a function of the window open handler details, which lets it
- * decline a window by returning undefined.
+ * Returns the BrowserWindow options the registered popup configurations
+ * provide for the window about to be opened. A configuration may hold the
+ * options directly or as a function of the window open handler details, which
+ * lets it decline a window by returning undefined.
+ *
+ * The options of all matching configurations are merged in registration
+ * order, so an app can add to a popup the SDK defines (for instance the
+ * sandbox flag Electron 45 requires when the meeting iframe shares an
+ * unsandboxed window process) without repeating the SDK's options. A later
+ * configuration wins on the same key; webPreferences are merged one level
+ * deep so a flag added by one configuration does not drop the flags set by
+ * another.
  *
  * @param {Object} details - The window open handler details.
  * @returns {Object|undefined} - The BrowserWindow options or undefined if no
@@ -56,13 +64,26 @@ function testMatchPatterns(url, frameName, matchPatterns = {}) {
  */
 function getPopupWindowOptions(details) {
     const { url, frameName } = details;
-    const config = popupsConfigRegistry.getAllConfigs().find(
-        ({ matchPatterns, overrideBrowserWindowOptions }) =>
-            overrideBrowserWindowOptions
-                && testMatchPatterns(url, frameName, matchPatterns));
-    const options = config?.overrideBrowserWindowOptions;
+    const allOptions = popupsConfigRegistry.getAllConfigs()
+        .filter(({ matchPatterns, overrideBrowserWindowOptions }) =>
+            overrideBrowserWindowOptions && testMatchPatterns(url, frameName, matchPatterns))
+        .map(({ overrideBrowserWindowOptions }) => (typeof overrideBrowserWindowOptions === 'function'
+            ? overrideBrowserWindowOptions(details) : overrideBrowserWindowOptions))
+        .filter(Boolean);
 
-    return typeof options === 'function' ? options(details) : options;
+    if (!allOptions.length) {
+        return undefined;
+    }
+
+    return allOptions.reduce((merged, options) => {
+        const result = { ...merged, ...options };
+
+        if (merged.webPreferences && options.webPreferences) {
+            result.webPreferences = { ...merged.webPreferences, ...options.webPreferences };
+        }
+
+        return result;
+    });
 }
 
 /**
