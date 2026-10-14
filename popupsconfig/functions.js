@@ -45,6 +45,27 @@ function testMatchPatterns(url, frameName, matchPatterns = {}) {
 }
 
 /**
+ * Returns the BrowserWindow options a registered popup configuration provides
+ * for the window about to be opened. A configuration may hold the options
+ * directly or as a function of the window open handler details, which lets it
+ * decline a window by returning undefined.
+ *
+ * @param {Object} details - The window open handler details.
+ * @returns {Object|undefined} - The BrowserWindow options or undefined if no
+ * configuration with options matches.
+ */
+function getPopupWindowOptions(details) {
+    const { url, frameName } = details;
+    const config = popupsConfigRegistry.getAllConfigs().find(
+        ({ matchPatterns, overrideBrowserWindowOptions }) =>
+            overrideBrowserWindowOptions
+                && testMatchPatterns(url, frameName, matchPatterns));
+    const options = config?.overrideBrowserWindowOptions;
+
+    return typeof options === 'function' ? options(details) : options;
+}
+
+/**
  * Returns the target property from the config object that corresponds to the
  * passed url and frameName.
  *
@@ -61,5 +82,6 @@ function getPopupTarget(url, frameName) {
 
 module.exports = {
     getPopupTarget,
+    getPopupWindowOptions,
     testMatchPatterns
 };

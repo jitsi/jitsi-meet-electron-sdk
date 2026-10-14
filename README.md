@@ -298,6 +298,12 @@ const windowOpenHandler = ({ url }) => {
 initPopupsConfigurationMain(jitsiMeetWindow, windowOpenHandler);
 ```
 
+A popup configuration in `popupsConfigRegistry` may carry `overrideBrowserWindowOptions`: a
+`BrowserWindow` options object, or a function receiving the window open handler details and
+returning one (or `undefined` to leave the decision to your handler). A matching configuration
+with options is allowed with those options; this is how the OAuth popups get
+`nodeIntegration: false`.
+
 `initPopupsConfigurationRender(api)` is exported from the renderer entry for API
 compatibility but is a no-op.
 
