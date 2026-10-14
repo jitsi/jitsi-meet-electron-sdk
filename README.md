@@ -281,7 +281,9 @@ this one) shows no PiP at all, so such apps have to request the video-element
 PiP by passing `pip: { mode: 'videoPiP' }` in `configOverwrite`. Apps that
 sandbox the meeting iframe (the External API's `sandbox` option) must include
 `allow-popups`, otherwise the browser itself blocks the popup with the same
-result; the OAuth popups already have this requirement.
+result; the OAuth popups already have this requirement. The same symptom has
+one more cause on Electron 45 and later, see
+[Electron 45 and later](#electron-45-and-later).
 
 ### Power Monitor
 
@@ -339,6 +341,46 @@ with options is allowed with those options; this is how the OAuth popups get
 
 `initPopupsConfigurationRender(api)` is exported from the renderer entry for API
 compatibility but is a no-op.
+
+#### Electron 45 and later
+
+Since Electron 45 a popup is created in its own process, without an opener, when
+its sandbox state differs from the sandbox state of the process of the frame that
+opens it; `window.open()` then returns `null`. Popups are sandboxed unless a
+configuration says otherwise, and the SDK popups set no `sandbox` flag, so they
+only open when the meeting iframe runs in a sandboxed process. For the PiP window
+this means no PiP at all (jitsi-meet logs "The embedding app denied the PiP
+window"); the OAuth popups open without a link to the meeting page.
+
+Whether the meeting iframe runs sandboxed depends on the app, not on the meeting:
+
+- **Works**: the iframe has its own renderer process, which is always sandboxed.
+  That is the case whenever the page hosting the meeting is on another site than
+  the meeting, for example a `file://` page embedding `https://meet.example.com`
+  (jitsi-meet-electron).
+- **Works**: the window is created with `sandbox: true`, whatever the page.
+- **Fails**: the iframe shares the window's process and that process is not
+  sandboxed, i.e. the window has `sandbox: false` (or `nodeIntegration: true`)
+  and either the page is on the same site as the meeting
+  (`https://app.example.com` embedding `https://meet.example.com`) or the app
+  runs with `--disable-site-isolation-trials`.
+
+In the failing case register a configuration that adds `sandbox: false` to the
+SDK popups. The options of all matching configurations are merged, so the SDK's
+own options are kept. Register it only in that case: on a sandboxed window it
+causes the very same failure, because then the popup is the one that differs.
+
+```Javascript
+const { popupsConfigRegistry } = require('@jitsi/electron-sdk/main');
+
+popupsConfigRegistry.registerPopupConfig('unsandboxed-popups', {
+    matchPatterns: {
+        frameName: '^JitsiMeetPiPWindow$',
+        url: '^https:\\/\\/(www\\.)?(accounts\\.google\\.com\\/|dropbox\\.com\\/oauth2\\/authorize)'
+    },
+    overrideBrowserWindowOptions: { webPreferences: { sandbox: false } }
+});
+```
 
 ## Migrating from v9
 
