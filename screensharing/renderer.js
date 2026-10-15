@@ -18,6 +18,9 @@ class ScreenShareRenderHook {
         this._api = api;
         this._bridge = window.jitsiElectronSDK?.screenSharing;
 
+        // IDs of the OPEN_PICKER requests which still wait for a DO_GDM reply.
+        this._pendingPickerRequests = new Set();
+
         this._onScreenSharingStatusChanged = this._onScreenSharingStatusChanged.bind(this);
         this._sendCloseTrackerEvent = this._sendCloseTrackerEvent.bind(this);
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
@@ -70,20 +73,15 @@ class ScreenShareRenderHook {
                 // Store requestId to match response with request
                 const { requestId } = data;
 
-                this._api._openDesktopPicker().then(r => {
-                    this._bridge.sendEvent({
-                        name: SCREEN_SHARE_EVENTS.DO_GDM,
-                        requestId,
-                        ...r
-                    });
+                this._pendingPickerRequests.add(requestId);
+
+                // Wrapped so a synchronous throw is handled like a rejection.
+                Promise.resolve().then(() => this._api._openDesktopPicker()).then(r => {
+                    this._sendDoGdm(requestId, r);
                 }).catch(error => {
                     // If picker fails, still send DO_GDM with requestId to complete the flow
                     logWarning(`Desktop picker error: ${error}`);
-                    this._bridge.sendEvent({
-                        name: SCREEN_SHARE_EVENTS.DO_GDM,
-                        requestId,
-                        source: null
-                    });
+                    this._sendDoGdm(requestId, { source: null });
                 });
                 break;
             }
@@ -91,6 +89,26 @@ class ScreenShareRenderHook {
                 logWarning(`Unhandled screen sharing event: ${data && data.name}`);
 
         }
+    }
+
+    /**
+     * Sends the DO_GDM reply for a picker request, unless it was already sent.
+     *
+     * @param {number} requestId - The ID of the request.
+     * @param {Object} result - The picker result: the selected source and the screen share audio flag.
+     *
+     * @returns {void}
+     */
+    _sendDoGdm(requestId, result) {
+        if (!this._pendingPickerRequests.delete(requestId)) {
+            return;
+        }
+
+        this._bridge.sendEvent({
+            name: SCREEN_SHARE_EVENTS.DO_GDM,
+            requestId,
+            ...result
+        });
     }
 
     /**
@@ -132,6 +150,9 @@ class ScreenShareRenderHook {
             this._unsubscribe = null;
         }
         this._sendCloseTrackerEvent();
+
+        // The api will not answer the picker requests in progress, so release them in the main process.
+        this._pendingPickerRequests.forEach(requestId => this._sendDoGdm(requestId, { source: null }));
 
         this._api.removeListener('screenSharingStatusChanged', this._onScreenSharingStatusChanged);
         this._api.removeListener('videoConferenceLeft', this._sendCloseTrackerEvent);
