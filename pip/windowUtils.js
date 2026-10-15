@@ -3,10 +3,10 @@ const Store = require('electron-store');
 const os = require('os');
 
 const { fitWithinWorkArea, getRestoredSize } = require('./bounds');
-const { PIP_WINDOW_ASPECT_RATIO, PIP_WINDOW_BOUNDS_STORAGE_KEYS, PIP_WINDOW_SIZE } = require('./constants');
+const { PIP_WINDOW_ASPECT_RATIO, PIP_WINDOW_POSITION_STORAGE_KEYS, PIP_WINDOW_SIZE } = require('./constants');
 
 /**
- * The electron-store instance persisting the PiP window bounds between
+ * The electron-store instance persisting the PiP window position between
  * sessions. Created on first use so that requiring this module before the app
  * is ready has no side effects.
  */
@@ -19,7 +19,7 @@ let store;
 let oldSize;
 
 /**
- * Returns the (lazily created) bounds store.
+ * Returns the (lazily created) position store.
  *
  * @returns {Store} The electron-store instance.
  */
@@ -32,56 +32,52 @@ function _getStore() {
 }
 
 /**
- * Returns the bounds for the PiP window: the persisted size (or the default
- * one) at the persisted position, fitted within the display it will appear on,
- * or - like the legacy always-on-top window - in the top right corner of the
+ * Returns the bounds for the PiP window: the given size (or the default one)
+ * at the persisted position, fitted within the display it will appear on, or -
+ * like the legacy always-on-top window - in the top right corner of the
  * display the cursor is on when no position has been persisted yet.
  *
+ * @param {Electron.Size} [size] - The size remembered for the current meeting, if any.
  * @returns {Electron.Rectangle} The { x, y, width, height } bounds.
  */
-function getStoredBounds() {
-    const boundsStore = _getStore();
-    const x = boundsStore.get(PIP_WINDOW_BOUNDS_STORAGE_KEYS.X);
-    const y = boundsStore.get(PIP_WINDOW_BOUNDS_STORAGE_KEYS.Y);
-    const size = getRestoredSize({
-        height: boundsStore.get(PIP_WINDOW_BOUNDS_STORAGE_KEYS.HEIGHT),
-        width: boundsStore.get(PIP_WINDOW_BOUNDS_STORAGE_KEYS.WIDTH)
-    });
+function _getBounds(size) {
+    const positionStore = _getStore();
+    const x = positionStore.get(PIP_WINDOW_POSITION_STORAGE_KEYS.X);
+    const y = positionStore.get(PIP_WINDOW_POSITION_STORAGE_KEYS.Y);
+    const restoredSize = getRestoredSize(size);
 
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
         const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
 
         return fitWithinWorkArea({
-            x: workArea.x + workArea.width - size.width,
+            x: workArea.x + workArea.width - restoredSize.width,
             y: workArea.y,
-            ...size
+            ...restoredSize
         }, workArea);
     }
 
     const windowRectangle = {
         x,
         y,
-        ...size
+        ...restoredSize
     };
 
     return fitWithinWorkArea(windowRectangle, screen.getDisplayMatching(windowRectangle).workArea);
 }
 
 /**
- * Persists the given PiP window bounds (position and size) for the next PiP
- * window to open with. Takes the bounds rather than the window because the
- * window is already destroyed by the time it is known to be gone (see
- * PictureInPictureMainHook).
+ * Persists the given PiP window position for the next PiP window to open at,
+ * in this and in future sessions. Takes the position rather than the window
+ * because the window is already destroyed by the time it is known to be gone
+ * (see PictureInPictureMainHook).
  *
- * @param {Electron.Rectangle} bounds - The last known bounds of the PiP window.
+ * @param {Electron.Point} position - The last known position of the PiP window.
  * @returns {void}
  */
-function saveBounds({ height, width, x, y }) {
+function savePosition({ x, y }) {
     _getStore().set({
-        [PIP_WINDOW_BOUNDS_STORAGE_KEYS.HEIGHT]: height,
-        [PIP_WINDOW_BOUNDS_STORAGE_KEYS.WIDTH]: width,
-        [PIP_WINDOW_BOUNDS_STORAGE_KEYS.X]: x,
-        [PIP_WINDOW_BOUNDS_STORAGE_KEYS.Y]: y
+        [PIP_WINDOW_POSITION_STORAGE_KEYS.X]: x,
+        [PIP_WINDOW_POSITION_STORAGE_KEYS.Y]: y
     });
 }
 
@@ -138,9 +134,10 @@ function setAspectRatioToResizeableWindow(win, aspectRatio = PIP_WINDOW_ASPECT_R
  * omitted: the window is rendered by the meeting page through web platform
  * APIs and needs no Electron access of its own.
  *
+ * @param {Electron.Size} [size] - The size remembered for the current meeting, if any.
  * @returns {Object} BrowserWindow options for setWindowOpenHandler overrides.
  */
-function getPiPWindowOptions() {
+function getPiPWindowOptions(size) {
     return {
         alwaysOnTop: true,
         backgroundColor: 'transparent',
@@ -155,12 +152,12 @@ function getPiPWindowOptions() {
         show: false,
         skipTaskbar: true,
         titleBarStyle: undefined,
-        ...getStoredBounds()
+        ..._getBounds(size)
     };
 }
 
 module.exports = {
     getPiPWindowOptions,
-    saveBounds,
+    savePosition,
     setAspectRatioToResizeableWindow
 };

@@ -3,10 +3,11 @@ const popupsConfigRegistry = require('../popupsconfig/PopupsConfigRegistry');
 const {
     PIP_CHANNEL,
     PIP_FOCUS_MAIN_CHANNEL,
+    PIP_RESET_WINDOW_SIZE_CHANNEL,
     PIP_WINDOW_NAME,
     PIP_WINDOW_POPUP_CONFIG_NAME
 } = require('./constants');
-const { getPiPWindowOptions, saveBounds, setAspectRatioToResizeableWindow } = require('./windowUtils');
+const { getPiPWindowOptions, savePosition, setAspectRatioToResizeableWindow } = require('./windowUtils');
 const log = require('@jitsi/logger');
 
 let logger;
@@ -35,14 +36,27 @@ class PictureInPictureMainHook {
         this._jitsiMeetWindow = jitsiMeetWindow;
         this._webContents = jitsiMeetWindow.webContents;
         this._pipWindow = null;
+
+        // The size the user resized the PiP window to. Kept in memory only, so
+        // that it survives the hide/show cycles of one meeting (jitsi-meet
+        // closes and reopens the popup for them) but not the meeting itself:
+        // the renderer hook resets it when the meeting is over. The position,
+        // in contrast, is persisted across meetings and sessions. Both match
+        // the legacy always-on-top window.
+        this._windowSize = null;
         this._handlePipRequest = this._handlePipRequest.bind(this);
         this._handleWindowCreated = this._handleWindowCreated.bind(this);
         this._handleFocusMainRequest = this._handleFocusMainRequest.bind(this);
+        this._handleResetWindowSizeRequest = this._handleResetWindowSizeRequest.bind(this);
         this.cleanup = this.cleanup.bind(this);
 
         // Listen for PiP requests from this window's renderer only.
         addSendRoute(PIP_CHANNEL, { owner: this._webContents, handler: this._handlePipRequest });
         addSendRoute(PIP_FOCUS_MAIN_CHANNEL, { owner: this._webContents, handler: this._handleFocusMainRequest });
+        addSendRoute(PIP_RESET_WINDOW_SIZE_CHANNEL, {
+            owner: this._webContents,
+            handler: this._handleResetWindowSizeRequest
+        });
 
         // Turn the popup jitsi-meet opens from inside the iframe into the
         // frameless always-on-top PiP window. The registered options are
@@ -63,7 +77,7 @@ class PictureInPictureMainHook {
              * @returns {Object|undefined} The window options or undefined.
              */
             overrideBrowserWindowOptions: details =>
-                (details?.url === 'about:blank' ? getPiPWindowOptions() : undefined)
+                (details?.url === 'about:blank' ? getPiPWindowOptions(this._windowSize) : undefined)
         });
 
         this._webContents.on('did-create-window', this._handleWindowCreated);
@@ -75,8 +89,9 @@ class PictureInPictureMainHook {
 
     /**
      * Configures a freshly created PiP window: always-on-top level that renders
-     * over full screen apps, aspect-ratio-preserving resizing and persistence
-     * of its bounds. Mirrors the legacy always-on-top window setup.
+     * over full screen apps, aspect-ratio-preserving resizing and remembering
+     * its bounds for the next one. Mirrors the legacy always-on-top window
+     * setup.
      *
      * @param {BrowserWindow} pipWindow - The newly created PiP window.
      * @param {Object} details - The did-create-window details.
@@ -124,12 +139,29 @@ class PictureInPictureMainHook {
         pipWindow.on('move', rememberBounds);
         pipWindow.on('resize', rememberBounds);
         pipWindow.on('closed', () => {
-            saveBounds(bounds);
+            savePosition(bounds);
+            this._windowSize = {
+                height: bounds.height,
+                width: bounds.width
+            };
 
             if (this._pipWindow === pipWindow) {
                 this._pipWindow = null;
             }
         });
+    }
+
+    /**
+     * Forgets the size the user resized the PiP window to; requested by the
+     * renderer hook when the meeting is over, so that the PiP window of the
+     * next meeting opens at the default size (the legacy always-on-top
+     * behavior).
+     *
+     * @returns {void}
+     */
+    _handleResetWindowSizeRequest() {
+        logger.info('Forgetting the PiP window size on request');
+        this._windowSize = null;
     }
 
     /**
@@ -207,6 +239,7 @@ class PictureInPictureMainHook {
         logger.info('Cleaning up PiP main process hook');
         removeSendRoute(PIP_CHANNEL, this._webContents);
         removeSendRoute(PIP_FOCUS_MAIN_CHANNEL, this._webContents);
+        removeSendRoute(PIP_RESET_WINDOW_SIZE_CHANNEL, this._webContents);
 
         if (this._pipWindow && !this._pipWindow.isDestroyed()) {
             this._pipWindow.close();
