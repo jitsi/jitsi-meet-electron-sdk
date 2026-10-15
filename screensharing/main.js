@@ -4,7 +4,8 @@ const {
     BrowserWindow,
     desktopCapturer,
     screen,
-    systemPreferences
+    systemPreferences,
+    webContents
 } = require('electron');
 const os = require('os');
 const path = require('path');
@@ -13,6 +14,103 @@ const { addInvokeRoute, addSendRoute, removeInvokeRoute, removeSendRoute } = req
 const { windowsEnableScreenProtection } = require('../helpers/functions');
 const { SCREEN_SHARE_EVENTS_CHANNEL, SCREEN_SHARE_EVENTS, SCREEN_SHARE_GET_SOURCES, TRACKER_SIZE } = require('./constants');
 const { isMac, isWayland } = require('./utils');
+
+/**
+ * Active hooks, keyed by the WebContents they were set up for.
+ *
+ * `setDisplayMediaRequestHandler` is per session, so a single handler sees the
+ * getDisplayMedia requests of every window sharing that session. The registry
+ * lets the handler hand each request to the hook of the window that made it.
+ *
+ * @type {Map<Electron.WebContents, ScreenShareMainHook>}
+ */
+const hooks = new Map();
+
+/**
+ * Counter for getDisplayMedia request IDs. Module wide, so that IDs stay unique
+ * when a hook is replaced by a new one for the same window.
+ *
+ * @type {number}
+ */
+let gdmRequestId = 0;
+
+/**
+ * Finds the WebContents that hosts the frame which made a getDisplayMedia
+ * request. The frame can be a subframe (the Jitsi Meet iframe).
+ *
+ * @param {Electron.WebFrameMain|null} frame - The requesting frame.
+ * @returns {Electron.WebContents|undefined} The WebContents, if it still exists.
+ */
+function webContentsForFrame(frame) {
+    if (!frame) {
+        return undefined;
+    }
+
+    if (typeof webContents.fromFrame === 'function') {
+        return webContents.fromFrame(frame);
+    }
+
+    // Electron versions without webContents.fromFrame: match the top frame.
+    const top = frame.top;
+
+    for (const wc of hooks.keys()) {
+        if (!wc.isDestroyed() && wc.mainFrame === top) {
+            return wc;
+        }
+    }
+
+    return undefined;
+}
+
+/**
+ * Session wide getDisplayMedia request handler. It hands the request to the hook
+ * of the requesting window, or rejects it when there is no such hook. Without a
+ * matching hook nobody can show the picker or answer the request, so rejecting
+ * it is the only way to keep getDisplayMedia from waiting forever.
+ *
+ * @param {Electron.DisplayMediaRequestHandlerHandlerRequest} request - The request.
+ * @param {Function} callback - The callback to complete the request.
+ * @returns {void}
+ */
+function onDisplayMediaRequest(request, callback) {
+    // On Wayland the native picker will show up and will resolve to what the user selected, so there
+    // is no need to use the Jitsi picker.
+    if (isWayland()) {
+        const options = {
+            types: ['screen', 'window']
+        };
+
+        desktopCapturer.getSources(options).then(sources => {
+            const source = sources[0];
+
+            if (source) {
+                callback({ video: source });
+            } else {
+                callback(null);
+            }
+        }).catch(error => {
+            console.warn(`[screensharing] Failed to get the Wayland source: ${error}`);
+            callback(null);
+        });
+
+        return;
+    }
+
+    const requester = webContentsForFrame(request.frame);
+    const hook = requester && hooks.get(requester);
+
+    if (!hook) {
+        console.warn('[screensharing] Rejecting getDisplayMedia request from '
+            + `${request.securityOrigin}: the requesting window has no screen sharing hook. `
+            + 'Make sure setupScreenSharingMain() was called with the window which hosts the meeting '
+            + `(hooks are set up for ${hooks.size} other window(s)).`);
+        callback(null);
+
+        return;
+    }
+
+    hook._onDisplayMediaRequest(request, callback);
+}
 
 /**
  * Main process component that sets up electron specific screen sharing functionality, like screen sharing
@@ -34,8 +132,9 @@ class ScreenShareMainHook {
         this._identity = identity;
         this._onScreenSharingEvent = this._onScreenSharingEvent.bind(this);
         this._acceptsEventSender = this._acceptsEventSender.bind(this);
-        this._gdmRequestId = 0;
         this._pendingGdmRequests = new Map();
+
+        this._rejectPendingGdmRequests = this._rejectPendingGdmRequests.bind(this);
 
         this.cleanup = this.cleanup.bind(this);
 
@@ -43,43 +142,19 @@ class ScreenShareMainHook {
             this._verifyScreenCapturePermissions(osxBundleId);
         }
 
+        // A new hook for the same window replaces the old one. Clean up the old one first, so its pending
+        // requests are rejected instead of being left without anybody to answer them.
+        const previousHook = hooks.get(this._webContents);
+
+        if (previousHook) {
+            previousHook.cleanup();
+        }
+
+        hooks.set(this._webContents, this);
+
         // Handle getDisplayMedia requests.
-        jitsiMeetWindow.webContents.session.setDisplayMediaRequestHandler((request, callback) => {
-            // On Wayland the native picker will show up and will resolve to what the user selected, so there
-            // is no need to use the Jitsi picker.
-            if (isWayland()) {
-                const options = {
-                    types: ['screen', 'window']
-                };
-
-                desktopCapturer.getSources(options).then(sources => {
-                    const source = sources[0];
-
-                    if (source) {
-                        callback({ video: source });
-                    } else {
-                        callback(null);
-                    }
-                });
-            } else {
-                // Generate unique ID for this request to handle multiple simultaneous requests
-                const requestId = ++this._gdmRequestId;
-
-                this._pendingGdmRequests.set(requestId, {
-                    request,
-                    callback
-                });
-
-                const ev = {
-                    data: {
-                        name: SCREEN_SHARE_EVENTS.OPEN_PICKER,
-                        requestId
-                    }
-                };
-
-                this._jitsiMeetWindow.webContents.send(SCREEN_SHARE_EVENTS_CHANNEL, ev);
-            }
-        }, { useSystemPicker: false /* TODO: enable this when not experimental. It's macOS >= 15 only for now. */ }
+        this._webContents.session.setDisplayMediaRequestHandler(onDisplayMediaRequest,
+            { useSystemPicker: false /* TODO: enable this when not experimental. It's macOS >= 15 only for now. */ }
         );
 
         // Listen for events coming in from the main render window and the screen share tracker window.
@@ -96,8 +171,60 @@ class ScreenShareMainHook {
             handler: (_event, opts) => this._getSources(opts)
         });
 
+        // Release pending requests when the renderer that must answer them goes away.
+        this._webContents.on('did-navigate', this._rejectPendingGdmRequests);
+        this._webContents.on('render-process-gone', this._rejectPendingGdmRequests);
+
         // Clean up ipcMain handlers to avoid leaks.
+        this._webContents.on('destroyed', this.cleanup);
         this._jitsiMeetWindow.on('closed', this.cleanup);
+    }
+
+    /**
+     * Handles a getDisplayMedia request made by this hook's window: asks the renderer to open the picker
+     * and waits for the DO_GDM reply.
+     *
+     * @param {Electron.DisplayMediaRequestHandlerHandlerRequest} request - The request.
+     * @param {Function} callback - The callback to complete the request.
+     * @returns {void}
+     */
+    _onDisplayMediaRequest(request, callback) {
+        if (this._webContents.isDestroyed()) {
+            console.warn('[screensharing] Rejecting getDisplayMedia request: the window is destroyed');
+            callback(null);
+
+            return;
+        }
+
+        // Generate unique ID for this request to handle multiple simultaneous requests
+        const requestId = ++gdmRequestId;
+
+        this._pendingGdmRequests.set(requestId, {
+            request,
+            callback
+        });
+
+        const ev = {
+            data: {
+                name: SCREEN_SHARE_EVENTS.OPEN_PICKER,
+                requestId
+            }
+        };
+
+        this._webContents.send(SCREEN_SHARE_EVENTS_CHANNEL, ev);
+    }
+
+    /**
+     * Rejects all pending getDisplayMedia requests.
+     *
+     * @returns {void}
+     */
+    _rejectPendingGdmRequests() {
+        this._pendingGdmRequests.forEach((gdmData, requestId) => {
+            console.warn(`[screensharing] Rejecting pending request ${requestId}`);
+            gdmData.callback(null);
+        });
+        this._pendingGdmRequests.clear();
     }
 
     /**
@@ -140,12 +267,22 @@ class ScreenShareMainHook {
      * Cleanup any handlers
      */
     cleanup() {
+        if (this._cleanedUp) {
+            return;
+        }
+        this._cleanedUp = true;
+
         // Reject all pending getDisplayMedia requests
-        this._pendingGdmRequests.forEach((gdmData, requestId) => {
-            console.warn(`[screensharing] Cleaning up pending request ${requestId}`);
-            gdmData.callback(null);
-        });
-        this._pendingGdmRequests.clear();
+        this._rejectPendingGdmRequests();
+
+        if (hooks.get(this._webContents) === this) {
+            hooks.delete(this._webContents);
+        }
+
+        this._webContents.removeListener('did-navigate', this._rejectPendingGdmRequests);
+        this._webContents.removeListener('render-process-gone', this._rejectPendingGdmRequests);
+        this._webContents.removeListener('destroyed', this.cleanup);
+        this._jitsiMeetWindow.removeListener('closed', this.cleanup);
 
         removeSendRoute(SCREEN_SHARE_EVENTS_CHANNEL, this._webContents);
         removeInvokeRoute(SCREEN_SHARE_GET_SOURCES, this._webContents);
