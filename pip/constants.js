@@ -38,10 +38,12 @@ const PIP_WINDOW_SIZE = {
 const PIP_WINDOW_ASPECT_RATIO = 16 / 9;
 
 /**
- * electron-store keys under which the PiP window position is persisted
- * between sessions.
+ * electron-store keys under which the PiP window bounds (position and size)
+ * are persisted between sessions.
  */
-const PIP_WINDOW_POSITION_STORAGE_KEYS = {
+const PIP_WINDOW_BOUNDS_STORAGE_KEYS = {
+    HEIGHT: 'pip-window-height',
+    WIDTH: 'pip-window-width',
     X: 'pip-window-x',
     Y: 'pip-window-y'
 };
@@ -50,8 +52,8 @@ module.exports = {
     PIP_CHANNEL,
     PIP_FOCUS_MAIN_CHANNEL,
     PIP_WINDOW_ASPECT_RATIO,
+    PIP_WINDOW_BOUNDS_STORAGE_KEYS,
     PIP_WINDOW_NAME,
     PIP_WINDOW_POPUP_CONFIG_NAME,
-    PIP_WINDOW_POSITION_STORAGE_KEYS,
     PIP_WINDOW_SIZE
 };

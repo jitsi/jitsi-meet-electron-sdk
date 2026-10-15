@@ -256,8 +256,9 @@ always-on-top window rendered by the meeting itself instead of the browser's
 video-element PiP. jitsi-meet opens it as a named popup
 (`JitsiMeetPiPWindow`) from inside the meeting iframe; `setupPictureInPictureMain`
 registers the popup configuration and finishes the window setup (always-on-top
-level that floats over full screen apps, 16:9 resizing,
-position persistence). The popup needs no Electron access of its own: the
+level that floats over full screen apps, 16:9 resizing, and reopening at the
+position and size the previous PiP window was left at, also across sessions).
+The popup needs no Electron access of its own: the
 meeting page renders it and moves it with web platform APIs. Like the OAuth
 popups, it relies on the SDK-owned window open handler installed by
 `initPopupsConfigurationMain`, so apps using it need no extra wiring.

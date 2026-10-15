@@ -2,10 +2,11 @@ const { screen } = require('electron');
 const Store = require('electron-store');
 const os = require('os');
 
-const { PIP_WINDOW_ASPECT_RATIO, PIP_WINDOW_POSITION_STORAGE_KEYS, PIP_WINDOW_SIZE } = require('./constants');
+const { fitWithinWorkArea, getRestoredSize } = require('./bounds');
+const { PIP_WINDOW_ASPECT_RATIO, PIP_WINDOW_BOUNDS_STORAGE_KEYS, PIP_WINDOW_SIZE } = require('./constants');
 
 /**
- * The electron-store instance persisting the PiP window position between
+ * The electron-store instance persisting the PiP window bounds between
  * sessions. Created on first use so that requiring this module before the app
  * is ready has no side effects.
  */
@@ -18,7 +19,7 @@ let store;
 let oldSize;
 
 /**
- * Returns the (lazily created) position store.
+ * Returns the (lazily created) bounds store.
  *
  * @returns {Store} The electron-store instance.
  */
@@ -31,73 +32,57 @@ function _getStore() {
 }
 
 /**
- * Calculates the coordinates for a window (based on its current coordinates
- * and size) to place it within the boundaries of a given screen. Ported from
- * the legacy always-on-top module.
+ * Returns the bounds for the PiP window: the persisted size (or the default
+ * one) at the persisted position, fitted within the display it will appear on,
+ * or - like the legacy always-on-top window - in the top right corner of the
+ * display the cursor is on when no position has been persisted yet.
  *
- * @param {Electron.Rectangle} windowRectangle - The current position and dimensions of the window.
- * @param {Electron.Rectangle} screenRectangle - The position and dimensions of the screen.
- * @returns {Electron.Point} The new coordinates for the window.
+ * @returns {Electron.Rectangle} The { x, y, width, height } bounds.
  */
-function _positionWithinScreenBoundaries(windowRectangle, screenRectangle) {
-    const minX = screenRectangle.x;
-    const minY = screenRectangle.y;
-    const maxX = screenRectangle.x + screenRectangle.width - windowRectangle.width;
-    const maxY = screenRectangle.y + screenRectangle.height - windowRectangle.height;
+function getStoredBounds() {
+    const boundsStore = _getStore();
+    const x = boundsStore.get(PIP_WINDOW_BOUNDS_STORAGE_KEYS.X);
+    const y = boundsStore.get(PIP_WINDOW_BOUNDS_STORAGE_KEYS.Y);
+    const size = getRestoredSize({
+        height: boundsStore.get(PIP_WINDOW_BOUNDS_STORAGE_KEYS.HEIGHT),
+        width: boundsStore.get(PIP_WINDOW_BOUNDS_STORAGE_KEYS.WIDTH)
+    });
 
-    return {
-        x: Math.min(Math.max(windowRectangle.x, minX), maxX),
-        y: Math.min(Math.max(windowRectangle.y, minY), maxY)
-    };
-}
-
-/**
- * Returns the position for the PiP window: the persisted position, clamped to
- * the boundaries of the display it will appear on, or - like the legacy
- * always-on-top window - the top right corner of the display the cursor is on
- * when nothing has been persisted yet.
- *
- * @returns {Electron.Point} The { x, y } position.
- */
-function getStoredPosition() {
-    const positionStore = _getStore();
-    const x = positionStore.get(PIP_WINDOW_POSITION_STORAGE_KEYS.X);
-    const y = positionStore.get(PIP_WINDOW_POSITION_STORAGE_KEYS.Y);
-
-    if (typeof x !== 'number' || typeof y !== 'number') {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
         const { workArea } = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
 
-        return {
-            x: workArea.x + workArea.width - PIP_WINDOW_SIZE.width,
-            y: workArea.y
-        };
+        return fitWithinWorkArea({
+            x: workArea.x + workArea.width - size.width,
+            y: workArea.y,
+            ...size
+        }, workArea);
     }
 
     const windowRectangle = {
         x,
         y,
-        ...PIP_WINDOW_SIZE
+        ...size
     };
 
-    return _positionWithinScreenBoundaries(windowRectangle, screen.getDisplayMatching(windowRectangle).workArea);
+    return fitWithinWorkArea(windowRectangle, screen.getDisplayMatching(windowRectangle).workArea);
 }
 
 /**
- * Persists the current position of the given PiP window.
+ * Persists the given PiP window bounds (position and size) for the next PiP
+ * window to open with. Takes the bounds rather than the window because the
+ * window is already destroyed by the time it is known to be gone (see
+ * PictureInPictureMainHook).
  *
- * @param {BrowserWindow} pipWindow - The PiP window.
+ * @param {Electron.Rectangle} bounds - The last known bounds of the PiP window.
  * @returns {void}
  */
-function savePosition(pipWindow) {
-    if (!pipWindow || pipWindow.isDestroyed()) {
-        return;
-    }
-
-    const [ x, y ] = pipWindow.getPosition();
-    const positionStore = _getStore();
-
-    positionStore.set(PIP_WINDOW_POSITION_STORAGE_KEYS.X, x);
-    positionStore.set(PIP_WINDOW_POSITION_STORAGE_KEYS.Y, y);
+function saveBounds({ height, width, x, y }) {
+    _getStore().set({
+        [PIP_WINDOW_BOUNDS_STORAGE_KEYS.HEIGHT]: height,
+        [PIP_WINDOW_BOUNDS_STORAGE_KEYS.WIDTH]: width,
+        [PIP_WINDOW_BOUNDS_STORAGE_KEYS.X]: x,
+        [PIP_WINDOW_BOUNDS_STORAGE_KEYS.Y]: y
+    });
 }
 
 /**
@@ -170,13 +155,12 @@ function getPiPWindowOptions() {
         show: false,
         skipTaskbar: true,
         titleBarStyle: undefined,
-        ...PIP_WINDOW_SIZE,
-        ...getStoredPosition()
+        ...getStoredBounds()
     };
 }
 
 module.exports = {
     getPiPWindowOptions,
-    savePosition,
+    saveBounds,
     setAspectRatioToResizeableWindow
 };

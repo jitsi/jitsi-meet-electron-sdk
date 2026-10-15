@@ -6,7 +6,7 @@ const {
     PIP_WINDOW_NAME,
     PIP_WINDOW_POPUP_CONFIG_NAME
 } = require('./constants');
-const { getPiPWindowOptions, savePosition, setAspectRatioToResizeableWindow } = require('./windowUtils');
+const { getPiPWindowOptions, saveBounds, setAspectRatioToResizeableWindow } = require('./windowUtils');
 const log = require('@jitsi/logger');
 
 let logger;
@@ -75,8 +75,8 @@ class PictureInPictureMainHook {
 
     /**
      * Configures a freshly created PiP window: always-on-top level that renders
-     * over full screen apps, aspect-ratio-preserving resizing and position
-     * persistence. Mirrors the legacy always-on-top window setup.
+     * over full screen apps, aspect-ratio-preserving resizing and persistence
+     * of its bounds. Mirrors the legacy always-on-top window setup.
      *
      * @param {BrowserWindow} pipWindow - The newly created PiP window.
      * @param {Object} details - The did-create-window details.
@@ -110,8 +110,22 @@ class PictureInPictureMainHook {
             }
         });
 
-        pipWindow.on('close', () => savePosition(pipWindow));
+        // Remember the bounds as they change rather than reading them when the
+        // window closes: jitsi-meet closes it from the page with window.close(),
+        // for which Electron destroys the web contents first and emits only
+        // 'closed', when the bounds can no longer be read ('close' is not
+        // emitted at all). 'move' also covers the moves jitsi-meet performs with
+        // window.moveTo() while the user drags the frameless window.
+        let bounds = pipWindow.getBounds();
+        const rememberBounds = () => {
+            bounds = pipWindow.getBounds();
+        };
+
+        pipWindow.on('move', rememberBounds);
+        pipWindow.on('resize', rememberBounds);
         pipWindow.on('closed', () => {
+            saveBounds(bounds);
+
             if (this._pipWindow === pipWindow) {
                 this._pipWindow = null;
             }
