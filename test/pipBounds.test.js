@@ -4,22 +4,23 @@ const { fitWithinWorkArea, getRestoredSize } = require('../pip/bounds');
 const { PIP_WINDOW_SIZE } = require('../pip/constants');
 
 describe('getRestoredSize', () => {
-    it('falls back to the default size when nothing has been persisted', () => {
+    it('falls back to the default size when no size is remembered', () => {
         assert.deepStrictEqual(getRestoredSize(), PIP_WINDOW_SIZE);
+        assert.deepStrictEqual(getRestoredSize(null), PIP_WINDOW_SIZE);
         assert.deepStrictEqual(getRestoredSize({}), PIP_WINDOW_SIZE);
     });
 
-    it('falls back to the default size when the persisted size is incomplete or not numeric', () => {
+    it('falls back to the default size when the remembered size is incomplete or not numeric', () => {
         assert.deepStrictEqual(getRestoredSize({ width: 640 }), PIP_WINDOW_SIZE);
         assert.deepStrictEqual(getRestoredSize({ height: '360', width: '640' }), PIP_WINDOW_SIZE);
         assert.deepStrictEqual(getRestoredSize({ height: 360, width: NaN }), PIP_WINDOW_SIZE);
     });
 
-    it('returns the persisted size', () => {
+    it('returns the remembered size', () => {
         assert.deepStrictEqual(getRestoredSize({ height: 360, width: 640 }), { height: 360, width: 640 });
     });
 
-    it('raises a persisted dimension below the minimum size to it', () => {
+    it('raises a remembered dimension below the minimum size to it', () => {
         assert.deepStrictEqual(
             getRestoredSize({ height: 360, width: 100 }),
             { height: 360, width: PIP_WINDOW_SIZE.width });
