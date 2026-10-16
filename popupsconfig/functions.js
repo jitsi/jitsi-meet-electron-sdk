@@ -45,6 +45,48 @@ function testMatchPatterns(url, frameName, matchPatterns = {}) {
 }
 
 /**
+ * Returns the BrowserWindow options the registered popup configurations
+ * provide for the window about to be opened. A configuration may hold the
+ * options directly or as a function of the window open handler details, which
+ * lets it decline a window by returning undefined.
+ *
+ * The options of all matching configurations are merged in registration
+ * order, so an app can add to a popup the SDK defines (for instance the
+ * sandbox flag Electron 45 requires when the meeting iframe shares an
+ * unsandboxed window process) without repeating the SDK's options. A later
+ * configuration wins on the same key; webPreferences are merged one level
+ * deep so a flag added by one configuration does not drop the flags set by
+ * another.
+ *
+ * @param {Object} details - The window open handler details.
+ * @returns {Object|undefined} - The BrowserWindow options or undefined if no
+ * configuration with options matches.
+ */
+function getPopupWindowOptions(details) {
+    const { url, frameName } = details;
+    const allOptions = popupsConfigRegistry.getAllConfigs()
+        .filter(({ matchPatterns, overrideBrowserWindowOptions }) =>
+            overrideBrowserWindowOptions && testMatchPatterns(url, frameName, matchPatterns))
+        .map(({ overrideBrowserWindowOptions }) => (typeof overrideBrowserWindowOptions === 'function'
+            ? overrideBrowserWindowOptions(details) : overrideBrowserWindowOptions))
+        .filter(Boolean);
+
+    if (!allOptions.length) {
+        return undefined;
+    }
+
+    return allOptions.reduce((merged, options) => {
+        const result = { ...merged, ...options };
+
+        if (merged.webPreferences && options.webPreferences) {
+            result.webPreferences = { ...merged.webPreferences, ...options.webPreferences };
+        }
+
+        return result;
+    });
+}
+
+/**
  * Returns the target property from the config object that corresponds to the
  * passed url and frameName.
  *
@@ -61,5 +103,6 @@ function getPopupTarget(url, frameName) {
 
 module.exports = {
     getPopupTarget,
+    getPopupWindowOptions,
     testMatchPatterns
 };
