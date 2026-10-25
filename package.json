@@ -55,6 +55,7 @@
     "eslint-plugin-jsdoc": "*",
     "husky": "^9.0.10",
     "mocha": "^11.7.3",
+    "node-gyp": "^13.1.0",
     "prebuildify": "^6.0.0",
     "precommit-hook": "3.0.0"
   }
