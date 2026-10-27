@@ -25,8 +25,8 @@ jobs:
             arch: arm64
             build-group: win32-arm64
     steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v6
-    - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v6
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v6
       with:
         node-version: '24'
         architecture: ${{ matrix.arch }}
@@ -36,7 +36,7 @@ jobs:
     - name: Prebuildify
       run: npm run prebuild
       shell: bash
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
       with:
         name: prebuilds-${{ matrix.build-group }}
         path: prebuilds/
@@ -48,18 +48,18 @@ jobs:
     concurrency:
       group: ${{ github.ref }}
     steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v6
-    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v6
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
       with:
         path: prebuilds
         pattern: prebuilds-*
         merge-multiple: true
-    - uses: jitsi/gh-actions/npm-version-bump@066f0d506761c59a0ba4aa26c06468d265f07a3c  # npm-version-bump/v1.0.0
+    - uses: jitsi/gh-actions/npm-version-bump@6ea91f36593d6a041528b2bf5af1cf667888f48e  # npm-version-bump/v1.0.1
       with:
         tag-prefix: 'v'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v6
       with:
         node-version: '24'
         registry-url: 'https://registry.npmjs.org'
