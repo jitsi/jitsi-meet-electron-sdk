@@ -1,5 +1,13 @@
 const { addSendRoute, removeSendRoute } = require('../helpers/ipcRouter');
-const { PIP_CHANNEL } = require('./constants');
+const popupsConfigRegistry = require('../popupsconfig/PopupsConfigRegistry');
+const {
+    PIP_CHANNEL,
+    PIP_FOCUS_MAIN_CHANNEL,
+    PIP_RESET_WINDOW_SIZE_CHANNEL,
+    PIP_WINDOW_NAME,
+    PIP_WINDOW_POPUP_CONFIG_NAME
+} = require('./constants');
+const { getPiPWindowOptions, savePosition, setAspectRatioToResizeableWindow } = require('./windowUtils');
 const log = require('@jitsi/logger');
 
 let logger;
@@ -7,7 +15,16 @@ let logger;
 
 /**
  * Main process hook that handles picture-in-picture requests from the renderer.
- * Executes requestPictureInPicture with userGesture: true to bypass transient activation requirements.
+ *
+ * Supports two PiP flavors:
+ * - Video-element PiP: executes requestPictureInPicture with userGesture: true
+ *   to bypass transient activation requirements.
+ * - Custom PiP window: jitsi-meet opens a same-origin popup (named
+ *   PIP_WINDOW_NAME) from inside the meeting iframe; this hook turns it into a
+ *   small frameless always-on-top window (the legacy always-on-top look) and
+ *   focuses the meeting window when the renderer hook asks for it (double
+ *   click in the PiP window). The popup itself needs no Electron access: it is
+ *   rendered and moved by the meeting page through web platform APIs only.
  */
 class PictureInPictureMainHook {
     /**
@@ -18,15 +35,154 @@ class PictureInPictureMainHook {
     constructor(jitsiMeetWindow) {
         this._jitsiMeetWindow = jitsiMeetWindow;
         this._webContents = jitsiMeetWindow.webContents;
+        this._pipWindow = null;
+
+        // The size the user resized the PiP window to. Kept in memory only, so
+        // that it survives the hide/show cycles of one meeting (jitsi-meet
+        // closes and reopens the popup for them) but not the meeting itself:
+        // the renderer hook resets it when the meeting is over. The position,
+        // in contrast, is persisted across meetings and sessions. Both match
+        // the legacy always-on-top window.
+        this._windowSize = null;
         this._handlePipRequest = this._handlePipRequest.bind(this);
+        this._handleWindowCreated = this._handleWindowCreated.bind(this);
+        this._handleFocusMainRequest = this._handleFocusMainRequest.bind(this);
+        this._handleResetWindowSizeRequest = this._handleResetWindowSizeRequest.bind(this);
         this.cleanup = this.cleanup.bind(this);
 
         // Listen for PiP requests from this window's renderer only.
         addSendRoute(PIP_CHANNEL, { owner: this._webContents, handler: this._handlePipRequest });
+        addSendRoute(PIP_FOCUS_MAIN_CHANNEL, { owner: this._webContents, handler: this._handleFocusMainRequest });
+        addSendRoute(PIP_RESET_WINDOW_SIZE_CHANNEL, {
+            owner: this._webContents,
+            handler: this._handleResetWindowSizeRequest
+        });
+
+        // Turn the popup jitsi-meet opens from inside the iframe into the
+        // frameless always-on-top PiP window. The registered options are
+        // consumed by the window open handler installed by
+        // initPopupsConfigurationMain, like the OAuth popup configurations.
+        popupsConfigRegistry.registerPopupConfig(PIP_WINDOW_POPUP_CONFIG_NAME, {
+            matchPatterns: {
+                frameName: `^${PIP_WINDOW_NAME}$`
+            },
+            target: 'electron',
+
+            /**
+             * Provides the BrowserWindow options for the PiP window. The popup
+             * is always opened as about:blank and rendered by the meeting
+             * iframe; any other URL does not get the frameless treatment.
+             *
+             * @param {Object} details - The window open handler details.
+             * @returns {Object|undefined} The window options or undefined.
+             */
+            overrideBrowserWindowOptions: details =>
+                (details?.url === 'about:blank' ? getPiPWindowOptions(this._windowSize) : undefined)
+        });
+
+        this._webContents.on('did-create-window', this._handleWindowCreated);
         logger.info('PiP main process hook initialized');
 
         // Automatically cleanup when the window is closed.
         this._jitsiMeetWindow.on('closed', this.cleanup);
+    }
+
+    /**
+     * Configures a freshly created PiP window: always-on-top level that renders
+     * over full screen apps, aspect-ratio-preserving resizing and remembering
+     * its bounds for the next one. Mirrors the legacy always-on-top window
+     * setup.
+     *
+     * @param {BrowserWindow} pipWindow - The newly created PiP window.
+     * @param {Object} details - The did-create-window details.
+     * @returns {void}
+     */
+    _handleWindowCreated(pipWindow, details) {
+        if (details?.frameName !== PIP_WINDOW_NAME) {
+            return;
+        }
+
+        logger.info('Setting up PiP window');
+        this._pipWindow = pipWindow;
+
+        // Required to allow the window to be rendered on top of full screen apps.
+        pipWindow.setAlwaysOnTop(true, 'screen-saver');
+
+        setAspectRatioToResizeableWindow(pipWindow);
+
+        // showInactive keeps the focus where it is: the PiP window appears
+        // because the user focused something else, so it must not steal focus.
+        pipWindow.once('ready-to-show', () => {
+            if (!pipWindow.isDestroyed()) {
+                pipWindow.showInactive();
+            }
+        });
+
+        pipWindow.webContents.on('render-process-gone', (event, renderDetails) => {
+            logger.error('Closing PiP window because its renderer is gone:', renderDetails?.reason);
+            if (!pipWindow.isDestroyed()) {
+                pipWindow.close();
+            }
+        });
+
+        // Remember the bounds as they change rather than reading them when the
+        // window closes: jitsi-meet closes it from the page with window.close(),
+        // for which Electron destroys the web contents first and emits only
+        // 'closed', when the bounds can no longer be read ('close' is not
+        // emitted at all). 'move' also covers the moves jitsi-meet performs with
+        // window.moveTo() while the user drags the frameless window.
+        let bounds = pipWindow.getBounds();
+        const rememberBounds = () => {
+            bounds = pipWindow.getBounds();
+        };
+
+        pipWindow.on('move', rememberBounds);
+        pipWindow.on('resize', rememberBounds);
+        pipWindow.on('closed', () => {
+            savePosition(bounds);
+            this._windowSize = {
+                height: bounds.height,
+                width: bounds.width
+            };
+
+            if (this._pipWindow === pipWindow) {
+                this._pipWindow = null;
+            }
+        });
+    }
+
+    /**
+     * Forgets the size the user resized the PiP window to; requested by the
+     * renderer hook when the meeting is over, so that the PiP window of the
+     * next meeting opens at the default size (the legacy always-on-top
+     * behavior).
+     *
+     * @returns {void}
+     */
+    _handleResetWindowSizeRequest() {
+        logger.info('Forgetting the PiP window size on request');
+        this._windowSize = null;
+    }
+
+    /**
+     * Focuses the window hosting the meeting; requested by the renderer hook
+     * when the user double clicks the PiP window (the legacy always-on-top
+     * double-click behavior).
+     *
+     * @returns {void}
+     */
+    _handleFocusMainRequest() {
+        logger.info('Focusing the jitsi-meet window on PiP request');
+
+        if (!this._jitsiMeetWindow || this._jitsiMeetWindow.isDestroyed()) {
+            return;
+        }
+
+        if (this._jitsiMeetWindow.isMinimized()) {
+            this._jitsiMeetWindow.restore();
+        }
+        this._jitsiMeetWindow.show();
+        this._jitsiMeetWindow.focus();
     }
 
     /**
@@ -82,9 +238,17 @@ class PictureInPictureMainHook {
     cleanup() {
         logger.info('Cleaning up PiP main process hook');
         removeSendRoute(PIP_CHANNEL, this._webContents);
+        removeSendRoute(PIP_FOCUS_MAIN_CHANNEL, this._webContents);
+        removeSendRoute(PIP_RESET_WINDOW_SIZE_CHANNEL, this._webContents);
+
+        if (this._pipWindow && !this._pipWindow.isDestroyed()) {
+            this._pipWindow.close();
+        }
+        this._pipWindow = null;
 
         // Remove the window close listener if the window still exists.
         if (this._jitsiMeetWindow && !this._jitsiMeetWindow.isDestroyed()) {
+            this._webContents.removeListener('did-create-window', this._handleWindowCreated);
             this._jitsiMeetWindow.removeListener('closed', this.cleanup);
         }
 
