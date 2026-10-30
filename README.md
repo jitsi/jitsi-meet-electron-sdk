@@ -228,7 +228,10 @@ keep it in a floating window while using other applications.
 **Requirements**:
 1. Jitsi Meet must be initialized through the [iframe API](https://github.com/jitsi/jitsi-meet/blob/master/doc/api.md).
 2. The main process executes the PiP request with userGesture privileges to bypass browser
-   transient-activation restrictions.
+   transient-activation restrictions. Because this grants the meeting frame transient
+   activation, it is only done while the Jitsi Meet window is unfocused (the automatic PiP
+   on focus loss) and at most once each time the window loses focus; requests made while
+   the window is focused are ignored.
 
 In the **main** process:
 
