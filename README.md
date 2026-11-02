@@ -250,6 +250,43 @@ import { setupPictureInPictureRender } from '@jitsi/electron-sdk/renderer';
 const pipRender = setupPictureInPictureRender(api, loggerTransports);
 ```
 
+**Custom PiP window** (the legacy always-on-top experience): deployments with
+`config.pip.mode` unset or set to `'customWindow'` open a small frameless
+always-on-top window rendered by the meeting itself instead of the browser's
+video-element PiP. jitsi-meet opens it as a named popup
+(`JitsiMeetPiPWindow`) from inside the meeting iframe; `setupPictureInPictureMain`
+registers the popup configuration and finishes the window setup (always-on-top
+level that floats over full screen apps, 16:9 resizing, and reopening where the
+previous PiP window was left: the position is kept across meetings and
+sessions, the size only until the meeting ends, like the legacy window).
+The popup needs no Electron access of its own: the
+meeting page renders it and moves it with web platform APIs. Like the OAuth
+popups, it relies on the SDK-owned window open handler installed by
+`initPopupsConfigurationMain`, so apps using it need no extra wiring.
+
+A double click in the PiP window focuses the window hosting the meeting through
+the main process (like the legacy always-on-top window). Apps that need to react
+to the window's gestures themselves listen to the External API directly:
+
+```Javascript
+// The user double clicked the PiP window ('return to the meeting').
+api.on('pipDoubleClicked', () => { /* e.g. focus and bring the meeting view to the front */ });
+
+// PiP was left; `reason` is 'dismissed' (X button), 'focus' or 'requested'.
+api.on('pipLeft', ({ mode, reason }) => { /* ... */ });
+```
+
+The `pipEntered` / `pipLeft` events carry the implementation in use as `mode`
+(`'customWindow'`, `'videoPiP'` or `'documentPiP'`). jitsi-meet does not detect
+a denied popup: an app whose window open handler denies it (an SDK older than
+this one) shows no PiP at all, so such apps have to request the video-element
+PiP by passing `pip: { mode: 'videoPiP' }` in `configOverwrite`. Apps that
+sandbox the meeting iframe (the External API's `sandbox` option) must include
+`allow-popups`, otherwise the browser itself blocks the popup with the same
+result; the OAuth popups already have this requirement. The same symptom has
+one more cause on Electron 45 and later, see
+[Electron 45 and later](#electron-45-and-later).
+
 ### Power Monitor
 
 Query Electron for system idle state and receive power-monitor events (suspend, resume,
@@ -298,8 +335,54 @@ const windowOpenHandler = ({ url }) => {
 initPopupsConfigurationMain(jitsiMeetWindow, windowOpenHandler);
 ```
 
+A popup configuration in `popupsConfigRegistry` may carry `overrideBrowserWindowOptions`: a
+`BrowserWindow` options object, or a function receiving the window open handler details and
+returning one (or `undefined` to leave the decision to your handler). A matching configuration
+with options is allowed with those options; this is how the OAuth popups get
+`nodeIntegration: false`.
+
 `initPopupsConfigurationRender(api)` is exported from the renderer entry for API
 compatibility but is a no-op.
+
+#### Electron 45 and later
+
+Since Electron 45 a popup is created in its own process, without an opener, when
+its sandbox state differs from the sandbox state of the process of the frame that
+opens it; `window.open()` then returns `null`. Popups are sandboxed unless a
+configuration says otherwise, and the SDK popups set no `sandbox` flag, so they
+only open when the meeting iframe runs in a sandboxed process. For the PiP window
+this means no PiP at all (jitsi-meet logs "The embedding app denied the PiP
+window"); the OAuth popups open without a link to the meeting page.
+
+Whether the meeting iframe runs sandboxed depends on the app, not on the meeting:
+
+- **Works**: the iframe has its own renderer process, which is always sandboxed.
+  That is the case whenever the page hosting the meeting is on another site than
+  the meeting, for example a `file://` page embedding `https://meet.example.com`
+  (jitsi-meet-electron).
+- **Works**: the window is created with `sandbox: true`, whatever the page.
+- **Fails**: the iframe shares the window's process and that process is not
+  sandboxed, i.e. the window has `sandbox: false` (or `nodeIntegration: true`)
+  and either the page is on the same site as the meeting
+  (`https://app.example.com` embedding `https://meet.example.com`) or the app
+  runs with `--disable-site-isolation-trials`.
+
+In the failing case register a configuration that adds `sandbox: false` to the
+SDK popups. The options of all matching configurations are merged, so the SDK's
+own options are kept. Register it only in that case: on a sandboxed window it
+causes the very same failure, because then the popup is the one that differs.
+
+```Javascript
+const { popupsConfigRegistry } = require('@jitsi/electron-sdk/main');
+
+popupsConfigRegistry.registerPopupConfig('unsandboxed-popups', {
+    matchPatterns: {
+        frameName: '^JitsiMeetPiPWindow$',
+        url: '^https:\\/\\/(www\\.)?(accounts\\.google\\.com\\/|dropbox\\.com\\/oauth2\\/authorize)'
+    },
+    overrideBrowserWindowOptions: { webPreferences: { sandbox: false } }
+});
+```
 
 ## Migrating from v9
 
